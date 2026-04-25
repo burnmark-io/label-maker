@@ -16,7 +16,14 @@
       "Bash(curl -fsSI http://localhost:18080/manifest.webmanifest)",
       "Bash(curl -fsSI http://localhost:18080/sw.js)",
       "Bash(curl -fsSI http://localhost:18080/compose.yaml)",
-      "Bash(docker stop *)"
+      "Bash(docker stop *)",
+      "Bash(awk '/^## 18\\\\./,/^## 19\\\\./' /home/mannes/burnmark-io/label-maker/PLAN.md)",
+      "Bash(awk '/^### 14\\\\.2/,/^### 14\\\\.[3-9]|^## 15/' /home/mannes/burnmark-io/label-maker/PLAN.md)",
+      "Bash(awk '/^## 19\\\\. Help/,/^## 20/' /home/mannes/burnmark-io/label-maker/PLAN.md)",
+      "WebFetch(domain:www.123inkt.nl)"
+    ],
+    "additionalDirectories": [
+      "/home/mannes/burnmark-io/designer-core"
     ]
   }
 }

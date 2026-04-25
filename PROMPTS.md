@@ -345,7 +345,7 @@ Remaining polish (steps 57-62):
   batch preview grid if >10 items, debounce renders (already in composable)
 
 Phase 9 target — Final:
-- Verify ALL gate checks pass across all phases (typecheck + lint + test + build)
+- Verify ALL gate checks pass across all phases (typecheck + lint + format + test + build)
 - Test on Chrome desktop — full flow: connect, design, print, export, batch
 - Test on Edge desktop — same flow
 - Firefox / Safari: verify the "printing requires Chrome or Edge" banner

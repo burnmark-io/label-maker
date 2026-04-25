@@ -590,3 +590,24 @@ Safari/Firefox ignore the field; no harm.
 The launchQueue handler delegates to the same `useLabelImport.runImport`
 that the menu and drop overlay use, so the confirm-replace and missing-
 assets toasts are uniform across all entry points.
+
+## D47 — Drivers own bitmap rotation to feed direction
+
+Per `amendment-canvas-sizing.md` §4.5, orientation is a designer-side
+concept: the canvas frame swaps W/H, objects keep absolute coordinates,
+text always reads upright. `@burnmark-io/designer-core` renders honestly
+at the chosen canvas dimensions and produces a bitmap in that orientation.
+
+Contract: **printer drivers accept an arbitrary-dimension bitmap and
+rotate it to match their physical feed direction.** The designer doesn't
+know which way a print head scans; the driver does. Pushing rotation
+into the driver keeps the editor mm/dots conversion simple (one canonical
+mm value per axis, dots derived) and avoids a second orientation source
+of truth in the print pipeline.
+
+Per-driver verification is on the §9 checklist of the canvas-sizing
+amendment. For any driver that doesn't currently rotate, the fix is
+either (a) patch the driver — preferred when the driver is ours and
+the rotation is genuinely a driver concern — or (b) insert a rotation
+step in label-maker's print pipeline before send. Decision is per
+driver and recorded as a sub-note under this entry once we audit.
