@@ -34,6 +34,18 @@ Tracking the phase/step plan from `PLAN.md` section 22. Tick boxes as steps comp
 - [x] test
 - [x] build
 
-## Phase 3+ (later sessions)
+## Phase 3: Shapes and Borders
+- [x] 17. Decorative shapes — heart, star, diamond, arrow, badge, ribbon
+- [x] 18. Border presets — simple, classical, playful, dotted
+- [x] 19. Shape library picker in toolbar (Basic / Decorative / Borders)
+- [x] 20. Gate: all shapes render correctly on canvas and in bitmap preview
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] test
+- [x] build
+
+## Phase 4+ (later sessions)
 
 See `PLAN.md` section 22 for the remaining phases.

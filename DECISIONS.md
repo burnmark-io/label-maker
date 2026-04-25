@@ -120,6 +120,61 @@ Phases 4/6/7/8 will pick up the rest. Privacy banner is held for
 Phase 7 (PWA / first-visit polish) since it pairs with the install
 prompt in the same surface.
 
+## D13 — Decorative shapes and borders are rasterised as ImageObjects
+
+`@burnmark-io/designer-core@0.1.0` ships `ShapeObject` with
+`shape: 'rectangle' | 'ellipse' | 'line'` only. The package is
+published, so we cannot extend the union to add heart / star / border
+variants without a coordinated release.
+
+Resolution: each entry in the shape registry (`src/lib/shapes/*`)
+exposes one `renderPath(ctx, w, h)` function. On insert, the function
+rasterises onto an offscreen canvas at object-space dimensions, the
+PNG is stored via the existing `assetLoader`, and the result is added
+as an `ImageObject` (with `dither: false` so the silhouette stays
+crisp at 1bpp). Konva renders it through the regular `<VImage>`
+pipeline; designer-core renders it through its image renderer for the
+1bpp bitmap preview. One drawing function feeds both views — they
+cannot diverge.
+
+Trade-off: shapes are bitmap, not vector, so very aggressive scaling
+loses quality. Mitigation: `MAX_RASTER_DIMENSION = 1600` for borders
+that span large continuous labels, with `defaultWidth/Height = 200`
+for decorative shapes. At 300 dpi thermal output this is plenty.
+
+The plan's note about Konva `sceneFunc` on `<v-shape>` (for vector
+custom shapes) was discarded for the same reason — a vector path on
+the Konva canvas would not match the bitmap-path output from
+designer-core's image renderer, and re-implementing the bitmap render
+ourselves was out of scope for Phase 3.
+
+## D14 — Borders auto-resize via name-tag tracking
+
+Borders are single-instance per label. The active border is identified
+by an object name beginning with `shape:border:` (set when inserted via
+the registry). `useBorderResize()` watches `canvas.widthDots` and
+`canvas.heightDots` and re-rasterises the active border to fill the new
+canvas, replacing its asset and updating its image dimensions in place.
+
+Adding a second border replaces the first (`upsertBorder`). The plan
+doesn't explicitly require single-instance behaviour but a label with
+two competing frames is almost never what the user wants, and it keeps
+the resize logic simple.
+
+The decorative shapes (heart / star / etc.) are also tagged with a
+`shape:<id>` name so the objects panel can show a useful label and so
+future features (e.g. a "swap shape" affordance) can find them.
+
+## D15 — One additional border preset (dotted)
+
+The plan asks for "simple, classical, playful". Added a fourth
+preset, `dotted`, because a 6-tile grid in the picker felt sparse
+with three borders that span 2 columns each (which left a gap), and
+a dotted-perimeter style reads especially well on small thermal
+labels (single dots are unambiguous at 1bpp, no anti-alias artefacts).
+Total Phase 3 inventory: 6 decorative shapes + 4 borders. Quality
+remains the bar — the fourth preset is genuinely useful, not filler.
+
 ## D12 — Web driver packages NOT yet imported
 
 Phase 2 ends without importing `@thermal-label/*-web` — the printer
