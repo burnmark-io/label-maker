@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsusb -d 04f9:209d)",
+      "Read(//sys/bus/usb/drivers/usblp/**)",
+      "Bash(sudo -n lsof /dev/bus/usb/003/056)"
+    ]
+  }
+}

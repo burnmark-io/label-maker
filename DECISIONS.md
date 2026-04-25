@@ -240,3 +240,22 @@ is fast enough on demand).
 `{ width, height, data: Uint8ClampedArray }`. `PrinterAdapter.print()`
 expects `data: Uint8Array`. We coerce by viewing the same buffer:
 `new Uint8Array(rgba.data.buffer, rgba.data.byteOffset, rgba.data.byteLength)`.
+
+## D17 — Patch `createImageBitmap` for SVG blobs in Chromium
+
+`@burnmark-io/designer-core@0.1.0`'s browser barcode path renders bwip-js
+output via `toSVG()`, wraps the string in a `Blob`, then calls
+`createImageBitmap(blob)`. Firefox handles this; Chromium and WebKit
+throw `InvalidStateError: The source image could not be decoded` —
+a long-standing gap in `createImageBitmap`'s SVG support. The first-
+visit sample label has a QR code, so every preview/print fails on
+Chrome out of the box.
+
+Resolution: `src/shims/createImageBitmap-svg.ts` wraps
+`globalThis.createImageBitmap` at app startup. SVG blobs are detected
+by `type === 'image/svg+xml'` and routed through an `HTMLImageElement`
+(`img.decode()` then native `createImageBitmap(img)`), which works in
+every target browser. All other inputs pass through to the native
+implementation unchanged. Logged in BLOCKERS.md as a soft issue against
+designer-core — a clean fix upstream is to use the `Image` indirection
+inside `BarcodeEngine.renderToImage` directly.

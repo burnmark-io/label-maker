@@ -165,7 +165,13 @@ Data import and all export paths.
 
 ```
 You are continuing work on `github.com/burnmark-io/label-maker`.
-Check PROGRESS.md — Phases 1-4 should be done.
+Check PROGRESS.md — Phases 1-4 should be done. 
+
+Two documents define the work:
+
+- `PLAN.md` — the full product spec
+- `GUIDE.md` — how to work, what to placeholder, what to track
+
 
 This session covers Phase 5 (steps 29-36) and Phase 6 (steps 37-43).
 Stop after Phase 6's gate check passes.
@@ -222,6 +228,12 @@ Deployment infrastructure.
 ```
 You are continuing work on `github.com/burnmark-io/label-maker`.
 Check PROGRESS.md — Phases 1-6 should be done.
+
+Two documents define the work:
+
+- `PLAN.md` — the full product spec
+- `GUIDE.md` — how to work, what to placeholder, what to track
+
 
 This session covers Phase 7 (steps 44-49).
 Stop after Phase 7's gate check passes.

@@ -19,6 +19,17 @@ are no-ops. The operator should `git remote add origin
 git@github.com:burnmark-io/label-maker.git` (once the repo exists)
 and push the local branch.
 
+## (soft) designer-core barcode path needs SVG → ImageBitmap workaround
+
+`@burnmark-io/designer-core@0.1.0`'s browser barcode renderer calls
+`createImageBitmap(svgBlob)`, which Chromium does not support — every
+document containing a barcode throws `InvalidStateError: The source
+image could not be decoded`. Worked around in this app via
+`src/shims/createImageBitmap-svg.ts` (see DECISIONS.md D17). Upstream
+fix: in `BarcodeEngine.renderToImage`, pipe the SVG through an
+`HTMLImageElement` (`img.decode()` + native `createImageBitmap(img)`)
+instead of decoding the blob directly. Once that ships, drop the shim.
+
 ## (soft) `LabelObjectInput` distributes Omit over the union
 
 The exposed `add()` method's parameter type loses subtype-specific
