@@ -106,6 +106,8 @@ const stepIndex = ref(0);
 const currentStep = computed(() => steps[stepIndex.value]);
 const anchor = ref<{ top: number; left: number; width: number; height: number } | null>(null);
 
+type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center';
+
 const cardStyle = computed(() => {
   if (!anchor.value) {
     return {
@@ -116,45 +118,59 @@ const cardStyle = computed(() => {
   }
   const margin = 16;
   const cardWidth = 320;
-  const cardHeight = 180;
+  // Generous estimate — actual card height varies by translation length.
+  // Used only for placement; final clamp keeps the card on-screen even if
+  // the real height differs by a few px.
+  const cardHeight = 220;
   const a = anchor.value;
-  let top = a.top;
-  let left = a.left;
-  switch (currentStep.value.placement) {
-    case 'top':
-      top = a.top - cardHeight - margin;
-      left = Math.max(
-        margin,
-        Math.min(a.left + a.width / 2 - cardWidth / 2, window.innerWidth - cardWidth - margin),
-      );
-      break;
-    case 'bottom':
-      top = a.top + a.height + margin;
-      left = Math.max(
-        margin,
-        Math.min(a.left + a.width / 2 - cardWidth / 2, window.innerWidth - cardWidth - margin),
-      );
-      break;
-    case 'left':
-      top = Math.max(
-        margin,
-        Math.min(a.top + a.height / 2 - cardHeight / 2, window.innerHeight - cardHeight - margin),
-      );
-      left = a.left - cardWidth - margin;
-      break;
-    case 'right':
-      top = Math.max(
-        margin,
-        Math.min(a.top + a.height / 2 - cardHeight / 2, window.innerHeight - cardHeight - margin),
-      );
-      left = a.left + a.width + margin;
-      break;
-    default:
-      break;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const cx = a.left + a.width / 2 - cardWidth / 2;
+  const cy = a.top + a.height / 2 - cardHeight / 2;
+
+  function place(p: Placement): { top: number; left: number } {
+    switch (p) {
+      case 'top':
+        return { top: a.top - cardHeight - margin, left: cx };
+      case 'bottom':
+        return { top: a.top + a.height + margin, left: cx };
+      case 'left':
+        return { top: cy, left: a.left - cardWidth - margin };
+      case 'right':
+        return { top: cy, left: a.left + a.width + margin };
+      default:
+        return { top: cy, left: cx };
+    }
   }
-  if (top < margin) top = a.top + a.height + margin;
-  if (left < margin) left = margin;
-  return { top: `${top}px`, left: `${left}px` };
+
+  function fits(pos: { top: number; left: number }): boolean {
+    return (
+      pos.top >= margin &&
+      pos.left >= margin &&
+      pos.top + cardHeight <= vh - margin &&
+      pos.left + cardWidth <= vw - margin
+    );
+  }
+
+  const opposite: Record<Placement, Placement> = {
+    top: 'bottom',
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+    center: 'center',
+  };
+
+  // Preferred → opposite → centered overlay. Final clamp keeps it on-screen
+  // even when the anchor itself is larger than the viewport minus margins.
+  const preferred = currentStep.value.placement as Placement;
+  let pos = place(preferred);
+  if (!fits(pos)) pos = place(opposite[preferred]);
+  if (!fits(pos)) pos = place('center');
+
+  pos.top = Math.max(margin, Math.min(pos.top, vh - cardHeight - margin));
+  pos.left = Math.max(margin, Math.min(pos.left, vw - cardWidth - margin));
+
+  return { top: `${pos.top}px`, left: `${pos.left}px` };
 });
 
 async function refreshAnchor(): Promise<void> {
