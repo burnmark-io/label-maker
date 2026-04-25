@@ -13,6 +13,7 @@
           :width="viewport.labelWidthDots.value"
           :height="viewport.labelHeightDots.value"
           :scale="viewport.zoom.value"
+          :fill="document.canvas.background"
         />
         <GridOverlay
           v-if="prefs.showGrid"
