@@ -1,7 +1,14 @@
 <template>
   <Teleport to="body">
     <transition name="tour">
-      <div v-if="active" class="tour" role="dialog" aria-modal="true" :aria-labelledby="titleId">
+      <div
+        v-if="active"
+        class="tour"
+        :class="{ 'tour--no-anchor': !anchor }"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="titleId"
+      >
         <div class="tour__backdrop" @click="skip" />
         <div
           v-if="anchor"
@@ -261,9 +268,14 @@ onBeforeUnmount(() => {
 .tour__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(28, 25, 23, 0.45);
-  backdrop-filter: blur(1px);
+  /* Transparent — the highlight's outward box-shadow provides the dim, so
+     we don't double up. Pointer-events stay enabled for click-to-dismiss. */
+  background: transparent;
   pointer-events: auto;
+}
+
+.tour--no-anchor .tour__backdrop {
+  background: rgba(28, 25, 23, 0.45);
 }
 
 .tour__highlight {

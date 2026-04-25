@@ -9,7 +9,7 @@
       >
         <DesignCanvas />
         <span class="visually-hidden" aria-live="polite">{{ canvasSummary }}</span>
-        <div data-tour="toolbar"><MainToolbar /></div>
+        <MainToolbar data-tour="toolbar" />
         <CanvasActions
           @open-batch="batchOpen = true"
           @open-sheet="sheetOpen = true"
@@ -17,9 +17,7 @@
           @open-library="libraryOpen = true"
         />
       </section>
-      <div v-if="prefs.sidePanelOpen" data-tour="side-panel" class="app-shell__side">
-        <SidePanel @open-batch="batchOpen = true" />
-      </div>
+      <SidePanel v-if="prefs.sidePanelOpen" data-tour="side-panel" @open-batch="batchOpen = true" />
     </main>
     <AppFooter />
     <ToastStack />
@@ -207,11 +205,6 @@ function maybeStartTour(): void {
   min-width: 0;
 }
 
-.app-shell__side {
-  display: flex;
-  flex-shrink: 0;
-}
-
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -227,10 +220,6 @@ function maybeStartTour(): void {
 @media (max-width: 900px) {
   .app-shell__main {
     flex-direction: column;
-  }
-
-  .app-shell__side {
-    border-top: 1px solid var(--color-border);
   }
 }
 </style>
