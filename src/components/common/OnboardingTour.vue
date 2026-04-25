@@ -93,7 +93,7 @@ const steps: Step[] = [
     selector: '[data-tour="toolbar"]',
     titleKey: 'tour.step2Title',
     bodyKey: 'tour.step2Body',
-    placement: 'right',
+    placement: 'bottom',
   },
   {
     selector: '[data-tour="side-panel"]',
