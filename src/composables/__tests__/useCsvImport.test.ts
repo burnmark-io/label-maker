@@ -11,6 +11,7 @@ import { __resetForTests } from '@/services/storage';
 vi.mock('@/stores/designer', () => ({
   useDesignerStore: () => ({
     getPlaceholders: () => ['name'],
+    designer: { on: () => () => undefined },
   }),
 }));
 

@@ -368,6 +368,57 @@ inside `node:24-slim`. corepack ships with Node 24 so no extra apt
 install is needed; the slim image is ~80MB before our app, against
 ~15MB for the final nginx:alpine stage that actually ships.
 
+## D31 — Barcode validation is rails, not a wall
+
+`amendment-barcode-validation.md` adds keystroke-mask + soft-validation
+to the barcode `data` field, but **never blocks save/print/batch**.
+Designer-core's existing blank-block fallback ([BarcodeNode.vue:79-82](src/components/canvas/BarcodeNode.vue#L79-L82))
+remains the production-side "you got it wrong" signal; the helper line
+under the textarea is the design-side signal. Validation severity
+(`ok` / `info` / `warning` / `error`) drives only border colour and
+helper-line copy. Hitting Print on a malformed barcode still works —
+some industrial workflows depend on inputs we don't model.
+
+## D32 — Format switch preserves data and flags it (no auto-strip)
+
+When the user switches format with carry-over data that the new format
+rejects, the data is **preserved** and the helper line flips to
+`error`. Auto-stripping silently on switch was the alternative; the
+amendment §7.3 leaves it open and recommends preserve-and-flag as the
+less-surprising default. Implementation: `applyMask` only runs on
+`onDataInput`, not on format change, so the existing `data` is left
+untouched until the user types again.
+
+## D33 — Mask exception for `{` and `}` + insert-variable button (parity)
+
+Strict masks (digits-only for EAN/UPC/ITF/POSTNET/etc.) would silently
+drop the `{` keystroke, blocking the user from typing a `{{token}}` into
+a barcode field. We solve this two ways simultaneously, **not** as a
+mode toggle:
+
+1. Every keystroke filter implicitly allows `{` and `}` (`applyMask`
+   in `src/lib/barcode/validation/index.ts`). Once `{{...}}` shows up
+   in the field, `hasPlaceholders()` flips the on-input handler into
+   pass-through mode, leaving the rest of the input alone.
+2. A new `InsertVariableButton.vue` next to the data field. Reads
+   `useDataStore.placeholders`. Disabled with tooltip when no
+   placeholders exist. Click inserts `{{name}}` at the textarea's
+   cursor. Lives at `src/components/panels/InsertVariableButton.vue` so
+   a follow-up can reuse it inside `TextProperties.vue` (out of scope
+   for this amendment).
+
+## D34 — GS1 AI table is a partial built-in, unknowns warn
+
+`src/lib/barcode/validation/gs1.ts` ships a curated `AI_TABLE` (≈22
+common AIs covering GTIN, dates, lot/serial, weights, GLN, etc.).
+Parses the parenthesised `(AI)data` syntax and validates each entry
+against the table. Unknown AIs surface a **warning** ("Unknown AI 99
+— this might not scan reliably"), not an error — niche AIs we haven't
+shipped should still render without UI friction. The 310/320 weight
+families collapse to one entry per family (the 4-digit `310x`/`320x`
+decimal-position variant resolves to the 3-digit prefix). Structured
+AI builder (dropdowns + value field) is intentionally deferred.
+
 ## D30 — `compose.yaml` published in `public/` (not generated)
 
 PLAN section 12.3 wants `compose.yaml` at `burnmark-io.github.io/compose.yaml`.

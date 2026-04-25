@@ -92,3 +92,49 @@
   background: var(--color-border);
   margin: 0 4px;
 }
+
+.props__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.props__textarea--error {
+  border-color: var(--color-error);
+}
+
+.props__textarea--error:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+}
+
+.props__textarea--warning {
+  border-color: var(--color-warning);
+}
+
+.props__textarea--warning:focus {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.props__help {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.props__help--info {
+  color: var(--color-text-muted);
+}
+
+.props__help--warning {
+  color: #b45309;
+}
+
+.props__help--error {
+  color: var(--color-error);
+}

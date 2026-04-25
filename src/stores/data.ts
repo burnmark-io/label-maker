@@ -89,13 +89,22 @@ export const useDataStore = defineStore('data', () => {
   const previewEnabled = ref(true);
   /** Bumped on mapping mutations so `currentVariables` recomputes. */
   const mappingVersion = ref(0);
+  /**
+   * Bumped every time the underlying designer fires a `change` event.
+   * `LabelDesigner.getPlaceholders()` reads `this.doc` directly, and
+   * designer-core mutates that doc in place — designer-vue's
+   * ShallowRef therefore sees an identical reference on every change
+   * and short-circuits, so a computed that depends only on
+   * `designer.document` never recomputes after mount. Subscribing to
+   * the change event ourselves gives a reliable invalidation signal.
+   */
+  const documentVersion = ref(0);
+  designer.designer.on('change', () => {
+    documentVersion.value += 1;
+  });
 
-  // `LabelDesigner.getPlaceholders()` reads its internal `this.doc` directly
-  // — that field isn't a Vue ref, so a naked computed here would never
-  // re-run when the user edits the design. Touch the reactive `document`
-  // ShallowRef the composable maintains so this recomputes on every change.
   const placeholders = computed<string[]>(() => {
-    void designer.document;
+    void documentVersion.value;
     return designer.getPlaceholders();
   });
 

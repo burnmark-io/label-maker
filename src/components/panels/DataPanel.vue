@@ -3,7 +3,7 @@
     <section class="data-panel__section">
       <h3 class="data-panel__heading">{{ t('data.placeholders.title') }}</h3>
       <p v-if="data.placeholders.length === 0" class="data-panel__empty">
-        {{ t('data.placeholders.empty') }}
+        {{ t('data.placeholders.empty', { token: PLACEHOLDER_TOKEN_NAME }) }}
       </p>
       <ul v-else class="data-panel__chips">
         <li v-for="ph in data.placeholders" :key="ph" class="data-panel__chip">
@@ -57,7 +57,7 @@
           :disabled="data.placeholders.length === 0"
           :title="
             data.placeholders.length === 0
-              ? t('data.template.disabledTooltip')
+              ? t('data.template.disabledTooltip', { token: PLACEHOLDER_TOKEN_GENERIC })
               : t('data.template.download')
           "
           @click="onDownloadTemplate"
@@ -195,6 +195,12 @@ const { t } = useI18n();
 const data = useDataStore();
 const designer = useDesignerStore();
 const prefs = usePreferencesStore();
+
+// Vue's template parser splits `{{...}}` even inside string literals, so
+// the literal token sample for the i18n placeholder is built from parts
+// here and passed in as a value.
+const PLACEHOLDER_TOKEN_NAME = `${'{{'}name${'}}'}`;
+const PLACEHOLDER_TOKEN_GENERIC = `${'{{'}placeholder${'}}'}`;
 
 // Active route-context for the import dialog. Exposed as a small bag of
 // refs so the dropzone handler can `await` the user's choice.

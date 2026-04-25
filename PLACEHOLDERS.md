@@ -33,4 +33,5 @@ Temporary values that need to be replaced before launch. Operator will fill thes
 | Dutch translations generally | best-effort, **needs human review** before launch |
 | Phase 8 additions (about/help/tour/locale toast) — Dutch | best-effort machine translation, **needs human review** |
 | Phase 10 additions (data switcher, import dialog, popup grid) — Dutch | best-effort machine translation, **needs human review** before launch |
+| Phase 11 additions (barcode validation hints, helpers, validation messages) — Dutch | best-effort machine translation, **needs human review** before launch |
 

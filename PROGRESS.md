@@ -216,6 +216,51 @@ pool (≤10 sets, ≤30 rows each, IndexedDB-persisted, cross-design).
 - [x] test
 - [x] build
 
+## Phase 11: Barcode input validation
+
+Implementing `amendment-barcode-validation.md` — turn the barcode `data`
+textarea into a guided input with per-format keystroke filter, soft
+validation helper line, and an inserter button for placeholder tokens.
+Never blocks save/print.
+
+- [x] 11.1 Scaffold `src/lib/barcode/validation/` (`types.ts`, `checksums.ts`,
+      `gs1.ts`, `registry.ts`, `index.ts`)
+- [x] 11.2 `checksums.ts` — `ean13/ean8/upca` mod-10 + `isValidGtin`,
+      pure functions, unit-tested
+- [x] 11.3 `gs1.ts` — partial `AI_TABLE`, `parseGs1`, `lookupAi`
+      (310/320 family fallback), `validateParsedAis`
+- [x] 11.4 `registry.ts` — one `FormatRule` per format from §4 (mask,
+      transform, validate, hintKey, placeholderKey); parameterised
+      tests over the registry, every format has at least 1 valid + 1
+      invalid example
+- [x] 11.5 i18n — `properties.barcode.hint.*`, `placeholder.*`,
+      `validation.*`, `insertVariable*`, `noPlaceholders` added in en
+      and nl; nl flagged in `PLACEHOLDERS.md`
+- [x] 11.6 `BarcodeProperties.vue` — controlled textarea, mask filter
+      with `{` / `}` exception, placeholder-bypass, helper line below
+      with severity variants; `aria-invalid` / `aria-describedby` /
+      `aria-labelledby`; format-specific `placeholder` attribute and
+      empty-state hint
+- [x] 11.7 CSS — `.props__textarea--error/--warning`,
+      `.props__help--info/--warning/--error` in `properties-panel.css`
+- [x] 11.8 `InsertVariableButton.vue` — `{ }` trigger, popover lists
+      `useDataStore.placeholders`, click inserts `{{name}}` at cursor,
+      disabled with tooltip when list is empty, focus-trapped popover
+      with Arrow/Escape support
+- [x] 11.9 Component test for `BarcodeProperties.vue` — empty hint,
+      error helper, aria-invalid, placeholder bypass, mask filter, brace
+      exception, write-through with placeholders, inserter button
+      disabled state, inserter wires through to update
+- [x] 11.10 New decision entries in `DECISIONS.md` (D31–D34)
+- [x] 11.11 Gate: typecheck + lint + format + test + build
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
 ## Phase 9: Final
 - [x] 63. Verify all gate checks across phases
 - [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)

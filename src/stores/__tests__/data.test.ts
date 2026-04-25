@@ -11,6 +11,7 @@ import {
 vi.mock('@/stores/designer', () => ({
   useDesignerStore: () => ({
     getPlaceholders: () => ['name'],
+    designer: { on: () => () => undefined },
   }),
 }));
 

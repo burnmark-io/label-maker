@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { computed, triggerRef } from 'vue';
 import { useLabelDesigner } from '@burnmark-io/designer-vue';
 import type {
   CanvasConfig,
@@ -28,6 +29,35 @@ export const useDesignerStore = defineStore('designer', () => {
     name: 'Untitled label',
     renderOnMount: false,
     assetLoader,
+  });
+
+  // designer-core mutates `this.doc` in place for every `update`/`add`/
+  // `remove`, so the composable's `document.value = designer.document`
+  // assignment is the same reference and the ShallowRef short-circuits.
+  // Force-trigger after every change so consumers that read through
+  // `document` see the new field values.
+  composable.designer.on('change', () => {
+    triggerRef(composable.document);
+  });
+
+  // The raw doc and its objects keep the same identity after in-place
+  // mutation. That's invisible to Vue's prop diff: ObjectsPanel rows
+  // bind `obj.visible` / `obj.locked`, property panels pass `:object="obj"`
+  // to children. Without fresh references, the visibility chevron, lock
+  // toggle, colour picker, etc. show stale state until something else
+  // forces a re-render. Wrap the document in a computed that returns a
+  // shallow-cloned doc + per-object shallow clones each time the
+  // underlying ShallowRef triggers. Cheap (object spreads on a doc with
+  // ~tens of objects), no history corruption (originals untouched), and
+  // every consumer becomes reactive to in-place edits without local
+  // workarounds. Keep `composable.document` as the dep so we recompute
+  // exactly when designer-core fires `change`.
+  const reactiveDocument = computed<LabelDocument>(() => {
+    const raw = composable.document.value;
+    return {
+      ...raw,
+      objects: raw.objects.map(o => ({ ...o })),
+    };
   });
 
   /**
@@ -68,7 +98,7 @@ export const useDesignerStore = defineStore('designer', () => {
   }
 
   return {
-    document: composable.document,
+    document: reactiveDocument,
     selection: composable.selection,
     canUndo: composable.canUndo,
     canRedo: composable.canRedo,

@@ -2,22 +2,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { shallowRef, nextTick } from 'vue';
 
-// A fake `LabelDesigner` whose document is a ShallowRef and whose
-// `getPlaceholders()` reads its internal mirror — same pattern the real
-// designer uses (it reads `this.doc` directly, not the ref).
-const documentRef = shallowRef<{ objects: { content?: string }[] }>({ objects: [] });
-let internalDoc = documentRef.value;
+// A fake `LabelDesigner` mirroring the production reality: designer-core
+// mutates `this.doc` in place and fires a 'change' event; designer-vue's
+// ShallowRef reassignment is a no-op for identical references. The data
+// store subscribes to the underlying designer's `change` event directly
+// — this fake exposes the same surface so the same code path is exercised.
+const changeListeners = new Set<() => void>();
+let internalDoc: { objects: { content?: string }[] } = { objects: [] };
+const documentRef = shallowRef(internalDoc);
 
 vi.mock('@/stores/designer', () => ({
   useDesignerStore: () => ({
-    // Pinia stores expose refs unwrapped via the reactive proxy, which is
-    // what the production code reads. A plain getter mirrors that
-    // unwrap-on-access behaviour while keeping the underlying ref tracked.
     get document() {
       return documentRef.value;
     },
+    designer: {
+      on(event: string, fn: () => void) {
+        if (event === 'change') changeListeners.add(fn);
+        return () => changeListeners.delete(fn);
+      },
+    },
     getPlaceholders: (): string[] => {
-      // Lifted from the real LabelDesigner: scan text content for {{name}}.
       const out = new Set<string>();
       for (const obj of internalDoc.objects) {
         if (typeof obj.content === 'string') {
@@ -33,14 +38,18 @@ vi.mock('@/stores/designer', () => ({
 import { useDataStore } from '../data';
 
 function setDocument(next: { objects: { content?: string }[] }): void {
-  internalDoc = next;
-  documentRef.value = next; // identity swap — what designer-vue does on 'change'
+  // In-place mutation followed by a `change` event — what designer-core
+  // actually does for `update` / `add` / `remove`. Identity is preserved.
+  internalDoc.objects = next.objects;
+  for (const fn of changeListeners) fn();
 }
 
 describe('data store — placeholders reactivity', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    setDocument({ objects: [] });
+    changeListeners.clear();
+    internalDoc = { objects: [] };
+    documentRef.value = internalDoc;
   });
 
   it('recomputes placeholders when the designer document changes', async () => {
