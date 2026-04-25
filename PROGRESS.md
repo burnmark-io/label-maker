@@ -165,6 +165,24 @@ pool (≤10 sets, ≤30 rows each, IndexedDB-persisted, cross-design).
 - [x] test
 - [x] build
 
+### Phase C: Global dataset pool & persistence
+- [x] C1. IDB bumped to v2; new `datasets` object store (keyPath `id`); idempotent upgrade leaves `designs` / `assets` / `meta` untouched (verified by a v1→v2 round-trip test)
+- [x] C2. Storage helpers added: `listDatasets` (sorted by `updatedAt` desc), `putDataset`, `deleteDataset`, `clearDatasets`; new `StoredDataset` and `DatasetSource` exports
+- [x] C3. `useDataStore` rebuilt around the global pool — `datasets[]`, `activeDataset`, `headers`/`rows`/`mapping`/`lastImport` become read-through computed proxies. New mutators: `createDataset`, `setActiveDataset`, `renameDataset`, `removeDataset`, `appendRowsToActive`, `clearActive`, `resetAll`, plus `flushPersist` for tests. Mapping is read straight from D21's placeholder-set-keyed cache; no `mapping` field on `StoredDataset`
+- [x] C4. Persistence is explicit-per-mutation with a 300ms debounced flush. `snapshot()` strips Vue reactivity before structured-cloning into IDB
+- [x] C5. Boot hydrate is single-flight (`Promise<void>` shared across concurrent callers); `main.ts` awaits `useDataStore().hydrate()` before mount. Stale `activeDatasetId` falls back to most-recent dataset, else null, with a `console.warn` rather than throwing
+- [x] C6. Datasets are global — no document lifecycle wiring; the library deletion path is unchanged and does not cascade into data
+- [x] C7. `useCsvImport` decoupled from `setData`: parses, then routes via `prefs.csvImportBehavior` (`'append'` / `'new'` / `'ask'`). The `'ask'` branch invokes an optional `onAsk` callback (Phase D wires it to `ImportChoiceDialog`); without a callback it falls back to creating a new dataset
+- [x] C8. Preferences gain `csvImportBehavior: 'ask' | 'append' | 'new'` (default `'ask'`) and `activeDatasetId: string | null`
+- [x] C9. Tests added — boot hydrate, IDB round-trip across store instances, eviction at the cap, manual-set eviction confirm, append semantics, stale-active fallback, resetAll. 77 tests pass overall (up from 68)
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
 ## Phase 9: Final
 - [x] 63. Verify all gate checks across phases
 - [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)

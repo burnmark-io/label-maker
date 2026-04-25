@@ -3,18 +3,24 @@ import type { LabelDocument } from '@burnmark-io/designer-core';
 import { fromJSON, toJSON } from '@burnmark-io/designer-core';
 
 /**
- * IndexedDB-backed persistence for label-maker. One DB, three stores:
+ * IndexedDB-backed persistence for label-maker. One DB, four stores:
  *
  * - `designs`     — saved label documents (JSON)
  * - `assets`      — image assets keyed by content hash
  * - `meta`        — small key/value scratchpad (last opened id, etc.)
+ * - `datasets`    — global dataset pool (added at v2). Not bound to any
+ *                   particular `LabelDocument`; one set lives across all
+ *                   designs that share the same placeholder shape.
  *
  * Designs are stored as JSON strings so the schema is robust against
  * future document migrations (the parser handles versioning on load).
+ *
+ * Schema upgrades are idempotent: v1 → v2 only adds the `datasets`
+ * store, leaving `designs`, `assets`, `meta` untouched.
  */
 
 const DB_NAME = 'burnmark';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface StoredDesignSummary {
   id: string;
@@ -31,6 +37,21 @@ interface StoredDesign extends StoredDesignSummary {
   json: string;
 }
 
+export type DatasetSource = 'csv' | 'tsv' | 'xlsx' | 'manual';
+
+export interface StoredDataset {
+  id: string;
+  name: string;
+  source: DatasetSource;
+  fileName: string | null;
+  headers: string[];
+  rows: Record<string, string>[];
+  /** Total rows in the original file. Drives the "showing first 30 of N" banner. */
+  totalRowsInFile: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface BurnmarkSchema extends DBSchema {
   designs: {
     key: string;
@@ -44,6 +65,10 @@ interface BurnmarkSchema extends DBSchema {
     key: string;
     value: unknown;
   };
+  datasets: {
+    key: string;
+    value: StoredDataset;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<BurnmarkSchema>> | null = null;
@@ -51,6 +76,10 @@ let dbPromise: Promise<IDBPDatabase<BurnmarkSchema>> | null = null;
 function getDb(): Promise<IDBPDatabase<BurnmarkSchema>> {
   if (!dbPromise) {
     dbPromise = openDB<BurnmarkSchema>(DB_NAME, DB_VERSION, {
+      // Idempotent upgrade — `idb` runs this for every version step from
+      // oldVersion+1 to DB_VERSION, so each `if (!contains)` adds the
+      // store on the first version that introduced it without disturbing
+      // existing stores on subsequent boots.
       upgrade(db) {
         if (!db.objectStoreNames.contains('designs')) {
           db.createObjectStore('designs', { keyPath: 'id' });
@@ -60,6 +89,9 @@ function getDb(): Promise<IDBPDatabase<BurnmarkSchema>> {
         }
         if (!db.objectStoreNames.contains('meta')) {
           db.createObjectStore('meta');
+        }
+        if (!db.objectStoreNames.contains('datasets')) {
+          db.createObjectStore('datasets', { keyPath: 'id' });
         }
       },
     });
@@ -155,4 +187,30 @@ export async function putAsset(key: string, data: Uint8Array): Promise<void> {
 export async function getAsset(key: string): Promise<Uint8Array | undefined> {
   const db = await getDb();
   return db.get('assets', key);
+}
+
+/**
+ * Dataset pool — global, not keyed by document. Sorted most-recently-
+ * updated first so the boot-time hydrate hands the data store something
+ * the dataset switcher can render straight away.
+ */
+export async function listDatasets(): Promise<StoredDataset[]> {
+  const db = await getDb();
+  const all = await db.getAll('datasets');
+  return all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export async function putDataset(dataset: StoredDataset): Promise<void> {
+  const db = await getDb();
+  await db.put('datasets', dataset);
+}
+
+export async function deleteDataset(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('datasets', id);
+}
+
+export async function clearDatasets(): Promise<void> {
+  const db = await getDb();
+  await db.clear('datasets');
 }

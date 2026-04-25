@@ -5,6 +5,14 @@ import type { SupportedLocale } from '@/i18n';
 export type SidePanelTab = 'objects' | 'data' | 'preview';
 
 /**
+ * What happens when a CSV is dropped while the active dataset already has
+ * rows. `'ask'` opens the import dialog; the other values skip the dialog
+ * and apply the choice silently. Set via the dialog's "Remember this
+ * choice" checkbox.
+ */
+export type CsvImportBehavior = 'ask' | 'append' | 'new';
+
+/**
  * UI preferences. Persisted to localStorage. These are user-level
  * preferences (panel state, grid visibility, locale) — NOT document data.
  */
@@ -24,6 +32,8 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const tourCompleted = useStorage<boolean>('burnmark.tourCompleted', false);
   const sessionCount = useStorage<number>('burnmark.sessionCount', 0);
   const installPromptDismissedAt = useStorage<number>('burnmark.installPromptDismissedAt', 0);
+  const csvImportBehavior = useStorage<CsvImportBehavior>('burnmark.csvImportBehavior', 'ask');
+  const activeDatasetId = useStorage<string | null>('burnmark.activeDatasetId', null);
 
   return {
     showGrid,
@@ -35,5 +45,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     tourCompleted,
     sessionCount,
     installPromptDismissedAt,
+    csvImportBehavior,
+    activeDatasetId,
   };
 });

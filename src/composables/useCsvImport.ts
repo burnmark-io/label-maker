@@ -1,15 +1,31 @@
 import { ref, type Ref } from 'vue';
 import { parseCsv, type CsvData } from '@burnmark-io/designer-core';
 import { useDataStore, type ImportSource } from '@/stores/data';
+import { usePreferencesStore } from '@/stores/preferences';
 
 /**
  * File import — CSV/TSV via designer-core's papaparse wrapper, XLSX/XLS
  * via SheetJS (lazy-imported so the bundle stays slim when the user
  * never opens the Data panel).
+ *
+ * Parsing is decoupled from routing: the composable parses the file,
+ * then decides where the rows should land based on the active set and
+ * the user's `csvImportBehavior` preference (D32). Callers can supply
+ * an `onAsk` handler to defer the choice to a UI dialog (Phase D wires
+ * the dialog; without it, `'ask'` falls back to creating a new set).
  */
 export interface ImportError {
   message: string;
   fileName?: string;
+}
+
+export type ImportDecision = { kind: 'append' } | { kind: 'new' } | { kind: 'cancel' };
+
+export interface ImportRouteContext {
+  source: ImportSource;
+  fileName: string;
+  parsed: CsvData;
+  activeName: string;
 }
 
 function detectSource(fileName: string): ImportSource | null {
@@ -54,13 +70,24 @@ async function parseExcel(file: File): Promise<CsvData> {
   return { headers, rows, rowCount: rows.length };
 }
 
-export function useCsvImport(): {
+export interface UseCsvImportOptions {
+  /**
+   * Hook for the `'ask'` branch — invoked when the active set already
+   * has rows and the user hasn't picked a "remember this choice" yet.
+   * Returns the user's choice. If omitted, `'ask'` silently defaults to
+   * creating a new dataset.
+   */
+  onAsk?: (ctx: ImportRouteContext) => Promise<ImportDecision> | ImportDecision;
+}
+
+export function useCsvImport(options: UseCsvImportOptions = {}): {
   isImporting: Ref<boolean>;
   error: Ref<ImportError | null>;
   importFile: (file: File) => Promise<void>;
   importFiles: (files: FileList | File[] | null) => Promise<void>;
 } {
   const data = useDataStore();
+  const prefs = usePreferencesStore();
   const isImporting = ref(false);
   const error = ref<ImportError | null>(null);
 
@@ -81,11 +108,60 @@ export function useCsvImport(): {
       if (parsed.headers.length === 0) {
         throw new Error('No columns detected. Make sure the first row contains headers.');
       }
-      data.setData(parsed.headers, parsed.rows, {
+
+      const active = data.activeDataset;
+      const activeIsEmpty = !active || active.rows.length === 0;
+
+      if (activeIsEmpty) {
+        const created = data.createDataset({
+          source,
+          fileName: file.name,
+          headers: parsed.headers,
+          rows: parsed.rows,
+          totalRowsInFile: parsed.rowCount,
+          name: file.name,
+        });
+        if (created) data.setActiveDataset(created.id);
+        return;
+      }
+
+      let decision: ImportDecision;
+      if (prefs.csvImportBehavior === 'append') {
+        decision = { kind: 'append' };
+      } else if (prefs.csvImportBehavior === 'new') {
+        decision = { kind: 'new' };
+      } else if (options.onAsk) {
+        decision = await options.onAsk({
+          source,
+          fileName: file.name,
+          parsed,
+          activeName: active!.name,
+        });
+      } else {
+        // No dialog wired yet (Phase C without Phase D's dialog) —
+        // safer to start a fresh set than to silently mash data into
+        // the active one.
+        decision = { kind: 'new' };
+      }
+
+      if (decision.kind === 'cancel') return;
+      if (decision.kind === 'append') {
+        data.appendRowsToActive(parsed.headers, parsed.rows, {
+          source,
+          fileName: file.name,
+          totalRowsInFile: parsed.rowCount,
+        });
+        return;
+      }
+      const created = data.createDataset({
         source,
         fileName: file.name,
+        headers: parsed.headers,
+        rows: parsed.rows,
         totalRowsInFile: parsed.rowCount,
+        name: file.name,
       });
+      if (created) data.setActiveDataset(created.id);
     } catch (err) {
       error.value = {
         message: err instanceof Error ? err.message : String(err),

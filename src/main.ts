@@ -7,6 +7,7 @@ import App from './App.vue';
 import { router } from './router';
 import { i18n } from './i18n';
 import { patchCreateImageBitmap } from './shims/createImageBitmap-svg';
+import { useDataStore } from './stores/data';
 
 import './styles/variables.css';
 import './styles/base.css';
@@ -23,5 +24,11 @@ app.use(createPinia());
 app.use(router);
 app.use(i18n);
 app.use(VueKonva, { prefix: 'V' });
+
+// Hydrate the global dataset pool from IndexedDB before mounting so the
+// canvas substitution preview and the dataset switcher have data on
+// first paint. Errors are swallowed — if IDB is unavailable, the store
+// just starts empty.
+void useDataStore().hydrate();
 
 app.mount('#app');
