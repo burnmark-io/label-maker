@@ -78,22 +78,17 @@ function levenshtein(a: string, b: string): number {
  * Auto-map CSV/Excel headers to placeholder names. Returns the mapping
  * plus diagnostics for the UI.
  */
-export function autoMapColumns(
-  headers: string[],
-  placeholders: string[],
-): MappingResult {
+export function autoMapColumns(headers: string[], placeholders: string[]): MappingResult {
   const mapping: Record<string, string> = {};
   const usedColumns = new Set<string>();
   const remainingPlaceholders: string[] = [];
 
-  const normalisedHeaders = headers.map((h) => ({ raw: h, norm: normalise(h) }));
+  const normalisedHeaders = headers.map(h => ({ raw: h, norm: normalise(h) }));
 
   // Pass 1 — exact (case-insensitive, punctuation-stripped) match.
   for (const ph of placeholders) {
     const target = normalise(ph);
-    const hit = normalisedHeaders.find(
-      (h) => !usedColumns.has(h.raw) && h.norm === target,
-    );
+    const hit = normalisedHeaders.find(h => !usedColumns.has(h.raw) && h.norm === target);
     if (hit) {
       mapping[ph.toLowerCase()] = hit.raw;
       usedColumns.add(hit.raw);
@@ -134,14 +129,14 @@ export function autoMapColumns(
   const complete = stillUnmapped.length === 0;
 
   // Pass 3 — positional fallback for everything still unmapped.
-  const remainingColumns = headers.filter((h) => !usedColumns.has(h));
+  const remainingColumns = headers.filter(h => !usedColumns.has(h));
   for (let i = 0; i < stillUnmapped.length && i < remainingColumns.length; i += 1) {
     mapping[stillUnmapped[i].toLowerCase()] = remainingColumns[i];
     usedColumns.add(remainingColumns[i]);
   }
 
-  const unmapped = placeholders.filter((ph) => !(ph.toLowerCase() in mapping));
-  const unusedColumns = headers.filter((h) => !usedColumns.has(h));
+  const unmapped = placeholders.filter(ph => !(ph.toLowerCase() in mapping));
+  const unusedColumns = headers.filter(h => !usedColumns.has(h));
 
   return { mapping, unmapped, unusedColumns, complete };
 }
@@ -154,7 +149,7 @@ export function autoMapColumns(
  */
 export function templateKeyFromPlaceholders(placeholders: string[]): string {
   return [...placeholders]
-    .map((p) => p.trim().toLowerCase())
+    .map(p => p.trim().toLowerCase())
     .filter(Boolean)
     .sort()
     .join('|');
@@ -189,10 +184,7 @@ export function loadMapping(templateKey: string): Record<string, string> | null 
   return all[templateKey] ?? null;
 }
 
-export function saveMapping(
-  templateKey: string,
-  mapping: Record<string, string>,
-): void {
+export function saveMapping(templateKey: string, mapping: Record<string, string>): void {
   const all = readStorage();
   all[templateKey] = { ...mapping };
   writeStorage(all);

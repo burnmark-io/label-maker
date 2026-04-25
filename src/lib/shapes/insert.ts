@@ -71,7 +71,7 @@ async function upsertBorder(
   const assetKey = await rasteriseShape(def, labelWidth, labelHeight, designer.assetLoader);
   const targetName = nameForShape(def);
   const existing = designer.document.objects.find(
-    (o) => o.name && o.name.startsWith(BORDER_NAME_PREFIX),
+    o => o.name && o.name.startsWith(BORDER_NAME_PREFIX),
   );
   if (existing) {
     designer.updateObject(existing.id, {
@@ -117,7 +117,7 @@ export async function refreshBorder(
 ): Promise<void> {
   if (width <= 0 || height <= 0) return;
   const existing = designer.document.objects.find(
-    (o) => o.name && o.name.startsWith(BORDER_NAME_PREFIX),
+    o => o.name && o.name.startsWith(BORDER_NAME_PREFIX),
   );
   if (!existing || existing.type !== 'image') return;
   const id = shapeIdFromName(existing.name);

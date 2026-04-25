@@ -19,12 +19,34 @@
           :title="obj.visible ? t('panel.objectVisible') : t('panel.objectHidden')"
           @click.stop="toggleVisible(obj.id, !obj.visible)"
         >
-          <svg v-if="obj.visible" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            v-if="obj.visible"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
             <circle cx="12" cy="12" r="3" />
           </svg>
-          <svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a17.93 17.93 0 0 1 4.06-5.94" />
+          <svg
+            v-else
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a17.93 17.93 0 0 1 4.06-5.94"
+            />
             <path d="M9.9 4.24A10 10 0 0 1 12 4c7 0 11 8 11 8a17.93 17.93 0 0 1-2.51 3.39" />
             <line x1="1" y1="1" x2="23" y2="23" />
           </svg>
@@ -36,11 +58,31 @@
           :title="obj.locked ? t('panel.objectLocked') : t('panel.objectUnlocked')"
           @click.stop="toggleLocked(obj.id, !obj.locked)"
         >
-          <svg v-if="obj.locked" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            v-if="obj.locked"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <rect x="3" y="11" width="18" height="11" rx="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          <svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            v-else
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <rect x="3" y="11" width="18" height="11" rx="2" />
             <path d="M7 11V7a5 5 0 0 1 9.9-1" />
           </svg>
@@ -105,7 +147,7 @@ function labelFor(type: LabelObject['type']): string {
 function onClickRow(id: string, event: MouseEvent): void {
   if (event.shiftKey) {
     if (designer.selection.includes(id)) {
-      designer.select(designer.selection.filter((x) => x !== id));
+      designer.select(designer.selection.filter(x => x !== id));
     } else {
       designer.select([...designer.selection, id]);
     }

@@ -1,5 +1,9 @@
 <template>
-  <svg :viewBox="`0 0 ${sheet.paperWidthMm} ${sheet.paperHeightMm}`" class="sheet-preview" :aria-label="t('sheet.previewAria', { name: sheet.name })">
+  <svg
+    :viewBox="`0 0 ${sheet.paperWidthMm} ${sheet.paperHeightMm}`"
+    class="sheet-preview"
+    :aria-label="t('sheet.previewAria', { name: sheet.name })"
+  >
     <rect
       x="0"
       y="0"
@@ -17,7 +21,7 @@
         :y="position.y"
         :width="sheet.labelWidthMm"
         :height="sheet.labelHeightMm"
-        :rx="sheet.labelShape === 'rectangle' ? sheet.cornerRadiusMm ?? 0 : undefined"
+        :rx="sheet.labelShape === 'rectangle' ? (sheet.cornerRadiusMm ?? 0) : undefined"
         :fill="layoutIndex === 0 ? 'var(--color-primary-subtle)' : 'rgba(245,158,11,0.18)'"
         stroke="var(--color-primary)"
         stroke-width="0.4"

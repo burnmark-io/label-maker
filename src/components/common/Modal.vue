@@ -1,8 +1,21 @@
 <template>
   <Teleport to="body">
     <transition name="modal">
-      <div v-if="open" class="modal" role="dialog" aria-modal="true" :aria-labelledby="titleId" @mousedown.self="onBackdrop">
-        <div class="modal__panel" :class="`modal__panel--${size}`" @mousedown.stop>
+      <div
+        v-if="open"
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="titleId"
+        @mousedown.self="onBackdrop"
+      >
+        <div
+          ref="panelRef"
+          class="modal__panel"
+          :class="`modal__panel--${size}`"
+          tabindex="-1"
+          @mousedown.stop
+        >
           <header v-if="$slots.title || title" class="modal__header">
             <h2 :id="titleId" class="modal__title">
               <slot name="title">{{ title }}</slot>
@@ -12,7 +25,9 @@
               class="modal__close"
               :aria-label="closeLabel"
               @click="emit('close')"
-            >×</button>
+            >
+              ×
+            </button>
           </header>
           <div class="modal__body">
             <slot />
@@ -27,7 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, useId, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, toRef, useId, watch } from 'vue';
+import { useFocusTrap } from '@/composables/useFocusTrap';
 
 const props = withDefaults(
   defineProps<{
@@ -49,6 +65,9 @@ const emit = defineEmits<{
 }>();
 
 const titleId = useId();
+const panelRef = ref<HTMLElement | null>(null);
+
+useFocusTrap(panelRef, toRef(props, 'open'));
 
 function onBackdrop(): void {
   if (props.closeOnBackdrop) emit('close');
@@ -63,7 +82,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeyDown));
 
 watch(
   () => props.open,
-  (isOpen) => {
+  isOpen => {
     if (typeof document === 'undefined') return;
     document.body.style.overflow = isOpen ? 'hidden' : '';
   },
@@ -95,9 +114,15 @@ watch(
   overflow: hidden;
 }
 
-.modal__panel--sm { max-width: 400px; }
-.modal__panel--md { max-width: 640px; }
-.modal__panel--lg { max-width: 960px; }
+.modal__panel--sm {
+  max-width: 400px;
+}
+.modal__panel--md {
+  max-width: 640px;
+}
+.modal__panel--lg {
+  max-width: 960px;
+}
 
 .modal__header {
   display: flex;

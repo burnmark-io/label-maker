@@ -30,8 +30,8 @@ export async function rasteriseShape(
   if (!ctx) throw new Error('Failed to create 2D context for shape rasterisation');
   def.renderPath(ctx, w, h);
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob((b) => resolve(b), 'image/png'),
+  const blob = await new Promise<Blob | null>(resolve =>
+    canvas.toBlob(b => resolve(b), 'image/png'),
   );
   if (!blob) throw new Error('Failed to encode shape PNG');
   const buffer = await blob.arrayBuffer();

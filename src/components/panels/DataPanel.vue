@@ -8,11 +8,7 @@
         {{ t('data.placeholders.empty') }}
       </p>
       <ul v-else class="data-panel__chips">
-        <li
-          v-for="ph in data.placeholders"
-          :key="ph"
-          class="data-panel__chip"
-        >
+        <li v-for="ph in data.placeholders" :key="ph" class="data-panel__chip">
           <code>{{ formatPlaceholder(ph) }}</code>
         </li>
       </ul>
@@ -86,36 +82,34 @@
           class="data-panel__step"
           :aria-label="t('data.preview.previous')"
           @click="data.step(-1)"
-        >‹</button>
+        >
+          ‹
+        </button>
         <span class="data-panel__index">
-          {{ t('data.preview.position', {
-            current: data.currentIndex + 1,
-            total: data.rows.length,
-          }) }}
+          {{
+            t('data.preview.position', {
+              current: data.currentIndex + 1,
+              total: data.rows.length,
+            })
+          }}
         </span>
         <button
           type="button"
           class="data-panel__step"
           :aria-label="t('data.preview.next')"
           @click="data.step(1)"
-        >›</button>
+        >
+          ›
+        </button>
         <label class="data-panel__toggle">
-          <input
-            type="checkbox"
-            :checked="data.previewEnabled"
-            @change="data.togglePreview()"
-          />
+          <input type="checkbox" :checked="data.previewEnabled" @change="data.togglePreview()" />
           {{ t('data.preview.toggle') }}
         </label>
       </div>
 
       <ColumnMapper v-if="data.placeholders.length > 0" />
 
-      <button
-        type="button"
-        class="data-panel__primary"
-        @click="emit('open-batch')"
-      >
+      <button type="button" class="data-panel__primary" @click="emit('open-batch')">
         {{ t('data.batch.open') }}
       </button>
     </section>
@@ -243,7 +237,8 @@ async function onFileChange(event: Event): Promise<void> {
   border: 2px dashed var(--color-border-strong);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: border-color var(--duration-fast) var(--easing),
+  transition:
+    border-color var(--duration-fast) var(--easing),
     background var(--duration-fast) var(--easing);
   color: var(--color-text-secondary);
   text-align: center;

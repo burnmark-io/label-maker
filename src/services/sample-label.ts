@@ -1,8 +1,4 @@
-import type {
-  ShapeObject,
-  TextObject,
-  BarcodeObject,
-} from '@burnmark-io/designer-core';
+import type { ShapeObject, TextObject, BarcodeObject } from '@burnmark-io/designer-core';
 import type { useDesignerStore } from '@/stores/designer';
 
 type DesignerStore = ReturnType<typeof useDesignerStore>;

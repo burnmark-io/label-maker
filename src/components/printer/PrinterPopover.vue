@@ -2,12 +2,7 @@
   <div ref="rootRef" class="popover">
     <PrinterStatus class="popover__trigger" :open="open" @click="toggle" />
     <transition name="popover-fade">
-      <div
-        v-if="open"
-        class="popover__panel"
-        role="dialog"
-        :aria-label="t('printer.popoverTitle')"
-      >
+      <div v-if="open" class="popover__panel" role="dialog" :aria-label="t('printer.popoverTitle')">
         <div v-if="!printer.isConnected" class="popover__section">
           <p class="popover__heading">{{ t('printer.connectHeading') }}</p>
           <button class="popover__btn popover__btn--primary" type="button" @click="connectUsb">
@@ -44,11 +39,7 @@ import { useI18n } from 'vue-i18n';
 import PrinterStatus from './PrinterStatus.vue';
 import MediaSelector from './MediaSelector.vue';
 import { usePrinterStore } from '@/stores/printer';
-import {
-  isWebSerialAvailable,
-  isWebUsbAvailable,
-  requestUsbPrinter,
-} from '@/lib/printer/connect';
+import { isWebSerialAvailable, isWebUsbAvailable, requestUsbPrinter } from '@/lib/printer/connect';
 import { openBrotherQLViaSerial } from '@/lib/printer/drivers';
 
 const { t } = useI18n();
@@ -211,7 +202,8 @@ onBeforeUnmount(() => {
 
 .popover-fade-enter-active,
 .popover-fade-leave-active {
-  transition: opacity var(--duration-fast) var(--easing),
+  transition:
+    opacity var(--duration-fast) var(--easing),
     transform var(--duration-fast) var(--easing);
 }
 

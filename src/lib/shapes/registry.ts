@@ -14,7 +14,7 @@ import { BORDERS } from './borders';
 export const SHAPE_REGISTRY: ShapeDefinition[] = [...DECORATIVE_SHAPES, ...BORDERS];
 
 export function findShape(id: string): ShapeDefinition | undefined {
-  return SHAPE_REGISTRY.find((s) => s.id === id);
+  return SHAPE_REGISTRY.find(s => s.id === id);
 }
 
 /** Object name prefix that marks an object as registry-rendered. */

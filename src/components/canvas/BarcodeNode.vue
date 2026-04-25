@@ -37,7 +37,10 @@ const emit = defineEmits<{
   (e: 'dragstart'): void;
   (e: 'dragmove', x: number, y: number): void;
   (e: 'dragend', x: number, y: number): void;
-  (e: 'transformend', patch: { x: number; y: number; width: number; height: number; rotation: number }): void;
+  (
+    e: 'transformend',
+    patch: { x: number; y: number; width: number; height: number; rotation: number },
+  ): void;
 }>();
 
 interface KonvaNodeRef {

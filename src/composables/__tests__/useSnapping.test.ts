@@ -57,7 +57,7 @@ describe('computeSnap', () => {
     expect(result.guides.horizontal).toHaveLength(0);
   });
 
-  it('snaps to another object\'s left edge', () => {
+  it("snaps to another object's left edge", () => {
     const other = makeObj('a', { x: 200, y: 100, width: 100, height: 50 });
     const result = computeSnap({
       draggingId: 'dragged',

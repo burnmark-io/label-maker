@@ -1,18 +1,13 @@
 <template>
   <footer class="footer" role="contentinfo">
-    <a
-      class="footer__sponsor"
-      :href="kofiUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <a class="footer__sponsor" :href="kofiUrl" target="_blank" rel="noopener noreferrer">
       <span aria-hidden="true">🏷️</span>
       <span>{{ sponsorText }}</span>
     </a>
-    <nav class="footer__nav" aria-label="footer">
-      <a :href="aboutUrl">{{ t('footer.about') }}</a>
+    <nav class="footer__nav" :aria-label="t('footer.about')">
+      <button type="button" class="footer__link" @click="openAbout">{{ t('footer.about') }}</button>
       <span aria-hidden="true">·</span>
-      <a :href="helpUrl">{{ t('footer.help') }}</a>
+      <button type="button" class="footer__link" @click="openHelp">{{ t('footer.help') }}</button>
       <span aria-hidden="true">·</span>
       <a :href="githubUrl" target="_blank" rel="noopener noreferrer">
         {{ t('footer.github') }}
@@ -22,20 +17,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useUiDialogs } from '@/composables/useUiDialogs';
 
-const { t, tm, rt } = useI18n();
+const { t, tm, rt, locale } = useI18n();
+const { openAbout, openHelp } = useUiDialogs();
 
 const kofiUrl = 'https://ko-fi.com/mannes';
-const aboutUrl = '#about';
-const helpUrl = '#help';
 const githubUrl = 'https://github.com/burnmark-io/label-maker';
 
+// Pick once per mount; recompute when the locale switches.
+const sponsorIndex = ref(0);
+function pickIndex(): void {
+  const list = tm('footer.sponsorTexts') as unknown[];
+  if (!Array.isArray(list) || list.length === 0) {
+    sponsorIndex.value = 0;
+    return;
+  }
+  sponsorIndex.value = Math.floor(Math.random() * list.length);
+}
+
+onMounted(pickIndex);
+
 const sponsorText = computed(() => {
+  // touch the locale ref so the computed re-evaluates on language switch
+  void locale.value;
   const list = tm('footer.sponsorTexts') as unknown[];
   if (!Array.isArray(list) || list.length === 0) return '';
-  const idx = Math.floor(Math.random() * list.length);
+  const idx = sponsorIndex.value % list.length;
   return rt(list[idx] as string);
 });
 </script>
@@ -71,12 +81,20 @@ const sponsorText = computed(() => {
   gap: var(--space-2);
 }
 
-.footer__nav a {
+.footer__nav a,
+.footer__link {
   color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
-.footer__nav a:hover {
+.footer__nav a:hover,
+.footer__link:hover {
   color: var(--color-primary-text);
+  text-decoration: underline;
 }
 
 @media (max-width: 540px) {

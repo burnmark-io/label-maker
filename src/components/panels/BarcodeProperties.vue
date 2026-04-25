@@ -7,12 +7,10 @@
         class="props__input"
         @change="update('format', ($event.target as HTMLSelectElement).value as BarcodeFormat)"
       >
-        <optgroup
-          v-for="group in groupedFormats"
-          :key="group.label"
-          :label="group.label"
-        >
-          <option v-for="format in group.formats" :key="format" :value="format">{{ format }}</option>
+        <optgroup v-for="group in groupedFormats" :key="group.label" :label="group.label">
+          <option v-for="format in group.formats" :key="format" :value="format">
+            {{ format }}
+          </option>
         </optgroup>
       </select>
     </label>
@@ -44,7 +42,12 @@
       <select
         :value="object.options.eclevel ?? 'M'"
         class="props__input"
-        @change="updateOption('eclevel', ($event.target as HTMLSelectElement).value as 'L' | 'M' | 'Q' | 'H')"
+        @change="
+          updateOption(
+            'eclevel',
+            ($event.target as HTMLSelectElement).value as 'L' | 'M' | 'Q' | 'H',
+          )
+        "
       >
         <option value="L">{{ t('properties.barcode.ecLow') }} (L)</option>
         <option value="M">{{ t('properties.barcode.ecMedium') }} (M)</option>
@@ -73,9 +76,7 @@ const props = defineProps<{ object: BarcodeObject }>();
 const { t } = useI18n();
 const designer = useDesignerStore();
 
-const isQrFormat = computed(() =>
-  ['qrcode', 'gs1qrcode', 'microqr'].includes(props.object.format),
-);
+const isQrFormat = computed(() => ['qrcode', 'gs1qrcode', 'microqr'].includes(props.object.format));
 
 const groupedFormats = computed<{ label: string; formats: BarcodeFormat[] }[]>(() => [
   {

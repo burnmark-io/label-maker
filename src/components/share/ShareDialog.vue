@@ -14,11 +14,7 @@
             :aria-label="t('share.urlLabel')"
             @focus="onFocus"
           />
-          <button
-            type="button"
-            class="share__btn"
-            @click="onCopy"
-          >
+          <button type="button" class="share__btn" @click="onCopy">
             {{ copied ? t('share.copied') : t('share.copy') }}
           </button>
         </div>
@@ -54,11 +50,7 @@ import { nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
 import { useToast } from '@/composables/useToast';
-import {
-  buildShareUrl,
-  MAX_ENCODED_LENGTH,
-  ShareTooLargeError,
-} from '@/services/share-encoder';
+import { buildShareUrl, MAX_ENCODED_LENGTH, ShareTooLargeError } from '@/services/share-encoder';
 import { downloadBlob, safeFileName } from '@/services/file-download';
 import Modal from '@/components/common/Modal.vue';
 
@@ -77,7 +69,7 @@ const urlInput = ref<HTMLInputElement | null>(null);
 
 watch(
   () => props.open,
-  async (isOpen) => {
+  async isOpen => {
     if (!isOpen) {
       url.value = null;
       error.value = null;

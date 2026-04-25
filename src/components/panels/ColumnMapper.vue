@@ -6,11 +6,7 @@
     </div>
 
     <ul class="mapper__rows">
-      <li
-        v-for="placeholder in data.placeholders"
-        :key="placeholder"
-        class="mapper__row"
-      >
+      <li v-for="placeholder in data.placeholders" :key="placeholder" class="mapper__row">
         <span class="mapper__placeholder">
           <code>{{ formatPlaceholder(placeholder) }}</code>
         </span>
@@ -22,11 +18,7 @@
           @change="onChange(placeholder, $event)"
         >
           <option value="">{{ t('data.mapping.unmapped') }}</option>
-          <option
-            v-for="header in data.headers"
-            :key="header"
-            :value="header"
-          >
+          <option v-for="header in data.headers" :key="header" :value="header">
             {{ header }}
           </option>
         </select>
@@ -52,7 +44,7 @@ const data = useDataStore();
 
 const unusedColumns = computed(() => {
   const used = new Set(Object.values(data.mapping));
-  return data.headers.filter((h) => !used.has(h));
+  return data.headers.filter(h => !used.has(h));
 });
 
 function onChange(placeholder: string, event: Event): void {

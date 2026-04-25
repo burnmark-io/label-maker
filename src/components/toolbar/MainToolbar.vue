@@ -1,7 +1,16 @@
 <template>
   <div class="toolbar" role="toolbar" :aria-label="t('toolbar.addText')">
     <IconButton :label="t('toolbar.addText')" @click="addText">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <polyline points="4 7 4 4 20 4 20 7" />
         <line x1="9" y1="20" x2="15" y2="20" />
         <line x1="12" y1="4" x2="12" y2="20" />
@@ -9,7 +18,16 @@
     </IconButton>
 
     <IconButton :label="t('toolbar.addImage')" @click="onPickImage">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <circle cx="8.5" cy="8.5" r="1.5" />
         <polyline points="21 15 16 10 5 21" />
@@ -24,7 +42,16 @@
     />
 
     <IconButton :label="t('toolbar.addBarcode')" @click="addBarcode">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <rect x="3" y="4" width="18" height="16" rx="1" />
         <line x1="7" y1="8" x2="7" y2="16" />
         <line x1="10" y1="8" x2="10" y2="16" />
@@ -42,7 +69,15 @@
         :aria-expanded="libraryOpen"
         @click="toggleLibrary"
       >
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        >
           <rect x="3" y="3" width="8" height="8" rx="1.5" />
           <circle cx="17" cy="7" r="4" />
           <path d="M3 17l4-4 4 4-4 4z" />

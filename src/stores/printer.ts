@@ -157,11 +157,7 @@ export const usePrinterStore = defineStore('printer', () => {
     if (!adapter.value) throw new Error('No printer connected');
     isPrinting.value = true;
     try {
-      await adapter.value.print(
-        image,
-        effectiveMedia.value ?? undefined,
-        options,
-      );
+      await adapter.value.print(image, effectiveMedia.value ?? undefined, options);
     } finally {
       isPrinting.value = false;
     }

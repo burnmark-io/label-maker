@@ -5,7 +5,9 @@
       <select
         :value="object.shape"
         class="props__input"
-        @change="update('shape', ($event.target as HTMLSelectElement).value as ShapeObject['shape'])"
+        @change="
+          update('shape', ($event.target as HTMLSelectElement).value as ShapeObject['shape'])
+        "
       >
         <option value="rectangle">{{ t('toolbar.shapeRectangle') }}</option>
         <option value="ellipse">{{ t('toolbar.shapeCircle') }}</option>

@@ -18,15 +18,15 @@ export interface RegistryEntry {
 }
 
 const ALL: RegistryEntry[] = [
-  ...Object.values(BROTHER_DEVICES).map((d) => ({ family: 'brother-ql' as const, device: d })),
-  ...Object.values(LABELWRITER_DEVICES).map((d) => ({ family: 'labelwriter' as const, device: d })),
-  ...Object.values(LABELMANAGER_DEVICES).map((d) => ({
+  ...Object.values(BROTHER_DEVICES).map(d => ({ family: 'brother-ql' as const, device: d })),
+  ...Object.values(LABELWRITER_DEVICES).map(d => ({ family: 'labelwriter' as const, device: d })),
+  ...Object.values(LABELMANAGER_DEVICES).map(d => ({
     family: 'labelmanager' as const,
     device: d,
   })),
 ];
 
-const ALL_DEVICES: DeviceDescriptor[] = ALL.map((entry) => entry.device);
+const ALL_DEVICES: DeviceDescriptor[] = ALL.map(entry => entry.device);
 
 /** Combined USB filter set across every supported family. */
 export function getAllUsbFilters(): USBDeviceFilter[] {
@@ -35,7 +35,7 @@ export function getAllUsbFilters(): USBDeviceFilter[] {
 
 /** Identify a USB device by VID/PID. */
 export function identifyByVidPid(vid: number, pid: number): RegistryEntry | undefined {
-  return ALL.find((entry) => entry.device.vid === vid && entry.device.pid === pid);
+  return ALL.find(entry => entry.device.vid === vid && entry.device.pid === pid);
 }
 
 /**

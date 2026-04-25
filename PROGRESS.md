@@ -107,6 +107,41 @@ Tracking the phase/step plan from `PLAN.md` section 22. Tick boxes as steps comp
 - [x] test
 - [x] build
 
-## Phase 8+ (later sessions)
+## Phase 8: Polish, i18n, a11y
+- [x] 50. vue-i18n setup with en/nl locales (localStorage → navigator.language → en)
+- [x] 51. Dutch locale (best-effort, marked for review in PLACEHOLDERS.md); missing-locale toast for unsupported browsers
+- [x] 52. a11y: ARIA labels on icon buttons, focus-visible ring, focus trap in modals, role="dialog" + aria-labelledby + Escape, ToastStack aria-live, side panel tabs (arrow keys), darker amber for text (#b45309), canvas aria-label + off-screen contents summary, prefers-reduced-motion
+- [x] 53. Footer with rotating sponsor texts (per-mount, locale-aware), About + Help links
+- [x] 54. About modal — name explanation, scopecreep hint, project links, funding, version
+- [x] 55. Help menu — restart tour, shortcuts reference, printer compatibility, docs/report/feature links; opens via footer link, top-bar button, and `?` shortcut
+- [x] 56. Onboarding tour (4 steps, first-visit auto-start, restartable, dismissable)
+- [x] 57. Empty states: side panel "no objects yet" hint, library empty cards, batch "no data" prompt
+- [x] 58. Error messages audited — toasts use friendly language, errors include why-then-what
+- [x] 59. Transitions polished, all wrapped by prefers-reduced-motion override
+- [x] 60. Responsive: tablet landscape stacks side panel under canvas (≤900px breakpoint)
+- [x] 61. Performance: virtual scroll in batch grid (Phase 5), debounced renders in composable, lazy-loaded sheet templates
+- [x] 62. Gate: typecheck + lint + format + test + build all clean
 
-See `PLAN.md` section 22 for the remaining phases.
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
+## Phase 9: Final
+- [x] 63. Verify all gate checks across phases
+- [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)
+- [ ] 65. Android OTG scenario — no device available in this session, see BLOCKERS.md
+- [x] 66. Docker build smoke-tested in Phase 7
+- [x] 67. en.json + nl.json verified at full parity (318 keys each)
+- [x] 68. Keyboard-only navigation verified (Tab through topbar/toolbar/panel/dialogs, focus trap in modals, Escape closes)
+- [x] 69. PWA manifest valid, install prompt wired (Phase 7)
+- [x] 70. Offline-capable build (no external CDNs, IndexedDB designs, SW caches static assets)
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build

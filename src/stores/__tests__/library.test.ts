@@ -8,7 +8,7 @@ import { useLibraryStore, LibraryFullError } from '../library';
 beforeEach(async () => {
   setActivePinia(createPinia());
   await __resetForTests();
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     const req = indexedDB.deleteDatabase('burnmark');
     req.onsuccess = () => resolve();
     req.onerror = () => resolve();
@@ -60,6 +60,6 @@ describe('library store', () => {
     const doc = createDocument('to-delete', { widthDots: 100, heightDots: 60, dpi: 300 });
     await lib.save(doc);
     await lib.deleteDesign('to-delete');
-    expect(lib.entries.find((e) => e.id === 'to-delete')).toBeUndefined();
+    expect(lib.entries.find(e => e.id === 'to-delete')).toBeUndefined();
   });
 });

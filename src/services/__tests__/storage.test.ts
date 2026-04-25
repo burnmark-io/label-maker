@@ -14,7 +14,7 @@ import {
 
 beforeEach(async () => {
   await __resetForTests();
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     const req = indexedDB.deleteDatabase('burnmark');
     req.onsuccess = () => resolve();
     req.onerror = () => resolve();

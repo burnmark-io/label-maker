@@ -35,7 +35,9 @@
               :value="entry.name"
               class="library__name"
               :aria-label="t('library.nameLabel')"
-              @change="onRename(entry.id, ($event.target as HTMLInputElement).value, entry.description)"
+              @change="
+                onRename(entry.id, ($event.target as HTMLInputElement).value, entry.description)
+              "
             />
             <input
               :value="entry.description ?? ''"
@@ -51,14 +53,12 @@
             class="library__delete"
             :aria-label="t('library.delete', { name: entry.name })"
             @click="onDelete(entry.id)"
-          >×</button>
+          >
+            ×
+          </button>
         </li>
 
-        <li
-          v-for="i in emptySlots"
-          :key="`empty-${i}`"
-          class="library__slot library__slot--empty"
-        >
+        <li v-for="i in emptySlots" :key="`empty-${i}`" class="library__slot library__slot--empty">
           <button
             type="button"
             class="library__plus"
@@ -81,11 +81,7 @@
         type="button"
         class="library__btn library__btn--primary"
         :disabled="library.isFull && !designAlreadyExists"
-        :title="
-          library.isFull && !designAlreadyExists
-            ? t('library.cantSave')
-            : ''
-        "
+        :title="library.isFull && !designAlreadyExists ? t('library.cantSave') : ''"
         @click="onSaveCurrent"
       >
         {{ designAlreadyExists ? t('library.update') : t('library.save') }}
@@ -111,17 +107,13 @@ const library = useLibraryStore();
 const designer = useDesignerStore();
 const { show } = useToast();
 
-const emptySlots = computed(() =>
-  Math.max(0, library.MAX_SLOTS - library.entries.length),
-);
+const emptySlots = computed(() => Math.max(0, library.MAX_SLOTS - library.entries.length));
 
 const designAlreadyExists = computed(() =>
-  library.entries.some((e) => e.id === designer.document.id),
+  library.entries.some(e => e.id === designer.document.id),
 );
 
-const hasUnsavedToSave = computed(
-  () => !library.isFull || designAlreadyExists.value,
-);
+const hasUnsavedToSave = computed(() => !library.isFull || designAlreadyExists.value);
 
 function formatDate(iso: string): string {
   try {
@@ -186,11 +178,7 @@ async function onDelete(id: string): Promise<void> {
   show(t('library.deleted'), 'success');
 }
 
-async function onRename(
-  id: string,
-  name: string,
-  description: string | undefined,
-): Promise<void> {
+async function onRename(id: string, name: string, description: string | undefined): Promise<void> {
   await library.rename(id, name.trim() || t('library.untitled'), description);
 }
 
@@ -198,7 +186,7 @@ async function onRename(
 import { watch } from 'vue';
 watch(
   () => props.open,
-  async (isOpen) => {
+  async isOpen => {
     if (isOpen && !library.loaded) await library.load();
   },
   { immediate: true },

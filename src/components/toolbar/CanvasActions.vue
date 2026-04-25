@@ -5,11 +5,25 @@
         class="actions__btn actions__btn--primary"
         type="button"
         :disabled="printer.isPrinting"
-        :title="printer.isConnected ? t('actions.printConnected', { model: printer.model ?? '' }) : t('actions.printNoPrinter')"
+        :title="
+          printer.isConnected
+            ? t('actions.printConnected', { model: printer.model ?? '' })
+            : t('actions.printNoPrinter')
+        "
         @click="onPrint"
         @contextmenu.prevent="optionsOpen = true"
       >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <polyline points="6 9 6 2 18 2 18 9" />
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
           <rect x="6" y="14" width="12" height="8" />
@@ -29,13 +43,7 @@
       <div v-if="optionsOpen" class="actions__options" role="dialog">
         <label class="actions__field">
           {{ t('actions.copies') }}
-          <input
-            v-model.number="copies"
-            type="number"
-            min="1"
-            max="30"
-            class="actions__input"
-          />
+          <input v-model.number="copies" type="number" min="1" max="30" class="actions__input" />
         </label>
         <label class="actions__field">
           {{ t('actions.density') }}
@@ -45,7 +53,12 @@
             <option value="dark">{{ t('actions.densityDark') }}</option>
           </select>
         </label>
-        <button v-if="data.hasData" class="actions__btn actions__btn--full" type="button" @click="onPrintBatch">
+        <button
+          v-if="data.hasData"
+          class="actions__btn actions__btn--full"
+          type="button"
+          @click="onPrintBatch"
+        >
           {{ t('actions.printBatch', { count: data.rows.length }) }}
         </button>
         <button class="actions__btn actions__btn--full" type="button" @click="optionsOpen = false">
@@ -56,7 +69,17 @@
 
     <div ref="saveRootRef" class="actions__save">
       <button class="actions__btn" type="button" @click="onSave">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
           <polyline points="17 21 17 13 7 13 7 21" />
           <polyline points="7 3 7 8 15 8" />
@@ -74,16 +97,48 @@
         </svg>
       </button>
       <ul v-if="dropdownOpen" class="actions__dropdown" role="menu" @click="dropdownOpen = false">
-        <li><button type="button" role="menuitem" @click="onSave">{{ t('actions.saveCurrent') }}</button></li>
-        <li><button type="button" role="menuitem" @click="emit('open-library')">{{ t('topbar.library') }}</button></li>
+        <li>
+          <button type="button" role="menuitem" @click="onSave">
+            {{ t('actions.saveCurrent') }}
+          </button>
+        </li>
+        <li>
+          <button type="button" role="menuitem" @click="emit('open-library')">
+            {{ t('topbar.library') }}
+          </button>
+        </li>
         <li class="actions__divider" aria-hidden="true" />
-        <li><button type="button" role="menuitem" @click="onExportPdf">{{ t('actions.exportPdf') }}</button></li>
-        <li><button type="button" role="menuitem" @click="onExportPng">{{ t('actions.exportPng') }}</button></li>
-        <li><button type="button" role="menuitem" @click="onExportLabel">{{ t('actions.exportLabel') }}</button></li>
-        <li><button type="button" role="menuitem" @click="onExportZip">{{ t('actions.exportZip') }}</button></li>
+        <li>
+          <button type="button" role="menuitem" @click="onExportPdf">
+            {{ t('actions.exportPdf') }}
+          </button>
+        </li>
+        <li>
+          <button type="button" role="menuitem" @click="onExportPng">
+            {{ t('actions.exportPng') }}
+          </button>
+        </li>
+        <li>
+          <button type="button" role="menuitem" @click="onExportLabel">
+            {{ t('actions.exportLabel') }}
+          </button>
+        </li>
+        <li>
+          <button type="button" role="menuitem" @click="onExportZip">
+            {{ t('actions.exportZip') }}
+          </button>
+        </li>
         <li class="actions__divider" aria-hidden="true" />
-        <li><button type="button" role="menuitem" @click="emit('open-sheet')">{{ t('actions.printSheet') }}</button></li>
-        <li><button type="button" role="menuitem" @click="emit('open-share')">{{ t('topbar.share') }}</button></li>
+        <li>
+          <button type="button" role="menuitem" @click="emit('open-sheet')">
+            {{ t('actions.printSheet') }}
+          </button>
+        </li>
+        <li>
+          <button type="button" role="menuitem" @click="emit('open-share')">
+            {{ t('topbar.share') }}
+          </button>
+        </li>
       </ul>
     </div>
   </div>
@@ -131,11 +186,9 @@ async function onPrint(): Promise<void> {
     show(t('actions.printNoMedia'), 'error');
     return;
   }
-  const toastId = show(
-    t('actions.printingTo', { model: printer.model ?? '' }),
-    'info',
-    { sticky: true },
-  );
+  const toastId = show(t('actions.printingTo', { model: printer.model ?? '' }), 'info', {
+    sticky: true,
+  });
   try {
     const variables = data.currentVariables;
     const rgba = await designer.renderToRGBA(
@@ -206,9 +259,7 @@ async function onExportPng(): Promise<void> {
 async function onExportPdf(): Promise<void> {
   try {
     const rows =
-      data.rows.length > 0
-        ? data.rows.map((row) => applyMappingToRow(row, data.mapping))
-        : undefined;
+      data.rows.length > 0 ? data.rows.map(row => applyMappingToRow(row, data.mapping)) : undefined;
     const blob = await designer.exportPdf(rows);
     downloadBlob(blob, `${safeFileName(designer.document.name)}.pdf`);
     show(t('export.pdfDownloaded'), 'success');

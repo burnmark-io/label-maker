@@ -41,7 +41,8 @@
               class="batch__card"
               role="listitem"
               :class="{
-                'batch__card--printing': entry.index === status.currentIndex && status.kind === 'printing',
+                'batch__card--printing':
+                  entry.index === status.currentIndex && status.kind === 'printing',
                 'batch__card--done': isDone(entry.index),
                 'batch__card--error': errors[entry.index],
               }"
@@ -60,7 +61,9 @@
               <div class="batch__card-meta">
                 <span class="batch__card-index">#{{ entry.index + 1 }}</span>
                 <span v-if="entry.label" class="batch__card-label">{{ entry.label }}</span>
-                <span v-if="errors[entry.index]" class="batch__card-error">{{ errors[entry.index] }}</span>
+                <span v-if="errors[entry.index]" class="batch__card-error">{{
+                  errors[entry.index]
+                }}</span>
               </div>
             </article>
           </div>
@@ -147,7 +150,7 @@ const containerHeight = ref(420);
 
 watch(
   () => props.open,
-  async (open) => {
+  async open => {
     if (open) {
       await nextTick();
       if (gridRef.value) containerHeight.value = gridRef.value.clientHeight;
@@ -161,7 +164,7 @@ watch(
 const entries = computed(() =>
   data.rows.map((row, index) => {
     const variables = applyMappingToRow(row, data.mapping);
-    const firstNonEmpty = Object.values(variables).find((v) => v && v.trim().length > 0);
+    const firstNonEmpty = Object.values(variables).find(v => v && v.trim().length > 0);
     return { index, row, variables, label: firstNonEmpty ?? '' };
   }),
 );
@@ -212,21 +215,18 @@ async function buildPreviewThumbnails(): Promise<void> {
   }
 }
 
-watch(
-  visibleEntries,
-  async (visible) => {
-    if (!props.open) return;
-    for (const entry of visible) {
-      if (thumbnails.value[entry.index]) continue;
-      try {
-        const png = await designer.exportPng(entry.variables, 0.4);
-        thumbnails.value[entry.index] = URL.createObjectURL(png);
-      } catch {
-        // best-effort
-      }
+watch(visibleEntries, async visible => {
+  if (!props.open) return;
+  for (const entry of visible) {
+    if (thumbnails.value[entry.index]) continue;
+    try {
+      const png = await designer.exportPng(entry.variables, 0.4);
+      thumbnails.value[entry.index] = URL.createObjectURL(png);
+    } catch {
+      // best-effort
     }
-  },
-);
+  }
+});
 
 async function startPrint(): Promise<void> {
   if (!printer.isConnected) {
@@ -244,7 +244,7 @@ async function startPrint(): Promise<void> {
     currentIndex: -1,
   };
 
-  const rowsForBatch = data.rows.map((row) => applyMappingToRow(row, data.mapping));
+  const rowsForBatch = data.rows.map(row => applyMappingToRow(row, data.mapping));
 
   try {
     // Cast: pinia's setup-store typing strips the LabelDesigner's private

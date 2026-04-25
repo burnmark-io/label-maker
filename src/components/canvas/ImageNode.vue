@@ -34,7 +34,10 @@ const emit = defineEmits<{
   (e: 'dragstart'): void;
   (e: 'dragmove', x: number, y: number): void;
   (e: 'dragend', x: number, y: number): void;
-  (e: 'transformend', patch: { x: number; y: number; width: number; height: number; rotation: number }): void;
+  (
+    e: 'transformend',
+    patch: { x: number; y: number; width: number; height: number; rotation: number },
+  ): void;
 }>();
 
 interface KonvaNodeRef {
@@ -58,7 +61,7 @@ const image = ref<HTMLImageElement | null>(null);
 
 watch(
   () => props.object.assetKey,
-  async (key) => {
+  async key => {
     if (!key) {
       image.value = null;
       return;

@@ -174,7 +174,9 @@
     "ariaLabel": "Label ontwerp canvas",
     "feedDirection": "papierrichting",
     "cutLine": "hier afsnijden",
-    "zoom": "{percent}%"
+    "zoom": "{percent}%",
+    "summaryEmpty": "Leeg canvas. Gebruik de toolbar om tekst, afbeelding, barcode of vorm toe te voegen.",
+    "summary": "Canvas met {count} object | Canvas met {count} objecten"
   },
   "footer": {
     "about": "Over",
@@ -308,6 +310,104 @@
     "message": "Installeer burnmark voor snelle toegang vanaf je bureaublad",
     "install": "Installeren",
     "later": "Later misschien"
+  },
+  "locale": {
+    "missingToast": "burnmark is nog niet beschikbaar in {language}. We tonen Engels.",
+    "translateCta": "Wil je helpen vertalen? Laat het ons weten →"
+  },
+  "about": {
+    "title": "Over burnmark",
+    "intro": "burnmark is een gratis, open-source labelontwerper die volledig in je browser draait. Geen account, geen server, geen installatie.",
+    "nameHeading": "De naam",
+    "nameBody": "Thermische printers werken door piepkleine puntjes op warmtegevoelig papier te branden. Elk puntje op je label is letterlijk een brandvlek — een precieze hitteprik van de printkop. Wij vonden dat een leuke naam voor een label-app.",
+    "originHeading": "Hoe het begon",
+    "originBody": "Het begon met een rommelige werkplaats en een Dymo LabelManager die op Linux niet wilde meewerken. In plaats van de werkplaats op te ruimen zijn we USB-printerprotocollen gaan reverse-engineeren en hebben we per ongeluk een heel ecosysteem voor labelprinters gebouwd. De werkplaats is nog steeds niet helemaal opgeruimd.",
+    "originLink": "Lees het hele verhaal →",
+    "projectHeading": "Het project",
+    "projectBody": "burnmark is onderdeel van het thermal-label ecosysteem — open-source drivers voor Dymo en Brother labelprinters, een headless ontwerpengine, en deze webapp. Alles is MIT-gelicenseerd.",
+    "linkRepo": "GitHub",
+    "linkDrivers": "thermal-label drivers",
+    "linkCore": "designer-core",
+    "supportHeading": "Steun het project",
+    "supportBody": "burnmark is gemaakt en wordt onderhouden door Mannes Brak in Nederland. Vind je het nuttig? Steun het project:",
+    "supportKofi": "☕ Trakteer me op labels",
+    "supportSponsors": "♥ GitHub Sponsors",
+    "version": "Versie {version}"
+  },
+  "help": {
+    "title": "Help",
+    "restartTour": "Rondleiding opnieuw",
+    "restartTourHint": "Doorloopt de welkomstrondleiding opnieuw vanaf stap 1.",
+    "shortcuts": "Sneltoetsen",
+    "shortcutsHint": "Versnel alles met het toetsenbord.",
+    "compatibility": "Printercompatibiliteit",
+    "compatibilityHint": "Welke printers werken, en in welke browsers.",
+    "docs": "Documentatie",
+    "docsHint": "Handleidingen en protocolnotities op thermal-label.github.io.",
+    "report": "Probleem melden",
+    "reportHint": "Open een issue op GitHub.",
+    "feature": "Wens je een functie?",
+    "featureHint": "Start een discussie op GitHub.",
+    "shortcutsTitle": "Sneltoetsen",
+    "shortcutsGroupGeneral": "Algemeen",
+    "shortcutsGroupCanvas": "Canvas",
+    "shortcutsGroupObjects": "Objecten",
+    "compatTitle": "Printercompatibiliteit",
+    "compatIntro": "burnmark werkt het beste in Chrome of Edge.",
+    "compatChrome": "Chrome (desktop en Android): volledige ondersteuning — WebUSB, Web Serial, PWA.",
+    "compatEdge": "Edge (desktop): volledige ondersteuning.",
+    "compatFirefox": "Firefox: alleen ontwerpen en exporteren — geen printen (geen WebUSB).",
+    "compatSafari": "Safari: alleen ontwerpen en exporteren — geen printen.",
+    "compatPrintersHeading": "Ondersteunde printers",
+    "compatBrother": "Brother QL-serie (QL-800, QL-810W, QL-820NWB, QL-1100, QL-1110NWB)",
+    "compatDymoLW": "Dymo LabelWriter (400, 450, 450 Turbo, 450 Twin Turbo, 550, 5XL)",
+    "compatDymoLM": "Dymo LabelManager PnP",
+    "compatConnectHeading": "Hoe te verbinden",
+    "compatConnectBody": "USB-kabel of Bluetooth (Brother QL-820NWB via Web Serial). Android-gebruikers: een USB-C OTG-adapter (€5) verbindt direct.",
+    "back": "Terug"
+  },
+  "shortcuts": {
+    "general": {
+      "undo": "Ongedaan maken",
+      "redo": "Opnieuw",
+      "selectAll": "Alles selecteren",
+      "copy": "Kopiëren",
+      "paste": "Plakken",
+      "duplicate": "Dupliceren",
+      "deselect": "Deselecteren / annuleren"
+    },
+    "canvas": {
+      "zoom": "In- / uitzoomen",
+      "resetZoom": "Zoom passend resetten",
+      "nudge": "Selectie nudgen",
+      "nudgeBig": "Nudgen met 10px"
+    },
+    "objects": {
+      "delete": "Selectie verwijderen",
+      "raise": "Naar voren",
+      "lower": "Naar achter",
+      "raiseTop": "Helemaal naar voren",
+      "lowerBottom": "Helemaal naar achter"
+    },
+    "ui": {
+      "help": "Help openen"
+    }
+  },
+  "tour": {
+    "next": "Volgende",
+    "back": "Terug",
+    "skip": "Overslaan",
+    "done": "Begrepen",
+    "step": "Stap {current} van {total}",
+    "completedToast": "Je bent klaar! Hulp nodig later? Bekijk het help-menu.",
+    "step1Title": "Dit is jouw label",
+    "step1Body": "Dit is een voorbeeld — klik op een element om te bewerken, of begin opnieuw.",
+    "step2Title": "Voeg toe via de toolbar",
+    "step2Body": "Tekst, afbeeldingen, barcodes, vormen — kies er een en klik op het label.",
+    "step3Title": "Pas aan in het zijpaneel",
+    "step3Body": "Selecteer een object en stel lettertype, grootte, kleur en meer in.",
+    "step4Title": "Verbind en print",
+    "step4Body": "Sluit je printer aan en druk op printen. Klaar!"
   },
   "placeholderNote": "burnmark UI strings"
 }

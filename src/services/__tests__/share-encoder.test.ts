@@ -60,11 +60,11 @@ describe('share encoder', () => {
 
   it('throws ShareTooLargeError when the design exceeds the limit', () => {
     const doc = tinyDoc();
-    const big = (doc.objects[0] as TextObject);
+    const big = doc.objects[0] as TextObject;
     // Stuff a large incompressible payload (random base64-ish noise).
-    big.content = Array.from({ length: 16000 }, () =>
-      Math.random().toString(36).slice(2, 4),
-    ).join('');
+    big.content = Array.from({ length: 16000 }, () => Math.random().toString(36).slice(2, 4)).join(
+      '',
+    );
     expect(() => encodeDocument(doc)).toThrow(ShareTooLargeError);
   });
 

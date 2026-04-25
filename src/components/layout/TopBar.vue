@@ -5,7 +5,7 @@
       <span class="topbar__name">{{ t('app.name') }}</span>
     </div>
 
-    <div class="topbar__center">
+    <div class="topbar__center" data-tour="printer">
       <PrinterPopover />
     </div>
 
@@ -16,7 +16,16 @@
         :title="t('topbar.undo')"
         @click="designer.undo()"
       >
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M3 7v6h6" />
           <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
         </svg>
@@ -27,7 +36,16 @@
         :title="t('topbar.redo')"
         @click="designer.redo()"
       >
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M21 7v6h-6" />
           <path d="M3 17a9 9 0 0 1 15-6.7L21 13" />
         </svg>
@@ -39,7 +57,17 @@
         :aria-label="t('topbar.library')"
         @click="emit('open-library')"
       >
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
         </svg>
@@ -51,7 +79,17 @@
         :aria-label="t('topbar.share')"
         @click="emit('open-share')"
       >
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <circle cx="18" cy="5" r="3" />
           <circle cx="6" cy="12" r="3" />
           <circle cx="18" cy="19" r="3" />
@@ -60,8 +98,18 @@
         </svg>
         <span class="topbar__btn-label">{{ t('topbar.share') }}</span>
       </button>
-      <button class="topbar__btn" type="button" :aria-label="t('topbar.help')">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <button class="topbar__btn" type="button" :aria-label="t('topbar.help')" @click="openHelp">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
           <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -77,6 +125,7 @@ import { useI18n } from 'vue-i18n';
 import IconButton from '@/components/common/IconButton.vue';
 import PrinterPopover from '@/components/printer/PrinterPopover.vue';
 import { useDesignerStore } from '@/stores/designer';
+import { useUiDialogs } from '@/composables/useUiDialogs';
 
 const emit = defineEmits<{
   (e: 'open-library'): void;
@@ -85,6 +134,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const designer = useDesignerStore();
+const { openHelp } = useUiDialogs();
 </script>
 
 <style scoped>

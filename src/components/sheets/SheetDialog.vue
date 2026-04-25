@@ -36,12 +36,14 @@
               <div>
                 <p class="sheet-dialog__name">{{ sheet.brand }} {{ sheet.part }}</p>
                 <p class="sheet-dialog__detail">
-                  {{ t('sheet.detail', {
-                    width: sheet.labelWidthMm,
-                    height: sheet.labelHeightMm,
-                    paper: sheet.paperSize,
-                    perPage: sheet.layouts.reduce((sum, l) => sum + l.columns * l.rows, 0),
-                  }) }}
+                  {{
+                    t('sheet.detail', {
+                      width: sheet.labelWidthMm,
+                      height: sheet.labelHeightMm,
+                      paper: sheet.paperSize,
+                      perPage: sheet.layouts.reduce((sum, l) => sum + l.columns * l.rows, 0),
+                    })
+                  }}
                 </p>
               </div>
             </li>
@@ -111,7 +113,7 @@ const exporting = ref(false);
 
 watch(
   () => props.open,
-  async (isOpen) => {
+  async isOpen => {
     if (!isOpen || sheets.value.length > 0) return;
     loading.value = true;
     try {
@@ -128,7 +130,7 @@ watch(
 
 const filteredSheets = computed(() => {
   const q = query.value.trim().toLowerCase();
-  return sheets.value.filter((sheet) => {
+  return sheets.value.filter(sheet => {
     if (brandFilter.value && sheet.brand !== brandFilter.value) return false;
     if (!q) return true;
     return (
@@ -145,9 +147,7 @@ async function onExport(): Promise<void> {
   exporting.value = true;
   try {
     const rows =
-      data.rows.length > 0
-        ? data.rows.map((row) => applyMappingToRow(row, data.mapping))
-        : undefined;
+      data.rows.length > 0 ? data.rows.map(row => applyMappingToRow(row, data.mapping)) : undefined;
     const blob = await designer.exportSheet(selected.value, rows);
     const fileName = `${designer.document.name}-${selected.value.brand}-${selected.value.part}.pdf`
       .toLowerCase()

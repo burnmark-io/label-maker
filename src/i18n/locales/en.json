@@ -174,7 +174,9 @@
     "ariaLabel": "Label design canvas",
     "feedDirection": "feed direction",
     "cutLine": "cut here",
-    "zoom": "{percent}%"
+    "zoom": "{percent}%",
+    "summaryEmpty": "Empty canvas. Use the toolbar to add a text, image, barcode or shape.",
+    "summary": "Canvas with {count} object | Canvas with {count} objects"
   },
   "footer": {
     "about": "About",
@@ -308,6 +310,104 @@
     "message": "Install burnmark for quick access from your desktop",
     "install": "Install",
     "later": "Maybe later"
+  },
+  "locale": {
+    "missingToast": "burnmark isn't available in {language} yet. Showing English.",
+    "translateCta": "Want to help translate? Let us know →"
+  },
+  "about": {
+    "title": "About burnmark",
+    "intro": "burnmark is a free, open-source label designer that runs entirely in your browser. No account, no server, no install.",
+    "nameHeading": "The name",
+    "nameBody": "Thermal printers work by burning tiny marks onto heat-sensitive paper. Each dot on your label is literally a burn mark — a precise point of heat from the print head. We thought that was a pretty cool name for a label app.",
+    "originHeading": "How it started",
+    "originBody": "It started with a messy workshop and a Dymo LabelManager that refused to cooperate on Linux. Instead of organising the workshop, we ended up reverse-engineering USB printer protocols and accidentally building an entire label printing ecosystem. The workshop is still not fully organised.",
+    "originLink": "Read the full story →",
+    "projectHeading": "The project",
+    "projectBody": "burnmark is part of the thermal-label ecosystem — open-source drivers for Dymo and Brother label printers, a headless design engine, and this web app. Everything is MIT-licensed.",
+    "linkRepo": "GitHub",
+    "linkDrivers": "thermal-label drivers",
+    "linkCore": "designer-core",
+    "supportHeading": "Support the project",
+    "supportBody": "burnmark is built and maintained by Mannes Brak in the Netherlands. If you find it useful, consider supporting the project:",
+    "supportKofi": "☕ Buy me some labels",
+    "supportSponsors": "♥ GitHub Sponsors",
+    "version": "Version {version}"
+  },
+  "help": {
+    "title": "Help",
+    "restartTour": "Restart tour",
+    "restartTourHint": "Re-runs the welcome tour from step 1.",
+    "shortcuts": "Keyboard shortcuts",
+    "shortcutsHint": "Speed up everything with the keyboard.",
+    "compatibility": "Printer compatibility",
+    "compatibilityHint": "Which printers work, and which browsers they need.",
+    "docs": "Documentation",
+    "docsHint": "How-tos and protocol notes at thermal-label.github.io.",
+    "report": "Report a problem",
+    "reportHint": "Open an issue on GitHub.",
+    "feature": "Want a feature?",
+    "featureHint": "Start a discussion on GitHub.",
+    "shortcutsTitle": "Keyboard shortcuts",
+    "shortcutsGroupGeneral": "General",
+    "shortcutsGroupCanvas": "Canvas",
+    "shortcutsGroupObjects": "Objects",
+    "compatTitle": "Printer compatibility",
+    "compatIntro": "burnmark works best in Chrome or Edge.",
+    "compatChrome": "Chrome (desktop and Android): full support — WebUSB, Web Serial, PWA.",
+    "compatEdge": "Edge (desktop): full support.",
+    "compatFirefox": "Firefox: design and export only — no printing (WebUSB not supported).",
+    "compatSafari": "Safari: design and export only — no printing.",
+    "compatPrintersHeading": "Supported printers",
+    "compatBrother": "Brother QL series (QL-800, QL-810W, QL-820NWB, QL-1100, QL-1110NWB)",
+    "compatDymoLW": "Dymo LabelWriter (400, 450, 450 Turbo, 450 Twin Turbo, 550, 5XL)",
+    "compatDymoLM": "Dymo LabelManager PnP",
+    "compatConnectHeading": "How to connect",
+    "compatConnectBody": "USB cable or Bluetooth (Brother QL-820NWB via Web Serial). Android users: a USB-C OTG adapter (€5) connects directly.",
+    "back": "Back"
+  },
+  "shortcuts": {
+    "general": {
+      "undo": "Undo",
+      "redo": "Redo",
+      "selectAll": "Select all",
+      "copy": "Copy",
+      "paste": "Paste",
+      "duplicate": "Duplicate",
+      "deselect": "Deselect / cancel"
+    },
+    "canvas": {
+      "zoom": "Zoom in / out",
+      "resetZoom": "Reset zoom to fit",
+      "nudge": "Nudge selection",
+      "nudgeBig": "Nudge by 10px"
+    },
+    "objects": {
+      "delete": "Delete selection",
+      "raise": "Bring forward",
+      "lower": "Send backward",
+      "raiseTop": "Bring to front",
+      "lowerBottom": "Send to back"
+    },
+    "ui": {
+      "help": "Open help"
+    }
+  },
+  "tour": {
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "done": "Got it",
+    "step": "Step {current} of {total}",
+    "completedToast": "You're ready! Need help later? Check the help menu.",
+    "step1Title": "This is your label",
+    "step1Body": "This is a sample — click any element to edit, or start fresh.",
+    "step2Title": "Add things from the toolbar",
+    "step2Body": "Text, images, barcodes, shapes — pick one and click the label.",
+    "step3Title": "Adjust in the side panel",
+    "step3Body": "Select any object and tweak its font, size, colour, and more.",
+    "step4Title": "Connect and print",
+    "step4Body": "Connect your printer and hit print. That's it!"
   },
   "placeholderNote": "burnmark UI strings"
 }

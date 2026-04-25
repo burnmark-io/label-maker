@@ -43,7 +43,11 @@ function makeAdapter(): PrinterAdapter {
       rawBytes: new Uint8Array(),
     })),
     print: vi.fn(async () => undefined),
-    createPreview: vi.fn(async () => ({ planes: [], media: { id: 'm', name: 'm', widthMm: 62, type: 'continuous', colorCapable: false }, assumed: true })),
+    createPreview: vi.fn(async () => ({
+      planes: [],
+      media: { id: 'm', name: 'm', widthMm: 62, type: 'continuous', colorCapable: false },
+      assumed: true,
+    })),
     close: vi.fn(async () => undefined),
   } as unknown as PrinterAdapter;
 }

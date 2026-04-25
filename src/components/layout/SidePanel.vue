@@ -58,7 +58,7 @@ const tabs = computed<{ id: SidePanelTab; label: string }[]>(() => [
 ]);
 
 function cycle(delta: number): void {
-  const ids = tabs.value.map((tab) => tab.id);
+  const ids = tabs.value.map(tab => tab.id);
   const idx = ids.indexOf(prefs.sidePanelTab);
   const next = (idx + delta + ids.length) % ids.length;
   prefs.sidePanelTab = ids[next];

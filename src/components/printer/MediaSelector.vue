@@ -2,7 +2,9 @@
   <div v-if="family" class="media">
     <label class="media__label" :for="selectId">
       {{ t('printer.media') }}
-      <span v-if="autoDetected" class="media__badge media__badge--auto">{{ t('printer.autoDetected') }}</span>
+      <span v-if="autoDetected" class="media__badge media__badge--auto">{{
+        t('printer.autoDetected')
+      }}</span>
     </label>
     <select :id="selectId" v-model="selection" class="media__select">
       <option v-if="!autoDetected" value="">{{ t('printer.mediaPick') }}</option>
@@ -36,7 +38,7 @@ const selection = computed<string>({
       printer.setSelectedMedia(null);
       return;
     }
-    const next = options.value.find((m) => String(m.id) === value);
+    const next = options.value.find(m => String(m.id) === value);
     if (next) printer.setSelectedMedia(next);
   },
 });

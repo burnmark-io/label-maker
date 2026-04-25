@@ -70,8 +70,7 @@ export const BORDER_PLAYFUL: ShapeDefinition = {
   id: 'border-playful',
   labelKey: 'playful',
   category: 'border',
-  iconPath:
-    'M4 8c2-3 4-3 6 0s4 3 6 0 4-3 4 0v8c-2 3-4 3-6 0s-4-3-6 0-4 3-4 0V8z',
+  iconPath: 'M4 8c2-3 4-3 6 0s4 3 6 0 4-3 4 0v8c-2 3-4 3-6 0s-4-3-6 0-4 3-4 0V8z',
   defaultWidth: 0,
   defaultHeight: 0,
   isBorder: true,
@@ -125,7 +124,8 @@ export const BORDER_DOTTED: ShapeDefinition = {
   id: 'border-dotted',
   labelKey: 'dotted',
   category: 'border',
-  iconPath: 'M5 4h2v2H5zM11 4h2v2h-2zM17 4h2v2h-2zM5 18h2v2H5zM17 18h2v2h-2zM5 11h2v2H5zM17 11h2v2h-2z',
+  iconPath:
+    'M5 4h2v2H5zM11 4h2v2h-2zM17 4h2v2h-2zM5 18h2v2H5zM17 18h2v2h-2zM5 11h2v2H5zM17 11h2v2h-2z',
   defaultWidth: 0,
   defaultHeight: 0,
   isBorder: true,

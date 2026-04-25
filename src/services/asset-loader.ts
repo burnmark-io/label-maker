@@ -62,7 +62,7 @@ async function resizeIfNeeded(blob: Blob): Promise<Blob> {
   ctx.drawImage(bitmap, 0, 0, w, h);
   bitmap.close();
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((out) => {
+    canvas.toBlob(out => {
       if (out) resolve(out);
       else reject(new Error('Failed to encode resized image'));
     }, 'image/png');

@@ -1,10 +1,5 @@
 <template>
-  <a
-    class="feedback-link"
-    :href="href"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
+  <a class="feedback-link" :href="href" target="_blank" rel="noopener noreferrer">
     {{ label }}
     <span aria-hidden="true">→</span>
   </a>

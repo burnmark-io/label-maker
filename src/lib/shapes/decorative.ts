@@ -152,8 +152,7 @@ export const RIBBON: ShapeDefinition = {
   id: 'ribbon',
   labelKey: 'ribbon',
   category: 'decorative',
-  iconPath:
-    'M4 4h16l-2 5 2 5h-6l-2 4-2-4H4l2-5-2-5z',
+  iconPath: 'M4 4h16l-2 5 2 5h-6l-2 4-2-4H4l2-5-2-5z',
   defaultWidth: 280,
   defaultHeight: 120,
   renderPath(ctx, w, h) {
@@ -179,11 +178,4 @@ export const RIBBON: ShapeDefinition = {
   },
 };
 
-export const DECORATIVE_SHAPES: ShapeDefinition[] = [
-  HEART,
-  STAR,
-  DIAMOND,
-  ARROW,
-  BADGE,
-  RIBBON,
-];
+export const DECORATIVE_SHAPES: ShapeDefinition[] = [HEART, STAR, DIAMOND, ARROW, BADGE, RIBBON];

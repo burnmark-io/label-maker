@@ -16,10 +16,7 @@ describe('autoMapColumns', () => {
   });
 
   it('matches via fuzzy / synonym lookup', () => {
-    const result = autoMapColumns(
-      ['naam', 'adres', 'woonplaats'],
-      ['name', 'address', 'city'],
-    );
+    const result = autoMapColumns(['naam', 'adres', 'woonplaats'], ['name', 'address', 'city']);
     expect(result.mapping).toMatchObject({
       name: 'naam',
       address: 'adres',

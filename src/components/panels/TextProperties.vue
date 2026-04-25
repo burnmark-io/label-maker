@@ -123,7 +123,15 @@ const props = defineProps<{ object: TextObject }>();
 const { t } = useI18n();
 const designer = useDesignerStore();
 
-const fonts = ['Inter', 'JetBrains Mono', 'Bitter', 'Barlow Condensed', 'Arial', 'Helvetica', 'Courier New'];
+const fonts = [
+  'Inter',
+  'JetBrains Mono',
+  'Bitter',
+  'Barlow Condensed',
+  'Arial',
+  'Helvetica',
+  'Courier New',
+];
 
 function update<K extends keyof TextObject>(key: K, value: TextObject[K]): void {
   designer.updateObject(props.object.id, { [key]: value } as Partial<TextObject>);

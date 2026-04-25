@@ -10,7 +10,17 @@
         :disabled="rendering"
         @click="refreshNow"
       >
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <polyline points="23 4 23 10 17 10" />
           <polyline points="1 20 1 14 7 14" />
           <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
@@ -130,11 +140,7 @@ watch(preview, () => {
 });
 
 watch(
-  () => [
-    printer.isConnected,
-    printer.effectiveMedia,
-    designer.document,
-  ] as const,
+  () => [printer.isConnected, printer.effectiveMedia, designer.document] as const,
   () => {
     if (printer.isConnected) scheduleRefresh();
   },

@@ -40,16 +40,14 @@ export function useToast(): {
   }
 
   function dismiss(id: number): void {
-    toasts.value = toasts.value.filter((toast) => toast.id !== id);
+    toasts.value = toasts.value.filter(toast => toast.id !== id);
   }
 
   function update(
     id: number,
     patch: { message?: string; kind?: ToastKind; sticky?: boolean },
   ): void {
-    toasts.value = toasts.value.map((toast) =>
-      toast.id === id ? { ...toast, ...patch } : toast,
-    );
+    toasts.value = toasts.value.map(toast => (toast.id === id ? { ...toast, ...patch } : toast));
   }
 
   return { toasts, show, dismiss, update };

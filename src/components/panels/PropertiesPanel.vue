@@ -29,7 +29,7 @@ const designer = useDesignerStore();
 const selected = computed<LabelObject | undefined>(() => {
   const id = designer.selection[0];
   if (!id) return undefined;
-  return designer.document.objects.find((o) => o.id === id);
+  return designer.document.objects.find(o => o.id === id);
 });
 </script>
 

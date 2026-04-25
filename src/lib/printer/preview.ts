@@ -47,7 +47,11 @@ function parseColor(css: string): [number, number, number] {
       ];
     }
     if (hex.length === 6) {
-      return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+      return [
+        parseInt(hex.slice(0, 2), 16),
+        parseInt(hex.slice(2, 4), 16),
+        parseInt(hex.slice(4, 6), 16),
+      ];
     }
   }
   // Fallback to black for unrecognised colour strings — preview still legible.

@@ -28,14 +28,16 @@ interface MockAdapter extends PrinterAdapter {
   close: ReturnType<typeof vi.fn>;
 }
 
-function makeAdapter(opts: {
-  family?: string;
-  model?: string;
-  vid?: number;
-  pid?: number;
-  status?: Partial<PrinterStatus>;
-  preview?: PreviewResult;
-} = {}): MockAdapter {
+function makeAdapter(
+  opts: {
+    family?: string;
+    model?: string;
+    vid?: number;
+    pid?: number;
+    status?: Partial<PrinterStatus>;
+    preview?: PreviewResult;
+  } = {},
+): MockAdapter {
   const adapter: MockAdapter = {
     family: opts.family ?? 'brother-ql',
     model: opts.model ?? 'QL-820NWB',
@@ -47,20 +49,25 @@ function makeAdapter(opts: {
       pid: opts.pid ?? 0x20a7,
       transports: ['usb', 'webusb'],
     },
-    getStatus: vi.fn(async (): Promise<PrinterStatus> => ({
-      ready: true,
-      mediaLoaded: true,
-      detectedMedia: opts.status?.detectedMedia,
-      errors: [],
-      rawBytes: new Uint8Array(),
-      ...opts.status,
-    })),
+    getStatus: vi.fn(
+      async (): Promise<PrinterStatus> => ({
+        ready: true,
+        mediaLoaded: true,
+        detectedMedia: opts.status?.detectedMedia,
+        errors: [],
+        rawBytes: new Uint8Array(),
+        ...opts.status,
+      }),
+    ),
     print: vi.fn(async () => undefined),
-    createPreview: vi.fn(async () => opts.preview ?? {
-      planes: [],
-      media: makeMedia(),
-      assumed: false,
-    }),
+    createPreview: vi.fn(
+      async () =>
+        opts.preview ?? {
+          planes: [],
+          media: makeMedia(),
+          assumed: false,
+        },
+    ),
     close: vi.fn(async () => undefined),
   } as unknown as MockAdapter;
   return adapter;

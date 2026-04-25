@@ -1,11 +1,5 @@
 <template>
-  <button
-    class="status"
-    type="button"
-    :title="label"
-    :aria-expanded="open"
-    aria-haspopup="dialog"
-  >
+  <button class="status" type="button" :title="label" :aria-expanded="open" aria-haspopup="dialog">
     <span class="status__dot" :class="`status__dot--${dotClass}`" aria-hidden="true" />
     <span class="status__label">{{ label }}</span>
   </button>

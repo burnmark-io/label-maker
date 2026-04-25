@@ -65,7 +65,10 @@ const emit = defineEmits<{
   (e: 'dragstart'): void;
   (e: 'dragmove', x: number, y: number): void;
   (e: 'dragend', x: number, y: number): void;
-  (e: 'transformend', patch: { x: number; y: number; width: number; height: number; rotation: number }): void;
+  (
+    e: 'transformend',
+    patch: { x: number; y: number; width: number; height: number; rotation: number },
+  ): void;
 }>();
 
 function onDragMove(x: number, y: number): void {
@@ -76,7 +79,13 @@ function onDragEnd(x: number, y: number): void {
   emit('dragend', x, y);
 }
 
-function onTransformEnd(patch: { x: number; y: number; width: number; height: number; rotation: number }): void {
+function onTransformEnd(patch: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+}): void {
   emit('transformend', patch);
 }
 </script>

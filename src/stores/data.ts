@@ -138,7 +138,7 @@ export const useDataStore = defineStore('data', () => {
 
   // When placeholders change (user edits the design), re-run auto-map
   // for any new ones. Existing manual choices are preserved.
-  watch(placeholders, (next) => {
+  watch(placeholders, next => {
     if (rows.value.length === 0) return;
     const auto = autoMapColumns(headers.value, next);
     const merged: Record<string, string> = { ...auto.mapping };

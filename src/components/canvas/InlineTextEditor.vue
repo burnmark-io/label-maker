@@ -32,7 +32,7 @@ const emit = defineEmits<{
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const value = ref(props.object.content);
 
-watch(value, (next) => {
+watch(value, next => {
   emit('update:content', next);
 });
 

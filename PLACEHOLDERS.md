@@ -31,4 +31,5 @@ Temporary values that need to be replaced before launch. Operator will fill thes
 | Sponsor texts (en) | written, marked cheeky |
 | Sponsor texts (nl) | rough draft, **needs human review** |
 | Dutch translations generally | best-effort, **needs human review** before launch |
+| Phase 8 additions (about/help/tour/locale toast) — Dutch | best-effort machine translation, **needs human review** |
 

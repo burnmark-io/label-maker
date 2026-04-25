@@ -40,6 +40,17 @@ are no-ops. The operator should `git remote add origin
 git@github.com:burnmark-io/label-maker.git` (once the repo exists)
 and push the local branch.
 
+## (soft) Android OTG scenario not verified
+
+Phase 9 (step 65) calls for testing the Android + USB-C OTG path
+(Chrome Android claims a connected printer through an OTG adapter).
+No Android device was attached during this session, so the path is
+unexercised. Code-wise the WebUSB flow is identical to desktop Chrome
+— the operator should physically validate before announcing Android
+support. Operator action: pair a QL-820NWB or a LabelWriter via OTG,
+load the deployed PWA in Chrome Android, and confirm
+connect → preview → print works.
+
 ## (soft) designer-core barcode path can't render in Chromium
 
 **Affected version:** `@burnmark-io/designer-core@0.1.0`

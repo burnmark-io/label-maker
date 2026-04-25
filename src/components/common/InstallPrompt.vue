@@ -3,10 +3,18 @@
     <div v-if="visible" class="install-prompt" role="dialog" :aria-label="t('install.title')">
       <span class="install-prompt__message">{{ t('install.message') }}</span>
       <div class="install-prompt__actions">
-        <button type="button" class="install-prompt__btn install-prompt__btn--ghost" @click="dismiss">
+        <button
+          type="button"
+          class="install-prompt__btn install-prompt__btn--ghost"
+          @click="dismiss"
+        >
           {{ t('install.later') }}
         </button>
-        <button type="button" class="install-prompt__btn install-prompt__btn--primary" @click="install">
+        <button
+          type="button"
+          class="install-prompt__btn install-prompt__btn--primary"
+          @click="install"
+        >
           {{ t('install.install') }}
         </button>
       </div>
@@ -80,7 +88,8 @@ const { visible, install, dismiss } = useInstallPrompt();
 
 .install-prompt-enter-active,
 .install-prompt-leave-active {
-  transition: opacity var(--duration-fast) var(--easing),
+  transition:
+    opacity var(--duration-fast) var(--easing),
     transform var(--duration-fast) var(--easing);
 }
 

@@ -36,11 +36,11 @@ async function parseExcel(file: File): Promise<CsvData> {
     raw: false,
   });
   if (aoa.length === 0) return { headers: [], rows: [], rowCount: 0 };
-  const headers = (aoa[0] as unknown[]).map((cell) => String(cell ?? '').trim());
+  const headers = (aoa[0] as unknown[]).map(cell => String(cell ?? '').trim());
   const rows: Record<string, string>[] = [];
   for (let r = 1; r < aoa.length; r += 1) {
     const row = aoa[r] as unknown[];
-    if (!row || row.every((cell) => cell === '' || cell === null || cell === undefined)) continue;
+    if (!row || row.every(cell => cell === '' || cell === null || cell === undefined)) continue;
     const record: Record<string, string> = {};
     let hasContent = false;
     for (let c = 0; c < headers.length; c += 1) {

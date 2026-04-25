@@ -70,7 +70,7 @@ export function useCanvasViewport(): ViewportState {
   const zoom = ref(fitZoom.value);
   let userTouchedZoom = false;
 
-  watch(fitZoom, (next) => {
+  watch(fitZoom, next => {
     if (!userTouchedZoom) zoom.value = next;
   });
 
@@ -89,7 +89,7 @@ export function useCanvasViewport(): ViewportState {
     const rect = el.getBoundingClientRect();
     width.value = rect.width;
     height.value = rect.height;
-    useResizeObserver(el, (entries) => {
+    useResizeObserver(el, entries => {
       const entry = entries[0];
       if (!entry) return;
       const box = entry.contentRect;

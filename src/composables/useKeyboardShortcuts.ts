@@ -21,11 +21,11 @@ export function useKeyboardShortcuts(): void {
 
   function selectedObjects(): LabelObject[] {
     const ids = designer.selection;
-    return designer.document.objects.filter((o) => ids.includes(o.id));
+    return designer.document.objects.filter(o => ids.includes(o.id));
   }
 
   function copySelection(): void {
-    const items = selectedObjects().map((o) => {
+    const items = selectedObjects().map(o => {
       const { id: _id, ...rest } = o;
       void _id;
       return rest as LabelObjectInput;
@@ -55,7 +55,7 @@ export function useKeyboardShortcuts(): void {
   }
 
   function selectAll(): void {
-    designer.select(designer.document.objects.filter((o) => o.visible).map((o) => o.id));
+    designer.select(designer.document.objects.filter(o => o.visible).map(o => o.id));
   }
 
   function reorderSelection(direction: 'up' | 'down' | 'top' | 'bottom'): void {
@@ -72,7 +72,10 @@ export function useKeyboardShortcuts(): void {
       designer.undo();
       return;
     }
-    if (cmd && (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))) {
+    if (
+      cmd &&
+      (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))
+    ) {
       event.preventDefault();
       designer.redo();
       return;

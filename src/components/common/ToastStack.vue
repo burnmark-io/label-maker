@@ -93,7 +93,8 @@ const { toasts, dismiss } = useToast();
 
 .toast-enter-active,
 .toast-leave-active {
-  transition: opacity var(--duration-fast) var(--easing),
+  transition:
+    opacity var(--duration-fast) var(--easing),
     transform var(--duration-fast) var(--easing);
 }
 

@@ -13,7 +13,14 @@
           @click="onBasic(basic.id)"
         >
           <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
-            <path :d="basic.iconPath" :fill="basic.fillIcon ? 'currentColor' : 'none'" :stroke="basic.fillIcon ? 'none' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path
+              :d="basic.iconPath"
+              :fill="basic.fillIcon ? 'currentColor' : 'none'"
+              :stroke="basic.fillIcon ? 'none' : 'currentColor'"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
         </button>
       </div>
@@ -102,10 +109,8 @@ const basicShapes: BasicTile[] = [
   },
 ];
 
-const decorativeShapes = computed(() =>
-  SHAPE_REGISTRY.filter((s) => s.category === 'decorative'),
-);
-const borderShapes = computed(() => SHAPE_REGISTRY.filter((s) => s.category === 'border'));
+const decorativeShapes = computed(() => SHAPE_REGISTRY.filter(s => s.category === 'decorative'));
+const borderShapes = computed(() => SHAPE_REGISTRY.filter(s => s.category === 'border'));
 
 function nextDropPoint(): { x: number; y: number } {
   const c = designer.document.canvas;
@@ -160,7 +165,8 @@ function onDocumentClick(event: MouseEvent): void {
   if (event.target instanceof Node && root.contains(event.target)) return;
   // Clicks on the trigger button are handled by the parent (which toggles
   // open state). We dismiss for any other outside click.
-  if (event.target instanceof HTMLElement && event.target.closest('[data-shape-library-trigger]')) return;
+  if (event.target instanceof HTMLElement && event.target.closest('[data-shape-library-trigger]'))
+    return;
   emit('close');
 }
 
@@ -229,7 +235,10 @@ onBeforeUnmount(() => {
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
 }
 
 .shape-library__tile:hover:not(:disabled) {

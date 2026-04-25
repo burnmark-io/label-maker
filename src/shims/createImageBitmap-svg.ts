@@ -29,7 +29,7 @@ export function patchCreateImageBitmap(): void {
   }
   const native = globalThis.createImageBitmap.bind(globalThis);
 
-  globalThis.createImageBitmap = (async function patched(
+  globalThis.createImageBitmap = async function patched(
     source: ImageBitmapSource,
     sxOrOptions?: number | ImageBitmapOptions,
     sy?: number,
@@ -47,17 +47,14 @@ export function patchCreateImageBitmap(): void {
       return native(source, sxOrOptions);
     }
     return native(source);
-  }) as typeof globalThis.createImageBitmap;
+  } as typeof globalThis.createImageBitmap;
 }
 
 function isSvgBlob(source: ImageBitmapSource): source is Blob {
   return typeof Blob !== 'undefined' && source instanceof Blob && source.type === 'image/svg+xml';
 }
 
-async function decodeSvgBlob(
-  blob: Blob,
-  native: typeof createImageBitmap,
-): Promise<ImageBitmap> {
+async function decodeSvgBlob(blob: Blob, native: typeof createImageBitmap): Promise<ImageBitmap> {
   const text = await blob.text();
   const sized = ensureSvgDimensions(text);
   const url = URL.createObjectURL(
@@ -107,8 +104,11 @@ export function ensureSvgDimensions(svg: string): {
   let viewBoxH = 0;
   const vb = tag.match(/\sviewBox\s*=\s*"([^"]+)"/)?.[1];
   if (vb) {
-    const parts = vb.trim().split(/[\s,]+/).map((s) => parseFloat(s));
-    if (parts.length === 4 && parts.every((n) => Number.isFinite(n))) {
+    const parts = vb
+      .trim()
+      .split(/[\s,]+/)
+      .map(s => parseFloat(s));
+    if (parts.length === 4 && parts.every(n => Number.isFinite(n))) {
       viewBoxW = parts[2]!;
       viewBoxH = parts[3]!;
     }
@@ -128,8 +128,7 @@ export function ensureSvgDimensions(svg: string): {
   const closingChar = tag.endsWith('/>') ? '/>' : '>';
   const tagBody = tag.slice(0, tag.length - closingChar.length);
   const inject =
-    (explicitWidth ? '' : ` width="${width}"`) +
-    (explicitHeight ? '' : ` height="${height}"`);
+    (explicitWidth ? '' : ` width="${width}"`) + (explicitHeight ? '' : ` height="${height}"`);
   const newTag = `${tagBody}${inject}${closingChar}`;
   const text = svg.slice(0, tagStart) + newTag + svg.slice(tagEnd + 1);
   return { text, width, height };

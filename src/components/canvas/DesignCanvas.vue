@@ -37,12 +37,12 @@
           :object="obj"
           :selected="designer.selection.includes(obj.id)"
           :draggable="true"
-          @select="(event) => onObjectSelect(obj.id, event)"
+          @select="event => onObjectSelect(obj.id, event)"
           @edit="onObjectEdit(obj.id)"
           @dragstart="onObjectDragStart(obj.id)"
           @dragmove="(x, y) => onObjectDragMove(obj.id, x, y)"
           @dragend="(x, y) => onObjectDragEnd(obj.id, x, y)"
-          @transformend="(patch) => onObjectTransformEnd(obj.id, patch)"
+          @transformend="patch => onObjectTransformEnd(obj.id, patch)"
         />
       </VLayer>
 
@@ -131,16 +131,21 @@ const stageConfig = computed(() => ({
   scaleY: viewport.zoom.value,
 }));
 
-const visibleSelection = computed(() => designer.selection.filter((id) => !editingTextId.value || id !== editingTextId.value));
+const visibleSelection = computed(() =>
+  designer.selection.filter(id => !editingTextId.value || id !== editingTextId.value),
+);
 
 const editingTextId = ref<string | null>(null);
 const editingText = computed<TextObject | null>(() => {
   if (!editingTextId.value) return null;
-  const found = document.value.objects.find((o) => o.id === editingTextId.value);
+  const found = document.value.objects.find(o => o.id === editingTextId.value);
   return found && isTextObject(found) ? found : null;
 });
 
-const dragGuides = ref<{ vertical: number[]; horizontal: number[] }>({ vertical: [], horizontal: [] });
+const dragGuides = ref<{ vertical: number[]; horizontal: number[] }>({
+  vertical: [],
+  horizontal: [],
+});
 
 onMounted(async () => {
   if (containerRef.value) viewport.bindContainer(containerRef.value);
@@ -154,7 +159,10 @@ onBeforeUnmount(() => {
 
 const zoomPercent = computed(() => Math.round(viewport.zoom.value * 100));
 
-function onStageClick(event: { target?: { name?: () => string }; evt?: { shiftKey?: boolean } }): void {
+function onStageClick(event: {
+  target?: { name?: () => string };
+  evt?: { shiftKey?: boolean };
+}): void {
   // Click on empty area (the stage itself or paper rect) deselects.
   const target = event.target;
   if (!target) return;
@@ -181,7 +189,7 @@ function onObjectSelect(id: string, event: unknown): void {
   const native = (event as { evt?: MouseEvent }).evt;
   if (native?.shiftKey) {
     if (designer.selection.includes(id)) {
-      designer.select(designer.selection.filter((x) => x !== id));
+      designer.select(designer.selection.filter(x => x !== id));
     } else {
       designer.select([...designer.selection, id]);
     }
@@ -191,7 +199,7 @@ function onObjectSelect(id: string, event: unknown): void {
 }
 
 function onObjectEdit(id: string): void {
-  const obj = document.value.objects.find((o) => o.id === id);
+  const obj = document.value.objects.find(o => o.id === id);
   if (!obj || !isTextObject(obj)) return;
   designer.select([id]);
   editingTextId.value = id;
@@ -215,13 +223,13 @@ let dragOriginalPositions = new Map<string, { x: number; y: number }>();
 function onObjectDragStart(_id: string): void {
   dragOriginalPositions = new Map();
   for (const id of designer.selection) {
-    const obj = document.value.objects.find((o) => o.id === id);
+    const obj = document.value.objects.find(o => o.id === id);
     if (obj) dragOriginalPositions.set(id, { x: obj.x, y: obj.y });
   }
 }
 
 function onObjectDragMove(id: string, x: number, y: number): void {
-  const obj = document.value.objects.find((o) => o.id === id);
+  const obj = document.value.objects.find(o => o.id === id);
   if (!obj) return;
   const others = document.value.objects;
   const snap = computeSnap({
@@ -242,7 +250,7 @@ function onObjectDragMove(id: string, x: number, y: number): void {
 
 function onObjectDragEnd(id: string, x: number, y: number): void {
   dragGuides.value = { vertical: [], horizontal: [] };
-  const obj = document.value.objects.find((o) => o.id === id);
+  const obj = document.value.objects.find(o => o.id === id);
   if (!obj) return;
   const snap = computeSnap({
     draggingId: id,

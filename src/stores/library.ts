@@ -48,15 +48,14 @@ export const useLibraryStore = defineStore('library', () => {
     doc: LabelDocument,
     extras: { description?: string; thumbnail?: string } = {},
   ): Promise<LibraryEntry> {
-    const exists = entries.value.some((e) => e.id === doc.id);
+    const exists = entries.value.some(e => e.id === doc.id);
     if (!exists && entries.value.length >= MAX_SLOTS) {
       throw new LibraryFullError();
     }
     const summary = await saveToDb(doc, extras);
-    entries.value = [
-      summary,
-      ...entries.value.filter((e) => e.id !== summary.id),
-    ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    entries.value = [summary, ...entries.value.filter(e => e.id !== summary.id)].sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt),
+    );
     return summary;
   }
 
@@ -71,7 +70,7 @@ export const useLibraryStore = defineStore('library', () => {
 
   async function deleteDesign(id: string): Promise<void> {
     await removeFromDb(id);
-    entries.value = entries.value.filter((e) => e.id !== id);
+    entries.value = entries.value.filter(e => e.id !== id);
     if (lastOpenedId.value === id) {
       lastOpenedId.value = null;
       await deleteMeta(LAST_OPENED_KEY);
@@ -85,7 +84,7 @@ export const useLibraryStore = defineStore('library', () => {
     if (description !== undefined) doc.description = description;
     doc.updatedAt = new Date().toISOString();
     await saveToDb(doc, { description });
-    entries.value = entries.value.map((e) =>
+    entries.value = entries.value.map(e =>
       e.id === id ? { ...e, name, description, updatedAt: doc.updatedAt } : e,
     );
   }

@@ -26,7 +26,7 @@ describe('printer registry', () => {
 
   it('union of USB filters covers every family', () => {
     const filters = getAllUsbFilters();
-    const vids = new Set(filters.map((f) => f.vendorId));
+    const vids = new Set(filters.map(f => f.vendorId));
     expect(vids.has(0x04f9)).toBe(true); // Brother
     expect(vids.has(0x0922)).toBe(true); // Dymo
   });
