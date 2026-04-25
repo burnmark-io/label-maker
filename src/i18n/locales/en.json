@@ -1,0 +1,134 @@
+{
+  "app": {
+    "name": "burnmark",
+    "tagline": "Design beautiful labels"
+  },
+  "topbar": {
+    "help": "Help",
+    "library": "Library",
+    "save": "Save",
+    "print": "Print",
+    "export": "Export",
+    "share": "Share",
+    "undo": "Undo",
+    "redo": "Redo"
+  },
+  "printer": {
+    "disconnected": "No printer — click to connect",
+    "paired": "{model} — plug in to reconnect",
+    "connecting": "Connecting…",
+    "connected": "{model}",
+    "connectedWithMedia": "{model} — {media} loaded",
+    "connectedSelectMedia": "{model} — select your labels",
+    "error": "{model} — connection lost",
+    "connect": "Connect printer"
+  },
+  "toolbar": {
+    "addText": "Add text",
+    "addImage": "Add image",
+    "addBarcode": "Add barcode",
+    "addShape": "Add shape",
+    "shapeRectangle": "Rectangle",
+    "shapeCircle": "Circle",
+    "shapeLine": "Line"
+  },
+  "panel": {
+    "objects": "Objects",
+    "properties": "Properties",
+    "data": "Data",
+    "noSelection": "Select an object to edit its properties",
+    "emptyObjects": "Add a text, image, barcode or shape to get started",
+    "objectVisible": "Visible",
+    "objectHidden": "Hidden",
+    "objectLocked": "Locked",
+    "objectUnlocked": "Unlocked",
+    "untitled": "Untitled"
+  },
+  "properties": {
+    "name": "Name",
+    "position": "Position",
+    "size": "Size",
+    "x": "X",
+    "y": "Y",
+    "width": "Width",
+    "height": "Height",
+    "rotation": "Rotation",
+    "opacity": "Opacity",
+    "color": "Colour",
+    "text": {
+      "content": "Content",
+      "fontFamily": "Font",
+      "fontSize": "Size",
+      "bold": "Bold",
+      "italic": "Italic",
+      "alignLeft": "Align left",
+      "alignCenter": "Align centre",
+      "alignRight": "Align right",
+      "letterSpacing": "Letter spacing",
+      "lineHeight": "Line height",
+      "invert": "Invert",
+      "wrap": "Wrap",
+      "autoHeight": "Auto height"
+    },
+    "image": {
+      "fit": "Fit",
+      "fitContain": "Contain",
+      "fitCover": "Cover",
+      "fitFill": "Fill",
+      "fitNone": "None",
+      "threshold": "Threshold",
+      "dither": "Dither",
+      "invert": "Invert",
+      "replace": "Replace image"
+    },
+    "barcode": {
+      "format": "Format",
+      "data": "Data",
+      "scale": "Scale",
+      "includeText": "Show text",
+      "errorCorrection": "Error correction",
+      "ecLow": "Low",
+      "ecMedium": "Medium",
+      "ecQuartile": "Quartile",
+      "ecHigh": "High"
+    },
+    "shape": {
+      "type": "Shape",
+      "fill": "Fill",
+      "strokeWidth": "Stroke width",
+      "cornerRadius": "Corner radius",
+      "invert": "Invert"
+    }
+  },
+  "canvas": {
+    "ariaLabel": "Label design canvas",
+    "feedDirection": "feed direction",
+    "cutLine": "cut here",
+    "zoom": "{percent}%"
+  },
+  "footer": {
+    "about": "About",
+    "help": "Help",
+    "github": "GitHub",
+    "sponsorTexts": [
+      "Print labels, not money · Buy me some labels ☕",
+      "This label printer won't feed itself 🏷️",
+      "Fuelled by mass caffeine, erm, label runs ☕",
+      "Help keep the print head warm 🔥",
+      "Labels are free, label rolls aren't 🏷️",
+      "Powered by mass caffeine and mass labels ☕",
+      "Every label printed is a label earned 🏷️",
+      "Supporting open source, one label at a time 🏷️"
+    ]
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "delete": "Delete",
+    "rename": "Rename",
+    "duplicate": "Duplicate",
+    "save": "Save",
+    "loading": "Loading…"
+  }
+}

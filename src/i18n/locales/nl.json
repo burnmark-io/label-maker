@@ -1,0 +1,134 @@
+{
+  "app": {
+    "name": "burnmark",
+    "tagline": "Ontwerp mooie labels"
+  },
+  "topbar": {
+    "help": "Help",
+    "library": "Bibliotheek",
+    "save": "Opslaan",
+    "print": "Printen",
+    "export": "Exporteren",
+    "share": "Delen",
+    "undo": "Ongedaan maken",
+    "redo": "Opnieuw"
+  },
+  "printer": {
+    "disconnected": "Geen printer — klik om te verbinden",
+    "paired": "{model} — sluit aan om opnieuw te verbinden",
+    "connecting": "Verbinden…",
+    "connected": "{model}",
+    "connectedWithMedia": "{model} — {media} geladen",
+    "connectedSelectMedia": "{model} — kies je labels",
+    "error": "{model} — verbinding verbroken",
+    "connect": "Printer verbinden"
+  },
+  "toolbar": {
+    "addText": "Tekst toevoegen",
+    "addImage": "Afbeelding toevoegen",
+    "addBarcode": "Barcode toevoegen",
+    "addShape": "Vorm toevoegen",
+    "shapeRectangle": "Rechthoek",
+    "shapeCircle": "Cirkel",
+    "shapeLine": "Lijn"
+  },
+  "panel": {
+    "objects": "Objecten",
+    "properties": "Eigenschappen",
+    "data": "Gegevens",
+    "noSelection": "Selecteer een object om de eigenschappen te bewerken",
+    "emptyObjects": "Voeg tekst, een afbeelding, barcode of vorm toe om te beginnen",
+    "objectVisible": "Zichtbaar",
+    "objectHidden": "Verborgen",
+    "objectLocked": "Vergrendeld",
+    "objectUnlocked": "Ontgrendeld",
+    "untitled": "Naamloos"
+  },
+  "properties": {
+    "name": "Naam",
+    "position": "Positie",
+    "size": "Grootte",
+    "x": "X",
+    "y": "Y",
+    "width": "Breedte",
+    "height": "Hoogte",
+    "rotation": "Rotatie",
+    "opacity": "Doorzichtigheid",
+    "color": "Kleur",
+    "text": {
+      "content": "Inhoud",
+      "fontFamily": "Lettertype",
+      "fontSize": "Grootte",
+      "bold": "Vet",
+      "italic": "Cursief",
+      "alignLeft": "Links uitlijnen",
+      "alignCenter": "Centreren",
+      "alignRight": "Rechts uitlijnen",
+      "letterSpacing": "Letterspatiëring",
+      "lineHeight": "Regelhoogte",
+      "invert": "Inverteren",
+      "wrap": "Afbreken",
+      "autoHeight": "Automatische hoogte"
+    },
+    "image": {
+      "fit": "Passen",
+      "fitContain": "Bevatten",
+      "fitCover": "Bedekken",
+      "fitFill": "Vullen",
+      "fitNone": "Geen",
+      "threshold": "Drempel",
+      "dither": "Dithering",
+      "invert": "Inverteren",
+      "replace": "Afbeelding vervangen"
+    },
+    "barcode": {
+      "format": "Formaat",
+      "data": "Gegevens",
+      "scale": "Schaal",
+      "includeText": "Tekst tonen",
+      "errorCorrection": "Foutcorrectie",
+      "ecLow": "Laag",
+      "ecMedium": "Gemiddeld",
+      "ecQuartile": "Kwart",
+      "ecHigh": "Hoog"
+    },
+    "shape": {
+      "type": "Vorm",
+      "fill": "Vulling",
+      "strokeWidth": "Lijndikte",
+      "cornerRadius": "Hoekstraal",
+      "invert": "Inverteren"
+    }
+  },
+  "canvas": {
+    "ariaLabel": "Label ontwerp canvas",
+    "feedDirection": "papierrichting",
+    "cutLine": "hier afsnijden",
+    "zoom": "{percent}%"
+  },
+  "footer": {
+    "about": "Over",
+    "help": "Help",
+    "github": "GitHub",
+    "sponsorTexts": [
+      "Print labels, geen geld · Trakteer me op labels ☕",
+      "Deze printer voedt zichzelf niet 🏷️",
+      "Op koffie en label-runs ☕",
+      "Houd de printkop warm 🔥",
+      "Labels zijn gratis, rollen niet 🏷️",
+      "Gevoed door koffie en labels ☕",
+      "Elk geprint label is winst 🏷️",
+      "Open source, label voor label 🏷️"
+    ]
+  },
+  "common": {
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "close": "Sluiten",
+    "delete": "Verwijderen",
+    "rename": "Hernoemen",
+    "duplicate": "Dupliceren",
+    "save": "Opslaan",
+    "loading": "Laden…"
+  }
+}
