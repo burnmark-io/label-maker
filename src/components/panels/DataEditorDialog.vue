@@ -33,7 +33,13 @@
               <tr>
                 <th class="editor__th editor__th--idx" scope="col">#</th>
                 <th v-for="header in data.headers" :key="header" class="editor__th" scope="col">
-                  <div class="editor__col-name">{{ header }}</div>
+                  <EditableText
+                    class="editor__col-name"
+                    :value="header"
+                    :edit-label="t('data.editor.renameColumn')"
+                    :auto-edit="header === autoEditHeader"
+                    @update="onRenameColumn(header, $event)"
+                  />
                   <div class="editor__col-mapping">
                     <select
                       :value="placeholderForColumn(header)"
@@ -121,7 +127,7 @@
         {{ t('data.editor.addRow') }}
       </button>
       <button v-if="canAddColumn" type="button" class="btn-ghost" @click="onAddColumn">
-        {{ t('data.editor.addColumn') }}
+        + {{ t('data.editor.addColumn') }}
       </button>
       <span class="editor__footer-spacer" />
       <button type="button" class="btn-primary" @click="onClose">
@@ -132,10 +138,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Modal from '@/components/common/Modal.vue';
 import LimitBanner from '@/components/common/LimitBanner.vue';
+import EditableText from '@/components/common/EditableText.vue';
 import DatasetSwitcher from './DatasetSwitcher.vue';
 import { useDataStore } from '@/stores/data';
 
@@ -180,10 +187,25 @@ function onCellInput(rowIndex: number, header: string, event: Event): void {
   data.updateActiveRow(rowIndex, header, value);
 }
 
+// Header to open into edit-mode immediately. Set by `onAddColumn` so a
+// freshly-created `column_N` header focuses for inline rename without an
+// extra click; cleared after one tick to avoid re-triggering on
+// subsequent renders.
+const autoEditHeader = ref<string | null>(null);
+
 function onAddColumn(): void {
-  const proposed = window.prompt(t('data.editor.addColumnPrompt'), '');
-  if (proposed == null) return;
-  data.addColumnToActive(proposed.trim() || undefined);
+  const created = data.addColumnToActive();
+  if (!created) return;
+  autoEditHeader.value = created;
+  // Reset the trigger after the EditableText has picked it up so we
+  // don't re-open the input on the next reactive update.
+  setTimeout(() => {
+    if (autoEditHeader.value === created) autoEditHeader.value = null;
+  }, 0);
+}
+
+function onRenameColumn(oldHeader: string, next: string): void {
+  data.renameColumnInActive(oldHeader, next);
 }
 
 function onClose(): void {

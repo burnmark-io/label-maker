@@ -342,6 +342,28 @@ describe('data store — row-level mutators', () => {
     expect(data.headers).toEqual(['name', 'column_2']);
   });
 
+  it('renameColumnInActive updates headers, row keys, and the persisted mapping', () => {
+    seedManual(['Name'], [{ Name: 'Alice' }, { Name: 'Bob' }]);
+    const data = useDataStore();
+    // Establish a mapping pointing at the old header.
+    data.setColumnFor('name', 'Name');
+    expect(data.renameColumnInActive('Name', 'Voornaam')).toBe(true);
+    expect(data.headers).toEqual(['Voornaam']);
+    expect(data.rows).toEqual([{ Voornaam: 'Alice' }, { Voornaam: 'Bob' }]);
+    // Mapping should now point at the new header.
+    expect(data.mapping).toEqual({ name: 'Voornaam' });
+  });
+
+  it('renameColumnInActive refuses empty, identical, and conflicting names', () => {
+    seedManual(['name', 'city']);
+    const data = useDataStore();
+    expect(data.renameColumnInActive('name', '')).toBe(false);
+    expect(data.renameColumnInActive('name', 'name')).toBe(false);
+    expect(data.renameColumnInActive('name', 'city')).toBe(false);
+    expect(data.renameColumnInActive('missing', 'whatever')).toBe(false);
+    expect(data.headers).toEqual(['name', 'city']);
+  });
+
   it('duplicateDataset creates an independent copy', () => {
     seedManual(['name'], [{ name: 'A' }]);
     const data = useDataStore();

@@ -90,7 +90,14 @@ export const useDataStore = defineStore('data', () => {
   /** Bumped on mapping mutations so `currentVariables` recomputes. */
   const mappingVersion = ref(0);
 
-  const placeholders = computed<string[]>(() => designer.getPlaceholders());
+  // `LabelDesigner.getPlaceholders()` reads its internal `this.doc` directly
+  // — that field isn't a Vue ref, so a naked computed here would never
+  // re-run when the user edits the design. Touch the reactive `document`
+  // ShallowRef the composable maintains so this recomputes on every change.
+  const placeholders = computed<string[]>(() => {
+    void designer.document;
+    return designer.getPlaceholders();
+  });
 
   const activeDataset = computed<StoredDataset | null>(() => {
     const id = prefs.activeDatasetId;
@@ -203,6 +210,17 @@ export const useDataStore = defineStore('data', () => {
   function touch(ds: StoredDataset): void {
     ds.updatedAt = nowIso();
     datasets.value = [...datasets.value].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  /**
+   * Returns the dataset that the next `createDataset` call would evict,
+   * or `null` if no eviction would happen. Lets callers run their own
+   * (potentially async) confirm before calling `createDataset` instead
+   * of routing async work through the synchronous `onEvictManual` hook.
+   */
+  function peekEvictionVictim(): StoredDataset | null {
+    if (datasets.value.length < DATASET_LIMIT) return null;
+    return pickEvictionVictim();
   }
 
   function pickEvictionVictim(): StoredDataset | null {
@@ -410,6 +428,53 @@ export const useDataStore = defineStore('data', () => {
     schedulePersist(ds.id);
   }
 
+  /**
+   * Rename a column header. Returns true on success, false if the new
+   * name is empty, equal to an existing column, or the old header is
+   * unknown. Rewrites every row so cell keys stay aligned, and rewrites
+   * the persisted mapping (D21) so any placeholder pointing at the old
+   * column now points at the new one.
+   */
+  function renameColumnInActive(oldHeader: string, nextRaw: string): boolean {
+    const ds = activeDataset.value;
+    if (!ds) return false;
+    const next = nextRaw.trim();
+    if (!next) return false;
+    if (oldHeader === next) return false;
+    if (!ds.headers.includes(oldHeader)) return false;
+    if (ds.headers.includes(next)) return false;
+
+    ds.headers = ds.headers.map(h => (h === oldHeader ? next : h));
+    for (const row of ds.rows) {
+      if (oldHeader in row) {
+        row[next] = row[oldHeader];
+        delete row[oldHeader];
+      }
+    }
+    // Rewrite the placeholder-set-keyed mapping so any placeholder that
+    // pointed at `oldHeader` now points at `next` (D21).
+    const phs = placeholders.value;
+    const key = templateKeyFromPlaceholders(phs);
+    if (key) {
+      const remembered = loadMapping(key) ?? {};
+      let changed = false;
+      const updated: Record<string, string> = { ...remembered };
+      for (const [ph, col] of Object.entries(updated)) {
+        if (col === oldHeader) {
+          updated[ph] = next;
+          changed = true;
+        }
+      }
+      if (changed) {
+        saveMapping(key, updated);
+        bumpMapping();
+      }
+    }
+    touch(ds);
+    schedulePersist(ds.id);
+    return true;
+  }
+
   function addColumnToActive(name?: string): string | null {
     const ds = activeDataset.value;
     if (!ds) return null;
@@ -577,6 +642,7 @@ export const useDataStore = defineStore('data', () => {
     renameDataset,
     duplicateDataset,
     removeDataset,
+    peekEvictionVictim,
     appendRowsToActive,
     addRowToActive,
     updateActiveRow,
@@ -584,6 +650,7 @@ export const useDataStore = defineStore('data', () => {
     duplicateActiveRow,
     moveActiveRow,
     addColumnToActive,
+    renameColumnInActive,
     clearActive,
     resetAll,
     hydrate,

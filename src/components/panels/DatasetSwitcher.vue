@@ -1,42 +1,53 @@
 <template>
   <div ref="rootRef" class="switcher" :class="{ 'switcher--open': open }">
-    <button
-      type="button"
-      class="switcher__trigger"
-      :aria-haspopup="true"
-      :aria-expanded="open"
-      :aria-label="t('data.switcher.menuLabel')"
-      @click="toggle"
-    >
-      <span class="switcher__name">{{ activeLabel }}</span>
-      <span class="switcher__count">{{ t('data.switcher.datasetCount', counters) }}</span>
-      <span class="switcher__chevron" aria-hidden="true">▾</span>
-    </button>
+    <div class="switcher__trigger-wrap">
+      <EditableText
+        v-if="data.activeDataset"
+        class="switcher__active-name"
+        :value="data.activeDataset.name"
+        :edit-label="t('data.switcher.rename')"
+        @update="onRenameActive"
+      />
+      <button
+        type="button"
+        class="switcher__trigger"
+        :aria-haspopup="true"
+        :aria-expanded="open"
+        :aria-label="t('data.switcher.menuLabel')"
+        @click="toggle"
+      >
+        <span v-if="!data.activeDataset" class="switcher__name">
+          {{ t('data.switcher.noActive') }}
+        </span>
+        <span class="switcher__count">{{ countSummary }}</span>
+        <span class="switcher__chevron" aria-hidden="true">▾</span>
+      </button>
+    </div>
 
     <div v-if="open" class="switcher__menu" role="menu">
       <ul v-if="data.datasets.length > 0" class="switcher__list">
         <li v-for="ds in data.datasets" :key="ds.id" class="switcher__item">
-          <button
-            type="button"
+          <div
             class="switcher__item-main"
             :class="{ 'switcher__item-main--active': ds.id === activeId }"
-            role="menuitemradio"
-            :aria-checked="ds.id === activeId"
-            @click="onPick(ds.id)"
           >
-            <span class="switcher__item-name">{{ ds.name }}</span>
-            <span class="switcher__item-meta">{{ rowsLabel(ds.rows.length) }}</span>
-          </button>
-          <div class="switcher__row-actions">
             <button
               type="button"
-              class="switcher__row-action"
-              :title="t('data.switcher.rename')"
-              :aria-label="t('data.switcher.rename')"
-              @click="onRename(ds.id, ds.name)"
+              class="switcher__item-pick"
+              role="menuitemradio"
+              :aria-checked="ds.id === activeId"
+              @click="onPick(ds.id)"
             >
-              ✎
+              <span class="switcher__item-meta">{{ rowsLabel(ds.rows.length) }}</span>
             </button>
+            <EditableText
+              class="switcher__item-name"
+              :value="ds.name"
+              :edit-label="t('data.switcher.rename')"
+              @update="data.renameDataset(ds.id, $event)"
+            />
+          </div>
+          <div class="switcher__row-actions">
             <button
               type="button"
               class="switcher__row-action"
@@ -81,6 +92,17 @@
         </button>
       </footer>
     </div>
+
+    <ConfirmDialog
+      :open="confirmer.open.value"
+      :title="confirmer.options.value?.title ?? ''"
+      :message="confirmer.options.value?.message ?? ''"
+      :confirm-label="confirmer.options.value?.confirmLabel ?? ''"
+      :cancel-label="confirmer.options.value?.cancelLabel ?? ''"
+      :tone="confirmer.options.value?.tone ?? 'primary'"
+      @confirm="confirmer.resolve"
+      @cancel="confirmer.cancel"
+    />
   </div>
 </template>
 
@@ -88,6 +110,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDataStore } from '@/stores/data';
+import EditableText from '@/components/common/EditableText.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
+import { useConfirm } from '@/composables/useConfirm';
 
 const emit = defineEmits<{
   (e: 'open-editor'): void;
@@ -98,21 +123,45 @@ const { t } = useI18n();
 const data = useDataStore();
 const open = ref(false);
 const rootRef = ref<HTMLElement | null>(null);
+const confirmer = useConfirm();
+
+const confirms = {
+  deleteDataset: (name: string) =>
+    confirmer.confirm({
+      title: t('data.switcher.delete'),
+      message: t('data.switcher.confirmDelete', { name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      tone: 'danger',
+    }),
+  resetAll: () =>
+    confirmer.confirm({
+      title: t('data.switcher.resetAll'),
+      message: t('data.switcher.confirmReset'),
+      confirmLabel: t('data.switcher.resetAll'),
+      cancelLabel: t('common.cancel'),
+      tone: 'danger',
+    }),
+  evictManual: (name: string) =>
+    confirmer.confirm({
+      title: t('data.switcher.confirmEvictManual', { name }),
+      confirmLabel: t('common.confirm'),
+      cancelLabel: t('common.cancel'),
+      tone: 'danger',
+    }),
+};
 
 const activeId = computed(() => data.activeDataset?.id ?? null);
 
-const activeLabel = computed(() => {
+const countSummary = computed(() => {
   const ds = data.activeDataset;
-  if (!ds) return t('data.switcher.noActive');
-  if (ds.rows.length === 0) return t('data.switcher.activeEmpty', { name: ds.name });
-  if (ds.rows.length === 1) return t('data.switcher.activeOne', { name: ds.name });
-  return t('data.switcher.active', { name: ds.name, count: ds.rows.length });
+  const counter = t('data.switcher.datasetCount', {
+    used: data.datasets.length,
+    total: data.DATASET_LIMIT,
+  });
+  if (!ds) return counter;
+  return `${rowsLabel(ds.rows.length)} · ${counter}`;
 });
-
-const counters = computed(() => ({
-  used: data.datasets.length,
-  total: data.DATASET_LIMIT,
-}));
 
 function rowsLabel(n: number): string {
   if (n === 0) return t('data.switcher.activeEmpty', { name: '' }).replace('· ', '');
@@ -133,23 +182,22 @@ function onPick(id: string): void {
   close();
 }
 
-function onRename(id: string, current: string): void {
-  const next = window.prompt(t('data.switcher.renamePrompt'), current);
-  if (next == null) return;
-  data.renameDataset(id, next);
+function onRenameActive(next: string): void {
+  if (!data.activeDataset) return;
+  data.renameDataset(data.activeDataset.id, next);
 }
 
-function onDuplicate(id: string): void {
-  const target = data.datasets.find(d => d.id === id);
-  data.duplicateDataset(id, {
-    onEvictManual: victim =>
-      window.confirm(t('data.switcher.confirmEvictManual', { name: victim.name })),
-  });
-  if (target) close();
+async function onDuplicate(id: string): Promise<void> {
+  const victim = data.peekEvictionVictim();
+  if (victim?.source === 'manual') {
+    if (!(await confirms.evictManual(victim.name))) return;
+  }
+  data.duplicateDataset(id);
+  close();
 }
 
-function onDelete(id: string, name: string): void {
-  if (!window.confirm(t('data.switcher.confirmDelete', { name }))) return;
+async function onDelete(id: string, name: string): Promise<void> {
+  if (!(await confirms.deleteDataset(name))) return;
   data.removeDataset(id);
 }
 
@@ -165,8 +213,8 @@ function onNewManual(): void {
   emit('open-editor');
 }
 
-function onResetAll(): void {
-  if (!window.confirm(t('data.switcher.confirmReset'))) return;
+async function onResetAll(): Promise<void> {
+  if (!(await confirms.resetAll())) return;
   data.resetAll();
   close();
 }

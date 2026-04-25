@@ -78,6 +78,13 @@ export interface UseCsvImportOptions {
    * creating a new dataset.
    */
   onAsk?: (ctx: ImportRouteContext) => Promise<ImportDecision> | ImportDecision;
+  /**
+   * Hook for confirming the eviction of a `source: 'manual'` dataset
+   * when the pool is at the cap. Returning `false` aborts the import
+   * with no rows touched. Without a hook, manual sets are evicted
+   * silently — match the production wiring (DataPanel) to avoid that.
+   */
+  onEvictManual?: (name: string) => Promise<boolean> | boolean;
 }
 
 export function useCsvImport(options: UseCsvImportOptions = {}): {
@@ -112,7 +119,18 @@ export function useCsvImport(options: UseCsvImportOptions = {}): {
       const active = data.activeDataset;
       const activeIsEmpty = !active || active.rows.length === 0;
 
+      // If creating a new dataset would evict a manual set, surface the
+      // confirm before the parser-side mutation. Append doesn't trigger
+      // eviction (we're modifying the active set in place).
+      async function confirmManualEvictionIfNeeded(): Promise<boolean> {
+        const victim = data.peekEvictionVictim();
+        if (!victim || victim.source !== 'manual') return true;
+        if (!options.onEvictManual) return true;
+        return await options.onEvictManual(victim.name);
+      }
+
       if (activeIsEmpty) {
+        if (!(await confirmManualEvictionIfNeeded())) return;
         const created = data.createDataset({
           source,
           fileName: file.name,
@@ -153,6 +171,7 @@ export function useCsvImport(options: UseCsvImportOptions = {}): {
         });
         return;
       }
+      if (!(await confirmManualEvictionIfNeeded())) return;
       const created = data.createDataset({
         source,
         fileName: file.name,

@@ -289,6 +289,7 @@
       "mappedTo": "→ {{{placeholder}}}",
       "unusedColumn": "(unused)",
       "remapColumn": "Map column to placeholder",
+      "renameColumn": "Rename column",
       "noPlaceholders": "No placeholders in the design yet.",
       "done": "Done",
       "addRowsHint": "Click \"Add row\" below to enter your first row."

@@ -289,6 +289,7 @@
       "mappedTo": "→ {{{placeholder}}}",
       "unusedColumn": "(niet gebruikt)",
       "remapColumn": "Koppel kolom aan variabele",
+      "renameColumn": "Kolom hernoemen",
       "noPlaceholders": "Nog geen variabelen in het ontwerp.",
       "done": "Klaar",
       "addRowsHint": "Klik op \"Rij toevoegen\" hieronder om je eerste rij in te voeren."
