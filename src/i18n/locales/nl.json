@@ -293,7 +293,11 @@
       "done": "Klaar",
       "addRowsHint": "Klik op \"Rij toevoegen\" hieronder om je eerste rij in te voeren."
     },
-    "rowsAddInline": "Rij toevoegen"
+    "rowsAddInline": "Rij toevoegen",
+    "template": {
+      "download": "Voorbeeld-CSV downloaden",
+      "disabledTooltip": "Voeg eerst een {{variabele}} toe aan je ontwerp."
+    }
   },
   "batch": {
     "title": "Batch printen",

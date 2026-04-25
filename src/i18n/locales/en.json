@@ -293,7 +293,11 @@
       "done": "Done",
       "addRowsHint": "Click \"Add row\" below to enter your first row."
     },
-    "rowsAddInline": "Add row"
+    "rowsAddInline": "Add row",
+    "template": {
+      "download": "Download template",
+      "disabledTooltip": "Add a {{placeholder}} to your design first."
+    }
   },
   "batch": {
     "title": "Batch print",

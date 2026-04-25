@@ -42,14 +42,29 @@
           @change="onFileChange"
         />
       </div>
-      <button
-        v-if="canBootstrapManual"
-        type="button"
-        class="data-panel__bootstrap"
-        @click="onBootstrapManual"
-      >
-        {{ t('data.import.manualBootstrap') }}
-      </button>
+      <div class="data-panel__import-extras">
+        <button
+          v-if="canBootstrapManual"
+          type="button"
+          class="data-panel__bootstrap"
+          @click="onBootstrapManual"
+        >
+          {{ t('data.import.manualBootstrap') }}
+        </button>
+        <button
+          type="button"
+          class="data-panel__template"
+          :disabled="data.placeholders.length === 0"
+          :title="
+            data.placeholders.length === 0
+              ? t('data.template.disabledTooltip')
+              : t('data.template.download')
+          "
+          @click="onDownloadTemplate"
+        >
+          ⬇ {{ t('data.template.download') }}
+        </button>
+      </div>
       <p v-if="importError" class="data-panel__error">{{ importError.message }}</p>
     </section>
 
@@ -145,12 +160,15 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDataStore } from '@/stores/data';
+import { useDesignerStore } from '@/stores/designer';
 import { usePreferencesStore } from '@/stores/preferences';
 import {
   useCsvImport,
   type ImportDecision,
   type ImportRouteContext,
 } from '@/composables/useCsvImport';
+import { buildCsvTemplate } from '@/services/csv-template';
+import { downloadBlob } from '@/services/file-download';
 import ColumnMapper from './ColumnMapper.vue';
 import DatasetSwitcher from './DatasetSwitcher.vue';
 import ImportChoiceDialog from './ImportChoiceDialog.vue';
@@ -163,6 +181,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const data = useDataStore();
+const designer = useDesignerStore();
 const prefs = usePreferencesStore();
 
 // Active route-context for the import dialog. Exposed as a small bag of
@@ -291,6 +310,12 @@ function onImportFromEditor(): void {
   editorOpen.value = false;
   fileInput.value?.click();
 }
+
+function onDownloadTemplate(): void {
+  if (data.placeholders.length === 0) return;
+  const { filename, csv } = buildCsvTemplate(data.placeholders, designer.document.name);
+  downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), filename);
+}
 </script>
 
 <style scoped>
@@ -386,6 +411,14 @@ function onImportFromEditor(): void {
   pointer-events: none;
 }
 
+.data-panel__import-extras {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .data-panel__bootstrap {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
@@ -397,6 +430,26 @@ function onImportFromEditor(): void {
 
 .data-panel__bootstrap:hover {
   color: var(--color-primary-text);
+}
+
+.data-panel__template {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px var(--space-2);
+  margin-left: auto;
+}
+
+.data-panel__template:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.data-panel__template:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .data-panel__row-card {

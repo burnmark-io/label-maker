@@ -202,6 +202,20 @@ pool (≤10 sets, ≤30 rows each, IndexedDB-persisted, cross-design).
 - [x] test
 - [x] build
 
+### Phase E: CSV template download
+- [x] E1. `services/csv-template.ts` — pure `buildCsvTemplate(placeholders, documentName)` returning `{ filename, csv }`. Headers are lowercased placeholders in order; the example row uses plausible defaults for known names (name → "Sample name", address → "123 Main St", postcode → "1234 AB", …) and a numbered `value N` fallback otherwise. Manual CSV escaping (no SheetJS) — quotes any cell containing `,` / `"` / newline, doubles embedded quotes
+- [x] E2. UI — "⬇ Download template" button next to the dropzone in `DataPanel`. Disabled when `placeholders.length === 0` with the `data.template.disabledTooltip` tooltip
+- [x] E3. Wire — clicks call `buildCsvTemplate(placeholders, designer.document.name)` → `Blob` → existing `downloadBlob` helper (which appends an off-DOM `<a download>` and revokes the object URL after the click)
+- [x] E4. i18n — `data.template.download` and `data.template.disabledTooltip` added in en + nl; nl flagged for review in `PLACEHOLDERS.md`
+- [x] E5. Tests — unit tests for `buildCsvTemplate` covering header order, plausible defaults, numbered fallback, sanitised filename. 93 tests pass overall (up from 88)
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
 ## Phase 9: Final
 - [x] 63. Verify all gate checks across phases
 - [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)
