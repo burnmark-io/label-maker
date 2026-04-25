@@ -1,15 +1,61 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { patchCreateImageBitmap } from '../createImageBitmap-svg';
+import { ensureSvgDimensions, patchCreateImageBitmap } from '../createImageBitmap-svg';
 
 const decode = vi.fn(async () => undefined);
 
 class FakeImage {
   src = '';
   decoding = '';
-  naturalWidth = 0;
-  naturalHeight = 0;
+  naturalWidth = 200;
+  naturalHeight = 200;
   decode = decode;
 }
+
+describe('ensureSvgDimensions', () => {
+  it('injects width and height from viewBox when both absent', () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"><rect/></svg>';
+    const result = ensureSvgDimensions(svg);
+    expect(result.width).toBe(200);
+    expect(result.height).toBe(100);
+    expect(result.text).toContain('width="200"');
+    expect(result.text).toContain('height="100"');
+    // ViewBox preserved.
+    expect(result.text).toContain('viewBox="0 0 200 100"');
+  });
+
+  it('leaves the SVG unchanged when both attributes are present', () => {
+    const svg = '<svg width="42" height="24" viewBox="0 0 200 100"></svg>';
+    const result = ensureSvgDimensions(svg);
+    expect(result.text).toBe(svg);
+    expect(result.width).toBe(42);
+    expect(result.height).toBe(24);
+  });
+
+  it('only injects the missing attribute', () => {
+    const svg = '<svg height="50" viewBox="0 0 200 100"></svg>';
+    const result = ensureSvgDimensions(svg);
+    expect(result.text).toContain('width="200"');
+    expect(result.text).toContain('height="50"');
+    expect(result.width).toBe(200);
+    expect(result.height).toBe(50);
+  });
+
+  it('handles self-closing svg tags', () => {
+    const svg = '<svg viewBox="0 0 10 20"/>';
+    const result = ensureSvgDimensions(svg);
+    expect(result.text).toContain('width="10"');
+    expect(result.text).toContain('height="20"');
+    expect(result.text).toMatch(/\/>\s*$/);
+  });
+
+  it('returns zero dimensions when there is no viewBox or attributes', () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>';
+    const result = ensureSvgDimensions(svg);
+    expect(result.width).toBe(0);
+    expect(result.height).toBe(0);
+    expect(result.text).toBe(svg);
+  });
+});
 
 describe('patchCreateImageBitmap', () => {
   let nativeMock: ReturnType<typeof vi.fn>;
@@ -19,8 +65,6 @@ describe('patchCreateImageBitmap', () => {
   let originalRevokeURL: typeof URL.revokeObjectURL;
 
   beforeEach(() => {
-    // jsdom's Blob lacks `.text()` — polyfill it via FileReader (which
-    // jsdom does have) so the shim's blob.text() call resolves.
     if (!('text' in Blob.prototype)) {
       (Blob.prototype as unknown as { text: () => Promise<string> }).text =
         function text(): Promise<string> {
@@ -56,30 +100,15 @@ describe('patchCreateImageBitmap', () => {
     URL.revokeObjectURL = originalRevokeURL;
   });
 
-  it('extracts dimensions from viewBox when width/height absent', async () => {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"><rect/></svg>';
+  it('passes the decoded HTMLImageElement (no resize) when natural dimensions are present', async () => {
+    const svg = '<svg viewBox="0 0 200 200"><rect/></svg>';
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     await globalThis.createImageBitmap(blob);
     expect(nativeMock).toHaveBeenCalledOnce();
     const args = nativeMock.mock.calls[0]!;
-    expect(args[1]).toEqual({ resizeWidth: 200, resizeHeight: 100 });
-  });
-
-  it('prefers explicit width/height over viewBox', async () => {
-    const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="42" height="24" viewBox="0 0 200 100"></svg>';
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    await globalThis.createImageBitmap(blob);
-    const args = nativeMock.mock.calls[0]!;
-    expect(args[1]).toEqual({ resizeWidth: 42, resizeHeight: 24 });
-  });
-
-  it('strips unit suffix from width/height', async () => {
-    const svg = '<svg width="100px" height="50px" viewBox="0 0 1 1"></svg>';
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    await globalThis.createImageBitmap(blob);
-    const args = nativeMock.mock.calls[0]!;
-    expect(args[1]).toEqual({ resizeWidth: 100, resizeHeight: 50 });
+    // First arg is the FakeImage instance, second is undefined (no resize options)
+    expect(args[0]).toBeInstanceOf(FakeImage);
+    expect(args[1]).toBeUndefined();
   });
 
   it('passes non-SVG sources straight through to the native implementation', async () => {
