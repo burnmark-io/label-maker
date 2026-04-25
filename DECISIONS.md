@@ -94,8 +94,38 @@ guide lines that triggered the snap. Optional grid snapping kicks in
 only when no other candidate matched. Threshold scales with zoom so
 "close enough to snap" feels right at any zoom level.
 
-## D11 — Web driver packages NOT yet imported
+## D11 — ADR-001 adopted: two-button output, all formats always
+
+`ADR-001_all_printers_are_equal.md` amends PLAN.md sections 14.3,
+14.6, 6, 18, and 11. Three pillars:
+
+1. **Output is two buttons near the label.** `[⎙ Print]` and `[💾 ▾]`,
+   floating below the label. No modal print dialog. The topbar is just
+   logo / printer status / help.
+2. **All save formats always available.** PDF, PNG, .label, .zip, and
+   "Print to sticker sheet" live under the save dropdown for every
+   user, regardless of whether a thermal printer is connected. No
+   feature gating.
+3. **Privacy is part of the product story.** Zero analytics, zero
+   tracking; first-visit banner combining privacy message + PWA
+   install CTA; about page section; data-panel privacy line when CSV
+   is loaded.
+
+Phase 2 impact (today): moved Print out of the topbar; added a
+`CanvasActions.vue` floating below the canvas with the Print and Save
+controls (placeholders — Print wires in Phase 4, Save dropdown in
+Phase 6). The save dropdown UI is in place with all options.
+
+Phases 4/6/7/8 will pick up the rest. Privacy banner is held for
+Phase 7 (PWA / first-visit polish) since it pairs with the install
+prompt in the same surface.
+
+## D12 — Web driver packages NOT yet imported
 
 Phase 2 ends without importing `@thermal-label/*-web` — the printer
 status badge in the top bar reads from `printerStore` which is still a
 disconnected stub. Phase 4 wires real WebUSB / Web Serial.
+
+The Print button ADR-001 introduced is also a placeholder for the same
+reason: its smart fallback (no printer → sheet PDF) needs both Phase 4
+(printer connection) and Phase 6 (sheet picker + PDF) to be real.

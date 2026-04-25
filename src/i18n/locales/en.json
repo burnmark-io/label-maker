@@ -13,6 +13,15 @@
     "undo": "Undo",
     "redo": "Redo"
   },
+  "actions": {
+    "saveOptions": "More save options",
+    "saveCurrent": "Save",
+    "exportPdf": "PDF",
+    "exportPng": "PNG",
+    "exportLabel": ".label file",
+    "exportZip": ".zip bundle",
+    "printSheet": "Print to sticker sheet"
+  },
   "printer": {
     "disconnected": "No printer — click to connect",
     "paired": "{model} — plug in to reconnect",

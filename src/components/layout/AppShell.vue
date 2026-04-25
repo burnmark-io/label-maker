@@ -5,6 +5,7 @@
       <section class="app-shell__canvas-area" :aria-label="t('canvas.ariaLabel')">
         <DesignCanvas />
         <MainToolbar />
+        <CanvasActions />
       </section>
       <SidePanel v-if="prefs.sidePanelOpen" />
     </main>
@@ -21,6 +22,7 @@ import SidePanel from './SidePanel.vue';
 import AppFooter from './AppFooter.vue';
 import DesignCanvas from '@/components/canvas/DesignCanvas.vue';
 import MainToolbar from '@/components/toolbar/MainToolbar.vue';
+import CanvasActions from '@/components/toolbar/CanvasActions.vue';
 
 import { useDesignerStore } from '@/stores/designer';
 import { usePreferencesStore } from '@/stores/preferences';

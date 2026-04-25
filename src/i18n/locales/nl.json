@@ -13,6 +13,15 @@
     "undo": "Ongedaan maken",
     "redo": "Opnieuw"
   },
+  "actions": {
+    "saveOptions": "Meer opties om op te slaan",
+    "saveCurrent": "Opslaan",
+    "exportPdf": "PDF",
+    "exportPng": "PNG",
+    "exportLabel": ".label bestand",
+    "exportZip": ".zip bundel",
+    "printSheet": "Print op stickervel"
+  },
   "printer": {
     "disconnected": "Geen printer — klik om te verbinden",
     "paired": "{model} — sluit aan om opnieuw te verbinden",
