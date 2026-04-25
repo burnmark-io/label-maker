@@ -108,10 +108,13 @@
     "preview": "Preview",
     "noSelection": "Select an object to edit its properties",
     "emptyObjects": "Add a text, image, barcode or shape to get started",
+    "objectsHint": "Click any object to edit its details.",
     "objectVisible": "Visible",
     "objectHidden": "Hidden",
     "objectLocked": "Locked",
     "objectUnlocked": "Unlocked",
+    "bringForward": "Bring forward",
+    "sendBackward": "Send backward",
     "untitled": "Untitled"
   },
   "properties": {

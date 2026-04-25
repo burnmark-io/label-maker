@@ -108,10 +108,13 @@
     "preview": "Voorbeeld",
     "noSelection": "Selecteer een object om de eigenschappen te bewerken",
     "emptyObjects": "Voeg tekst, een afbeelding, barcode of vorm toe om te beginnen",
+    "objectsHint": "Klik op een object om de details te bewerken.",
     "objectVisible": "Zichtbaar",
     "objectHidden": "Verborgen",
     "objectLocked": "Vergrendeld",
     "objectUnlocked": "Ontgrendeld",
+    "bringForward": "Naar voren brengen",
+    "sendBackward": "Naar achter brengen",
     "untitled": "Naamloos"
   },
   "properties": {

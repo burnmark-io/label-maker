@@ -149,6 +149,22 @@ pool (≤10 sets, ≤30 rows each, IndexedDB-persisted, cross-design).
 - [x] test
 - [x] build
 
+### Phase B: Inline accordion
+- [x] B1. ObjectsPanel grows expand state — `expandedId` computed from `designer.selection`. Component name kept (no rename) to minimise churn
+- [x] B2. Selection drives expand: 0 → collapsed; ≥1 → most-recently-clicked id (`selection[selection.length - 1]`); canvas Esc / empty-area click already deselects, so the row collapses with it
+- [x] B3. Per-type property forms render inline (`CommonProperties` always; `Text/Image/Barcode/ShapeProperties` by `obj.type`). Form components untouched
+- [x] B4. Chevron at the row's right edge, rotates 90° when expanded; row body click toggles selection (which drives expand)
+- [x] B5. Empty-state line plus a hint below the list ("Click any object to edit its details.") — new i18n key `panel.objectsHint` in en + nl
+- [x] B6. a11y: each row uses `aria-expanded`; expanded form region has `role="region"` + `aria-labelledby` referencing the row header; row is keyboard-activatable via Enter / Space
+- [x] B7. `PropertiesPanel.vue` deleted; SidePanel no longer imports it
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
 ## Phase 9: Final
 - [x] 63. Verify all gate checks across phases
 - [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)
