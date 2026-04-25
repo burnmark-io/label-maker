@@ -100,5 +100,11 @@ export const useDesignerStore = defineStore('designer', () => {
     getAll: composable.getAll,
     designer: composable.designer,
     assetLoader,
+
+    // Export helpers from the composable.
+    exportPng: composable.exportPng,
+    exportPdf: composable.exportPdf,
+    exportSheet: composable.exportSheet,
+    exportBundled: composable.exportBundled,
   };
 });

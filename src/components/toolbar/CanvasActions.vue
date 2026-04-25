@@ -45,6 +45,9 @@
             <option value="dark">{{ t('actions.densityDark') }}</option>
           </select>
         </label>
+        <button v-if="data.hasData" class="actions__btn actions__btn--full" type="button" @click="onPrintBatch">
+          {{ t('actions.printBatch', { count: data.rows.length }) }}
+        </button>
         <button class="actions__btn actions__btn--full" type="button" @click="optionsOpen = false">
           {{ t('common.close') }}
         </button>
@@ -71,14 +74,16 @@
         </svg>
       </button>
       <ul v-if="dropdownOpen" class="actions__dropdown" role="menu" @click="dropdownOpen = false">
-        <li><button type="button" role="menuitem" @click="placeholder('save')">{{ t('actions.saveCurrent') }}</button></li>
+        <li><button type="button" role="menuitem" @click="onSave">{{ t('actions.saveCurrent') }}</button></li>
+        <li><button type="button" role="menuitem" @click="emit('open-library')">{{ t('topbar.library') }}</button></li>
         <li class="actions__divider" aria-hidden="true" />
-        <li><button type="button" role="menuitem" @click="placeholder('pdf')">{{ t('actions.exportPdf') }}</button></li>
-        <li><button type="button" role="menuitem" @click="placeholder('png')">{{ t('actions.exportPng') }}</button></li>
-        <li><button type="button" role="menuitem" @click="placeholder('label')">{{ t('actions.exportLabel') }}</button></li>
-        <li><button type="button" role="menuitem" @click="placeholder('zip')">{{ t('actions.exportZip') }}</button></li>
+        <li><button type="button" role="menuitem" @click="onExportPdf">{{ t('actions.exportPdf') }}</button></li>
+        <li><button type="button" role="menuitem" @click="onExportPng">{{ t('actions.exportPng') }}</button></li>
+        <li><button type="button" role="menuitem" @click="onExportLabel">{{ t('actions.exportLabel') }}</button></li>
+        <li><button type="button" role="menuitem" @click="onExportZip">{{ t('actions.exportZip') }}</button></li>
         <li class="actions__divider" aria-hidden="true" />
-        <li><button type="button" role="menuitem" @click="placeholder('sheet')">{{ t('actions.printSheet') }}</button></li>
+        <li><button type="button" role="menuitem" @click="emit('open-sheet')">{{ t('actions.printSheet') }}</button></li>
+        <li><button type="button" role="menuitem" @click="emit('open-share')">{{ t('topbar.share') }}</button></li>
       </ul>
     </div>
   </div>
@@ -89,11 +94,24 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
 import { useDesignerStore } from '@/stores/designer';
+import { useDataStore } from '@/stores/data';
+import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useToast } from '@/composables/useToast';
+import { downloadBlob, safeFileName } from '@/services/file-download';
+import { applyMappingToRow } from '@/services/column-mapper';
+
+const emit = defineEmits<{
+  (e: 'open-batch'): void;
+  (e: 'open-sheet'): void;
+  (e: 'open-share'): void;
+  (e: 'open-library'): void;
+}>();
 
 const { t } = useI18n();
 const printer = usePrinterStore();
 const designer = useDesignerStore();
+const data = useDataStore();
+const library = useLibraryStore();
 const { show, update, dismiss } = useToast();
 
 const dropdownOpen = ref(false);
@@ -106,7 +124,7 @@ const saveRootRef = ref<HTMLElement | null>(null);
 async function onPrint(): Promise<void> {
   if (!printer.isConnected) {
     show(t('actions.printNoPrinter'), 'info');
-    placeholder('sheet-fallback');
+    emit('open-sheet');
     return;
   }
   if (!printer.effectiveMedia) {
@@ -119,7 +137,10 @@ async function onPrint(): Promise<void> {
     { sticky: true },
   );
   try {
-    const rgba = await designer.renderToRGBA();
+    const variables = data.currentVariables;
+    const rgba = await designer.renderToRGBA(
+      Object.keys(variables).length > 0 ? variables : undefined,
+    );
     const image = {
       width: rgba.width,
       height: rgba.height,
@@ -144,12 +165,81 @@ async function onPrint(): Promise<void> {
   }
 }
 
-function onSave(): void {
-  placeholder('save');
+function onPrintBatch(): void {
+  optionsOpen.value = false;
+  emit('open-batch');
 }
 
-function placeholder(key: string): void {
-  console.warn(`[burnmark] action "${key}" — wired in a later phase`);
+async function onSave(): Promise<void> {
+  try {
+    const blob = await designer.exportPng(undefined, 0.25);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        await library.save(designer.document, { thumbnail: String(reader.result) });
+        show(t('library.saved'), 'success');
+      } catch (err) {
+        if (err instanceof LibraryFullError) {
+          show(t('library.fullToast'), 'error');
+          emit('open-library');
+        } else {
+          show(err instanceof Error ? err.message : String(err), 'error');
+        }
+      }
+    };
+    reader.readAsDataURL(blob);
+  } catch (err) {
+    show(err instanceof Error ? err.message : String(err), 'error');
+  }
+}
+
+async function onExportPng(): Promise<void> {
+  try {
+    const blob = await designer.exportPng();
+    downloadBlob(blob, `${safeFileName(designer.document.name)}.png`);
+    show(t('export.pngDownloaded'), 'success');
+  } catch (err) {
+    show(err instanceof Error ? err.message : String(err), 'error');
+  }
+}
+
+async function onExportPdf(): Promise<void> {
+  try {
+    const rows =
+      data.rows.length > 0
+        ? data.rows.map((row) => applyMappingToRow(row, data.mapping))
+        : undefined;
+    const blob = await designer.exportPdf(rows);
+    downloadBlob(blob, `${safeFileName(designer.document.name)}.pdf`);
+    show(t('export.pdfDownloaded'), 'success');
+  } catch (err) {
+    show(err instanceof Error ? err.message : String(err), 'error');
+  }
+}
+
+function onExportLabel(): void {
+  try {
+    const json = designer.toJSON();
+    const blob = new Blob([json], { type: 'application/json' });
+    downloadBlob(blob, `${safeFileName(designer.document.name)}.label`);
+    show(t('export.labelDownloaded'), 'success');
+  } catch (err) {
+    show(err instanceof Error ? err.message : String(err), 'error');
+  }
+}
+
+async function onExportZip(): Promise<void> {
+  try {
+    const result = await designer.exportBundled();
+    downloadBlob(result.blob, `${safeFileName(designer.document.name)}.zip`);
+    if (result.missing.length > 0) {
+      show(t('export.zipMissing', { count: result.missing.length }), 'info');
+    } else {
+      show(t('export.zipDownloaded'), 'success');
+    }
+  } catch (err) {
+    show(err instanceof Error ? err.message : String(err), 'error');
+  }
 }
 
 function onDocumentClick(event: MouseEvent): void {

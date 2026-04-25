@@ -62,6 +62,37 @@ Tracking the phase/step plan from `PLAN.md` section 22. Tick boxes as steps comp
 - [x] test
 - [x] build
 
-## Phase 5+ (later sessions)
+## Phase 5: Data and Batch
+- [x] 29. Template variables — placeholder detection, substitution preview
+- [x] 30. CSV import — drag-and-drop, papaparse (via designer-core)
+- [x] 31. Excel import — SheetJS, first sheet, row 1 as headers
+- [x] 32. Column mapper — auto-map (exact → fuzzy → positional) + manual UI, persisted per template-shape
+- [x] 33. Batch preview grid — virtual-scrolled thumbnails (lazy-rendered as scrolled into view)
+- [x] 34. Batch print — progress bar, per-row status, error recovery
+- [x] 35. Limit banner — 30-row cap with "let us know" feedback link
+- [x] 36. Gate: import CSV/Excel, map columns, preview batch, print batch
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] test
+- [x] build
+
+## Phase 6: Export and Sharing
+- [x] 37. Save/load — IndexedDB-backed library, 10-slot UI with editable name + description
+- [x] 38. Export PNG/PDF — via designer-core composable helpers
+- [x] 39. Sheet export — picker dialog (lazy-loads `@burnmark-io/sheet-templates`), visual preview, PDF download
+- [x] 40. Export .label file — JSON download
+- [x] 41. Export bundled .zip — design + assets, surfaces missing-asset warnings
+- [x] 42. URL sharing — pako + base64url, 8KB cap with .label fallback, hash import on app load
+- [x] 43. Gate: all export paths work, share URLs round-trip correctly
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] test
+- [x] build
+
+## Phase 7+ (later sessions)
 
 See `PLAN.md` section 22 for the remaining phases.

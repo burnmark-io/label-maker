@@ -32,7 +32,8 @@
     "printNoMedia": "Pick a label size first",
     "printingTo": "Printing to {model}…",
     "printSuccess": "Printed",
-    "printFailed": "Print failed: {error}"
+    "printFailed": "Print failed: {error}",
+    "printBatch": "Print batch ({count})"
   },
   "printer": {
     "disconnected": "No printer — click to connect",
@@ -199,5 +200,108 @@
     "duplicate": "Duplicate",
     "save": "Save",
     "loading": "Loading…"
-  }
+  },
+  "data": {
+    "placeholders": {
+      "title": "Placeholders",
+      "empty": "Add a {{name}} style token to any text or barcode to import data."
+    },
+    "import": {
+      "title": "Import data",
+      "dropPrompt": "Drop a CSV or Excel file here",
+      "dropHint": "Or click to choose a file (.csv, .tsv, .xlsx)",
+      "dropzoneAria": "Drop a CSV or Excel file here, or activate to choose a file"
+    },
+    "rows": {
+      "title": "Rows",
+      "summary": "{rows} rows from {file}",
+      "summaryShort": "{rows} rows loaded",
+      "clear": "Clear data",
+      "limitMessage": "Showing first {shown} of {total} rows.",
+      "feedbackCta": "Need more? Let us know"
+    },
+    "preview": {
+      "previous": "Previous row",
+      "next": "Next row",
+      "position": "Row {current} of {total}",
+      "toggle": "Substitute on canvas"
+    },
+    "mapping": {
+      "title": "Map columns to placeholders",
+      "hint": "We tried to match automatically — adjust below if anything looks off.",
+      "selectFor": "Column for {placeholder}",
+      "unmapped": "— not mapped —",
+      "unusedColumns": "Columns not used"
+    },
+    "batch": {
+      "open": "Open batch preview"
+    }
+  },
+  "batch": {
+    "title": "Batch print",
+    "summary": "{count} labels ready to preview and print.",
+    "printAll": "Print all",
+    "cancel": "Cancel",
+    "cantPrint": "Connect a printer and import data to print a batch.",
+    "progress": "Printing {current} of {total}…",
+    "success": "Printed {count} labels",
+    "error": "Batch failed: {message}",
+    "thumbnailAlt": "Preview of row {row}"
+  },
+  "library": {
+    "title": "Design library",
+    "counter": "{used} of {total} slots used",
+    "fullHint": "Delete or export a design to make room.",
+    "fullMessage": "All slots are in use. Delete or export one to make room.",
+    "fullToast": "All slots are in use. Delete or export one to make room.",
+    "feedbackCta": "Need more? Let us know",
+    "openLabel": "Open {name}",
+    "delete": "Delete {name}",
+    "newSlot": "Save current",
+    "save": "Save current",
+    "update": "Update",
+    "saved": "Design saved",
+    "openFailed": "Could not open this design",
+    "deleted": "Design deleted",
+    "confirmDelete": "Delete this saved design?",
+    "cantSave": "Library is full — delete a design first.",
+    "untitled": "Untitled",
+    "nameLabel": "Design name",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Description (optional)"
+  },
+  "sheet": {
+    "title": "Print to sticker sheet",
+    "loading": "Loading sticker sheet templates…",
+    "searchPlaceholder": "Search by brand or product code",
+    "searchLabel": "Search sticker sheets",
+    "allBrands": "All brands",
+    "resultCount": "{count} matching sheets",
+    "listAria": "Sticker sheet results",
+    "previewHint": "Pick a sheet on the left to preview the layout.",
+    "previewAria": "Layout preview for {name}",
+    "detail": "{width}×{height}mm on {paper} — {perPage} labels per page",
+    "exporting": "Building PDF…",
+    "download": "Download PDF",
+    "exportSuccess": "Sheet PDF downloaded"
+  },
+  "share": {
+    "title": "Share this design",
+    "hint": "Anyone with this link gets a copy of the design loaded in their browser.",
+    "urlLabel": "Share URL",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "size": "{size} of {limit} bytes",
+    "tooLarge": "This design is too large for a share link. Export it as a .label file instead.",
+    "exportLabel": "Export .label",
+    "imported": "Label loaded from shared link"
+  },
+  "export": {
+    "pngDownloaded": "PNG downloaded",
+    "pdfDownloaded": "PDF downloaded",
+    "labelDownloaded": ".label file downloaded",
+    "zipDownloaded": ".zip bundle downloaded",
+    "zipMissing": "{count} assets were missing from the bundle"
+  },
+  "placeholderNote": "burnmark UI strings"
 }

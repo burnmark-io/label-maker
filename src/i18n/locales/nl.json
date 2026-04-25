@@ -32,7 +32,8 @@
     "printNoMedia": "Kies eerst een labelmaat",
     "printingTo": "Printen naar {model}…",
     "printSuccess": "Geprint",
-    "printFailed": "Printen mislukt: {error}"
+    "printFailed": "Printen mislukt: {error}",
+    "printBatch": "Batch printen ({count})"
   },
   "printer": {
     "disconnected": "Geen printer — klik om te verbinden",
@@ -199,5 +200,108 @@
     "duplicate": "Dupliceren",
     "save": "Opslaan",
     "loading": "Laden…"
-  }
+  },
+  "data": {
+    "placeholders": {
+      "title": "Variabelen",
+      "empty": "Voeg een {{naam}}-token toe in tekst of een barcode om data te importeren."
+    },
+    "import": {
+      "title": "Data importeren",
+      "dropPrompt": "Sleep een CSV- of Excelbestand hier",
+      "dropHint": "Of klik om een bestand te kiezen (.csv, .tsv, .xlsx)",
+      "dropzoneAria": "Sleep een CSV- of Excelbestand hier, of activeer om een bestand te kiezen"
+    },
+    "rows": {
+      "title": "Rijen",
+      "summary": "{rows} rijen uit {file}",
+      "summaryShort": "{rows} rijen geladen",
+      "clear": "Wis data",
+      "limitMessage": "Eerste {shown} van {total} rijen getoond.",
+      "feedbackCta": "Meer nodig? Laat het ons weten"
+    },
+    "preview": {
+      "previous": "Vorige rij",
+      "next": "Volgende rij",
+      "position": "Rij {current} van {total}",
+      "toggle": "Op canvas tonen"
+    },
+    "mapping": {
+      "title": "Koppel kolommen aan variabelen",
+      "hint": "We hebben automatisch geprobeerd te koppelen — pas hieronder aan als iets niet klopt.",
+      "selectFor": "Kolom voor {placeholder}",
+      "unmapped": "— niet gekoppeld —",
+      "unusedColumns": "Niet-gebruikte kolommen"
+    },
+    "batch": {
+      "open": "Open batchpreview"
+    }
+  },
+  "batch": {
+    "title": "Batch printen",
+    "summary": "{count} labels klaar voor preview en printen.",
+    "printAll": "Alles printen",
+    "cancel": "Annuleren",
+    "cantPrint": "Verbind een printer en importeer data om een batch te printen.",
+    "progress": "Print {current} van {total}…",
+    "success": "{count} labels geprint",
+    "error": "Batch mislukt: {message}",
+    "thumbnailAlt": "Voorbeeld van rij {row}"
+  },
+  "library": {
+    "title": "Ontwerpbibliotheek",
+    "counter": "{used} van {total} plekken gebruikt",
+    "fullHint": "Verwijder of exporteer een ontwerp om ruimte te maken.",
+    "fullMessage": "Alle plekken zijn bezet. Verwijder of exporteer er een om ruimte te maken.",
+    "fullToast": "Alle plekken zijn bezet. Verwijder of exporteer er een om ruimte te maken.",
+    "feedbackCta": "Meer nodig? Laat het ons weten",
+    "openLabel": "Open {name}",
+    "delete": "Verwijder {name}",
+    "newSlot": "Huidige opslaan",
+    "save": "Huidige opslaan",
+    "update": "Bijwerken",
+    "saved": "Ontwerp opgeslagen",
+    "openFailed": "Kon dit ontwerp niet openen",
+    "deleted": "Ontwerp verwijderd",
+    "confirmDelete": "Dit opgeslagen ontwerp verwijderen?",
+    "cantSave": "Bibliotheek is vol — verwijder eerst een ontwerp.",
+    "untitled": "Naamloos",
+    "nameLabel": "Naam ontwerp",
+    "descriptionLabel": "Omschrijving",
+    "descriptionPlaceholder": "Omschrijving (optioneel)"
+  },
+  "sheet": {
+    "title": "Print op stickervel",
+    "loading": "Stickervel-templates laden…",
+    "searchPlaceholder": "Zoek op merk of productcode",
+    "searchLabel": "Stickervellen zoeken",
+    "allBrands": "Alle merken",
+    "resultCount": "{count} passende vellen",
+    "listAria": "Resultaten stickervellen",
+    "previewHint": "Kies links een vel om de layout te bekijken.",
+    "previewAria": "Layoutvoorbeeld voor {name}",
+    "detail": "{width}×{height}mm op {paper} — {perPage} labels per pagina",
+    "exporting": "PDF maken…",
+    "download": "PDF downloaden",
+    "exportSuccess": "Vel-PDF gedownload"
+  },
+  "share": {
+    "title": "Dit ontwerp delen",
+    "hint": "Iedereen met deze link krijgt een kopie van het ontwerp in hun browser.",
+    "urlLabel": "Deel-URL",
+    "copy": "Kopieer",
+    "copied": "Gekopieerd!",
+    "size": "{size} van {limit} bytes",
+    "tooLarge": "Dit ontwerp is te groot voor een deel-link. Exporteer het als .label-bestand.",
+    "exportLabel": "Exporteer .label",
+    "imported": "Label geladen vanaf gedeelde link"
+  },
+  "export": {
+    "pngDownloaded": "PNG gedownload",
+    "pdfDownloaded": "PDF gedownload",
+    "labelDownloaded": ".label-bestand gedownload",
+    "zipDownloaded": ".zip-bundel gedownload",
+    "zipMissing": "{count} assets ontbraken in de bundel"
+  },
+  "placeholderNote": "burnmark UI strings"
 }

@@ -33,6 +33,33 @@
         </svg>
       </IconButton>
 
+      <button
+        class="topbar__btn"
+        type="button"
+        :aria-label="t('topbar.library')"
+        @click="emit('open-library')"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+        <span class="topbar__btn-label">{{ t('topbar.library') }}</span>
+      </button>
+      <button
+        class="topbar__btn"
+        type="button"
+        :aria-label="t('topbar.share')"
+        @click="emit('open-share')"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+        </svg>
+        <span class="topbar__btn-label">{{ t('topbar.share') }}</span>
+      </button>
       <button class="topbar__btn" type="button" :aria-label="t('topbar.help')">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
@@ -50,6 +77,11 @@ import { useI18n } from 'vue-i18n';
 import IconButton from '@/components/common/IconButton.vue';
 import PrinterPopover from '@/components/printer/PrinterPopover.vue';
 import { useDesignerStore } from '@/stores/designer';
+
+const emit = defineEmits<{
+  (e: 'open-library'): void;
+  (e: 'open-share'): void;
+}>();
 
 const { t } = useI18n();
 const designer = useDesignerStore();

@@ -241,6 +241,87 @@ is fast enough on demand).
 expects `data: Uint8Array`. We coerce by viewing the same buffer:
 `new Uint8Array(rgba.data.buffer, rgba.data.byteOffset, rgba.data.byteLength)`.
 
+## D18 — CSV/Excel parsing reuses designer-core, lazy-loads SheetJS
+
+Designer-core already exposes `parseCsv` (papaparse under the hood), so
+the app's `useCsvImport` composable just calls it for `.csv`/`.tsv`. For
+`.xlsx`/`.xls` the SheetJS `xlsx` package is dynamically imported on
+first use — Vite splits it into a separate chunk (~430 kB pre-gzip)
+that only loads when a user actually drops an Excel file. Sheet
+parsing extracts the first worksheet and uses row 1 as headers, mirroring
+the design intent in PLAN.md §7.1.
+
+## D19 — Substitution preview lives in the canvas leaf nodes
+
+Rather than re-rendering the document every time the previewed row
+changes, `TextNode` and `BarcodeNode` apply `applyTemplate(content,
+data.currentVariables)` at render time. The document remains the single
+source of truth (`{{name}}` is what's stored), and the substituted
+form is purely presentational. Cycling rows updates `data.currentIndex`
+which Vue reactivity propagates straight to the canvas without going
+through the designer-core pipeline.
+
+## D20 — 30-row limit enforced by the data store, not the importer
+
+`useDataStore.setData` slices the imported rows down to `ROW_LIMIT`
+(30) before anything sees them. The total row count from the file is
+kept on `lastImport.totalRowsInFile` so the UI can show
+"showing first 30 of N rows" without leaking the dropped data anywhere
+else. Batch print, sheet export, and PDF export all draw from the
+trimmed array, so the limit is consistent across export paths.
+
+## D21 — Column mapper persistence keyed by placeholder set
+
+The remembered mapping (`localStorage` key `burnmark.columnMapper`) is
+keyed by a stable hash of the **placeholders**, not the document id —
+so any document with the same `{name, address}` placeholders shares a
+mapping. This matches the user expectation: importing the same CSV
+into a second template with identical fields auto-maps without prompting.
+Manual mapper edits write through to localStorage immediately.
+
+## D22 — Share URL uses base64url, not raw base64
+
+`btoa` of pako-deflate output produces `+` and `/` characters that
+break URL fragments. Encoded the result base64url-style (`-` / `_`
+substitution, `=` padding stripped) and reverse on decode. The 8KB
+ceiling check happens against the encoded length, before the URL is
+built.
+
+## D23 — IndexedDB layer is one shared module, not per-store
+
+`services/storage.ts` is the single owner of the `burnmark` IDB. The
+library store calls into it, and Phase 7 PWA / asset persistence will
+share the same DB handle. Upgrading the schema later is a
+single-version-bump in one file. The module memoises the open
+connection and exposes a test-only `__resetForTests` so the IDB can
+be reset between tests without leaking handles.
+
+## D24 — Sheet picker lazy-loads `@burnmark-io/sheet-templates`
+
+Per PLAN.md §4.5, `@burnmark-io/sheet-templates` (~100 KB gzipped) is
+dynamically imported the first time the SheetDialog opens. The build
+splits it into its own chunk (`xlsx-*.js` is the SheetJS chunk; the
+sheet-templates chunk lands separately under the EditorView dynamic
+imports). Cold first-open shows a "loading templates" line; subsequent
+opens are instant.
+
+## D25 — Save button writes to the design library, not just IndexedDB directly
+
+`CanvasActions.onSave` now goes through `useLibraryStore.save`, which
+enforces the 10-slot limit and updates the in-memory entries list so
+the library UI reflects the new save without a manual reload. When
+the library is full, the toast asks the user to make room and the
+library modal opens automatically.
+
+## D26 — Existing design counts as "already in library" for save UX
+
+`useLibraryStore.save` accepts an updated document with the same id
+without consuming a new slot. The library modal's primary button
+toggles between "Save current" and "Update" based on whether the
+current document id is already in the entries list. This avoids the
+infuriating "library full" error when the user is just saving over
+their existing design.
+
 ## D17 — Patch `createImageBitmap` for SVG blobs in Chromium
 
 `@burnmark-io/designer-core@0.1.0`'s browser barcode path renders bwip-js

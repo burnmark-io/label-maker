@@ -15,7 +15,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { TextObject } from '@burnmark-io/designer-core';
+import { applyTemplate, type TextObject } from '@burnmark-io/designer-core';
+import { useDataStore } from '@/stores/data';
+
+const data = useDataStore();
 
 const props = defineProps<{
   object: TextObject;
@@ -55,7 +58,7 @@ const config = computed(() => ({
   y: props.object.y,
   width: props.object.width,
   height: props.object.autoHeight ? undefined : props.object.height,
-  text: props.object.content,
+  text: applyTemplate(props.object.content, data.currentVariables),
   fontSize: props.object.fontSize,
   fontFamily: props.object.fontFamily,
   fontStyle: textFontStyle(props.object),

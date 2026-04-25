@@ -28,7 +28,7 @@
     >
       <ObjectsPanel v-if="prefs.sidePanelTab === 'objects'" />
       <PropertiesPanel v-else-if="prefs.sidePanelTab === 'properties'" />
-      <DataPanel v-else-if="prefs.sidePanelTab === 'data'" />
+      <DataPanel v-else-if="prefs.sidePanelTab === 'data'" @open-batch="emit('open-batch')" />
       <PrintPreview v-else-if="prefs.sidePanelTab === 'preview'" />
     </div>
   </aside>
@@ -42,6 +42,10 @@ import ObjectsPanel from '@/components/panels/ObjectsPanel.vue';
 import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
 import DataPanel from '@/components/panels/DataPanel.vue';
 import PrintPreview from '@/components/printer/PrintPreview.vue';
+
+const emit = defineEmits<{
+  (e: 'open-batch'): void;
+}>();
 
 const { t } = useI18n();
 const prefs = usePreferencesStore();

@@ -20,9 +20,11 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { BarcodeEngine, type BarcodeObject } from '@burnmark-io/designer-core';
+import { applyTemplate, BarcodeEngine, type BarcodeObject } from '@burnmark-io/designer-core';
+import { useDataStore } from '@/stores/data';
 
 const engine = new BarcodeEngine();
+const data = useDataStore();
 
 const props = defineProps<{
   object: BarcodeObject;
@@ -55,17 +57,19 @@ interface KonvaNodeRef {
 const nodeRef = ref<KonvaNodeRef | null>(null);
 const image = ref<ImageBitmap | HTMLImageElement | null>(null);
 
+const renderedData = computed(() => applyTemplate(props.object.data, data.currentVariables));
+
 watch(
-  () => [props.object.format, props.object.data, JSON.stringify(props.object.options)],
+  () => [props.object.format, renderedData.value, JSON.stringify(props.object.options)],
   async () => {
-    if (!props.object.data) {
+    if (!renderedData.value) {
       image.value = null;
       return;
     }
     try {
       const result = await engine.renderToImage(
         props.object.format,
-        props.object.data,
+        renderedData.value,
         props.object.options,
       );
       image.value = result.image as ImageBitmap | HTMLImageElement;
