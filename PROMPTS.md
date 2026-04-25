@@ -70,6 +70,11 @@ You are continuing work on `github.com/burnmark-io/label-maker`.
 Read the implementation plan and agent guide if you haven't already.
 Check PROGRESS.md for completed phases — Phases 1-2 should be done.
 
+Two documents define the work:
+
+- `PLAN.md` — the full product spec
+- `GUIDE.md` — how to work, what to placeholder, what to track
+
 This session covers Phase 3 (steps 17-20).
 Stop after Phase 3's gate check passes.
 

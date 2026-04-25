@@ -20,7 +20,19 @@
     "exportPng": "PNG",
     "exportLabel": ".label bestand",
     "exportZip": ".zip bundel",
-    "printSheet": "Print op stickervel"
+    "printSheet": "Print op stickervel",
+    "printOptions": "Printopties",
+    "copies": "Aantal",
+    "density": "Intensiteit",
+    "densityLight": "Licht",
+    "densityNormal": "Normaal",
+    "densityDark": "Donker",
+    "printConnected": "Printen naar {model}",
+    "printNoPrinter": "Geen printer — kies een stickervel",
+    "printNoMedia": "Kies eerst een labelmaat",
+    "printingTo": "Printen naar {model}…",
+    "printSuccess": "Geprint",
+    "printFailed": "Printen mislukt: {error}"
   },
   "printer": {
     "disconnected": "Geen printer — klik om te verbinden",
@@ -30,7 +42,27 @@
     "connectedWithMedia": "{model} — {media} geladen",
     "connectedSelectMedia": "{model} — kies je labels",
     "error": "{model} — verbinding verbroken",
-    "connect": "Printer verbinden"
+    "errorGeneric": "Verbindingsfout",
+    "connect": "Printer verbinden",
+    "connectHeading": "Verbind een printer",
+    "connectUsb": "Verbinden via USB",
+    "connectSerial": "Verbinden via Bluetooth",
+    "connectSerialHint": "Voor OS-gekoppelde Bluetooth SPP printers (bijv. QL-820NWB)",
+    "noWebUsb": "Je browser ondersteunt geen WebUSB. Probeer Chrome of Edge.",
+    "disconnect": "Verbinding verbreken",
+    "popoverTitle": "Printerverbinding",
+    "media": "Media",
+    "mediaPick": "Kies een labelmaat…",
+    "autoDetected": "automatisch gedetecteerd"
+  },
+  "preview": {
+    "title": "Print voorbeeld",
+    "notConnected": "Verbind een printer om te zien hoe je label geprint wordt.",
+    "noPreview": "Nog geen voorbeeld",
+    "rendering": "Voorbeeld renderen…",
+    "refresh": "Voorbeeld vernieuwen",
+    "media": "Media: {media}",
+    "assumedBanner": "Voorbeeld op basis van aangenomen media ({media}). Verbind of kies een media voor een nauwkeurig resultaat."
   },
   "toolbar": {
     "addText": "Tekst toevoegen",
@@ -72,6 +104,7 @@
     "objects": "Objecten",
     "properties": "Eigenschappen",
     "data": "Gegevens",
+    "preview": "Voorbeeld",
     "noSelection": "Selecteer een object om de eigenschappen te bewerken",
     "emptyObjects": "Voeg tekst, een afbeelding, barcode of vorm toe om te beginnen",
     "objectVisible": "Zichtbaar",

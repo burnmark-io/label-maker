@@ -17,15 +17,27 @@ importers:
       '@burnmark-io/sheet-templates':
         specifier: latest
         version: 0.1.0
+      '@mbtech-nl/bitmap':
+        specifier: ^1.0.1
+        version: 1.0.1
+      '@thermal-label/brother-ql-core':
+        specifier: ^0.2.1
+        version: 0.2.1
       '@thermal-label/brother-ql-web':
         specifier: latest
         version: 0.2.1(typescript@5.5.4)
       '@thermal-label/contracts':
         specifier: latest
         version: 0.1.2
+      '@thermal-label/labelmanager-core':
+        specifier: ^0.2.1
+        version: 0.2.1
       '@thermal-label/labelmanager-web':
         specifier: latest
         version: 0.2.1(typescript@5.5.4)
+      '@thermal-label/labelwriter-core':
+        specifier: ^0.2.1
+        version: 0.2.1
       '@thermal-label/labelwriter-web':
         specifier: latest
         version: 0.2.1(typescript@5.5.4)
@@ -75,6 +87,12 @@ importers:
       '@types/pako':
         specifier: ^2.0.3
         version: 2.0.4
+      '@types/w3c-web-serial':
+        specifier: ^1.0.8
+        version: 1.0.8
+      '@types/w3c-web-usb':
+        specifier: ^1.0.14
+        version: 1.0.14
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.59.0
         version: 8.59.0(@typescript-eslint/parser@8.59.0(eslint@9.39.4)(typescript@5.5.4))(eslint@9.39.4)(typescript@5.5.4)
@@ -1206,6 +1224,12 @@ packages:
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  '@types/w3c-web-serial@1.0.8':
+    resolution: {integrity: sha512-QQOT+bxQJhRGXoZDZGLs3ksLud1dMNnMiSQtBA0w8KXvLpXX4oM4TZb6J0GgJ8UbCaHo5s9/4VQT8uXy9JER2A==}
+
+  '@types/w3c-web-usb@1.0.14':
+    resolution: {integrity: sha512-Qu3Nn6JFuF4+sHKYl+IcX9vYiI40ogleXzFFSxoE1W94rG98o/kXs8uJ0QSfFzuwBCZWlGfUGpPkgwuuX4PchA==}
 
   '@types/web-bluetooth@0.0.20':
     resolution: {integrity: sha512-g9gZnnXVq7gM7v3tJCWV/qw7w+KeOlSHAhgF9RytFyifW6AF61hdT2ucrYhPq9hLs5JIryeupHV3qGk95dH9ow==}
@@ -4629,6 +4653,10 @@ snapshots:
   '@types/resolve@1.20.2': {}
 
   '@types/trusted-types@2.0.7': {}
+
+  '@types/w3c-web-serial@1.0.8': {}
+
+  '@types/w3c-web-usb@1.0.14': {}
 
   '@types/web-bluetooth@0.0.20': {}
 

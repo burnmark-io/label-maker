@@ -29,6 +29,7 @@
       <ObjectsPanel v-if="prefs.sidePanelTab === 'objects'" />
       <PropertiesPanel v-else-if="prefs.sidePanelTab === 'properties'" />
       <DataPanel v-else-if="prefs.sidePanelTab === 'data'" />
+      <PrintPreview v-else-if="prefs.sidePanelTab === 'preview'" />
     </div>
   </aside>
 </template>
@@ -40,6 +41,7 @@ import { usePreferencesStore, type SidePanelTab } from '@/stores/preferences';
 import ObjectsPanel from '@/components/panels/ObjectsPanel.vue';
 import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
 import DataPanel from '@/components/panels/DataPanel.vue';
+import PrintPreview from '@/components/printer/PrintPreview.vue';
 
 const { t } = useI18n();
 const prefs = usePreferencesStore();
@@ -48,6 +50,7 @@ const tabs = computed<{ id: SidePanelTab; label: string }[]>(() => [
   { id: 'objects', label: t('panel.objects') },
   { id: 'properties', label: t('panel.properties') },
   { id: 'data', label: t('panel.data') },
+  { id: 'preview', label: t('panel.preview') },
 ]);
 
 function cycle(delta: number): void {

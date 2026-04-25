@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { useStorage } from '@vueuse/core';
 import type { SupportedLocale } from '@/i18n';
 
-export type SidePanelTab = 'objects' | 'properties' | 'data';
+export type SidePanelTab = 'objects' | 'properties' | 'data' | 'preview';
 
 /**
  * UI preferences. Persisted to localStorage. These are user-level

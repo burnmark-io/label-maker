@@ -6,7 +6,7 @@
     </div>
 
     <div class="topbar__center">
-      <PrinterStatus />
+      <PrinterPopover />
     </div>
 
     <div class="topbar__actions">
@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import IconButton from '@/components/common/IconButton.vue';
-import PrinterStatus from '@/components/printer/PrinterStatus.vue';
+import PrinterPopover from '@/components/printer/PrinterPopover.vue';
 import { useDesignerStore } from '@/stores/designer';
 
 const { t } = useI18n();

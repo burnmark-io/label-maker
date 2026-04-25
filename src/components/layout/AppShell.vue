@@ -10,6 +10,7 @@
       <SidePanel v-if="prefs.sidePanelOpen" />
     </main>
     <AppFooter />
+    <ToastStack />
   </div>
 </template>
 
@@ -23,12 +24,14 @@ import AppFooter from './AppFooter.vue';
 import DesignCanvas from '@/components/canvas/DesignCanvas.vue';
 import MainToolbar from '@/components/toolbar/MainToolbar.vue';
 import CanvasActions from '@/components/toolbar/CanvasActions.vue';
+import ToastStack from '@/components/common/ToastStack.vue';
 
 import { useDesignerStore } from '@/stores/designer';
 import { usePreferencesStore } from '@/stores/preferences';
 import { loadFirstVisitDocument } from '@/services/sample-label';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import { useBorderResize } from '@/composables/useBorderResize';
+import { useAutoReconnect } from '@/composables/useAutoReconnect';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
@@ -36,6 +39,7 @@ const prefs = usePreferencesStore();
 
 useKeyboardShortcuts();
 useBorderResize();
+useAutoReconnect();
 
 onMounted(() => {
   prefs.sessionCount += 1;

@@ -20,7 +20,19 @@
     "exportPng": "PNG",
     "exportLabel": ".label file",
     "exportZip": ".zip bundle",
-    "printSheet": "Print to sticker sheet"
+    "printSheet": "Print to sticker sheet",
+    "printOptions": "Print options",
+    "copies": "Copies",
+    "density": "Density",
+    "densityLight": "Light",
+    "densityNormal": "Normal",
+    "densityDark": "Dark",
+    "printConnected": "Print to {model}",
+    "printNoPrinter": "No printer — pick a sticker sheet instead",
+    "printNoMedia": "Pick a label size first",
+    "printingTo": "Printing to {model}…",
+    "printSuccess": "Printed",
+    "printFailed": "Print failed: {error}"
   },
   "printer": {
     "disconnected": "No printer — click to connect",
@@ -30,7 +42,27 @@
     "connectedWithMedia": "{model} — {media} loaded",
     "connectedSelectMedia": "{model} — select your labels",
     "error": "{model} — connection lost",
-    "connect": "Connect printer"
+    "errorGeneric": "Connection error",
+    "connect": "Connect printer",
+    "connectHeading": "Connect a printer",
+    "connectUsb": "Connect via USB",
+    "connectSerial": "Connect via Bluetooth",
+    "connectSerialHint": "For OS-paired Bluetooth SPP printers (e.g. QL-820NWB)",
+    "noWebUsb": "Your browser doesn't support WebUSB. Try Chrome or Edge.",
+    "disconnect": "Disconnect",
+    "popoverTitle": "Printer connection",
+    "media": "Media",
+    "mediaPick": "Pick a label size…",
+    "autoDetected": "auto-detected"
+  },
+  "preview": {
+    "title": "Print preview",
+    "notConnected": "Connect a printer to see how your label will print.",
+    "noPreview": "No preview yet",
+    "rendering": "Rendering preview…",
+    "refresh": "Refresh preview",
+    "media": "Media: {media}",
+    "assumedBanner": "Preview based on assumed media ({media}). Connect or pick a media for an accurate result."
   },
   "toolbar": {
     "addText": "Add text",
@@ -72,6 +104,7 @@
     "objects": "Objects",
     "properties": "Properties",
     "data": "Data",
+    "preview": "Preview",
     "noSelection": "Select an object to edit its properties",
     "emptyObjects": "Add a text, image, barcode or shape to get started",
     "objectVisible": "Visible",

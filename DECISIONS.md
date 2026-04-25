@@ -184,3 +184,59 @@ disconnected stub. Phase 4 wires real WebUSB / Web Serial.
 The Print button ADR-001 introduced is also a placeholder for the same
 reason: its smart fallback (no printer → sheet PDF) needs both Phase 4
 (printer connection) and Phase 6 (sheet picker + PDF) to be real.
+
+## D16 — Web driver API surface (Phase 4 discovery)
+
+After reading the `.d.ts` files in `node_modules/@thermal-label/*-web`
+and the underlying `*-core` packages, here's the actual API the app
+programs against:
+
+**Per-family entry points** (`@thermal-label/{brother-ql,labelwriter,labelmanager}-web`):
+- `requestPrinter(options?)` — shows the WebUSB picker (filtered to that
+  family's VID/PIDs), opens the device, returns a `PrinterAdapter`.
+  Requires a user gesture.
+- `fromUSBDevice(device: USBDevice)` — wraps an already-paired
+  `USBDevice` (from `navigator.usb.getDevices()`). Throws if the
+  VID/PID isn't in that family's registry. **Used for auto-reconnect.**
+- `DEFAULT_FILTERS` — the family's USB filter set, built via
+  `buildUsbFilters(Object.values(DEVICES))` from
+  `@thermal-label/transport`.
+
+**Constructors** (also exported, e.g. `WebBrotherQLPrinter`,
+`WebLabelWriterPrinter`, `WebDymoPrinter`) — used when wrapping a
+`Transport` we built ourselves (e.g. a `WebSerialTransport` for
+QL-820NWB Bluetooth SPP).
+
+**Adapter contract** (`@thermal-label/contracts`):
+- `print(image: RawImageData, media?, options?)` — `RawImageData` is
+  `{ width, height, data: Uint8Array }` from `@mbtech-nl/bitmap`. The
+  designer returns `Uint8ClampedArray` (canvas ImageData) so we view
+  it as a `Uint8Array` before passing through.
+- `createPreview(image, options?)` returns `PreviewResult` with one
+  `PreviewPlane` per colour, each `{ name, bitmap: LabelBitmap, displayColor }`.
+  `LabelBitmap` is row-major MSB-first 1bpp. `assumed: true` when the
+  driver fell back to its default media (no detection, no override).
+- `getStatus()` returns `PrinterStatus` with `detectedMedia?` —
+  Brother QL detects via `STATUS_REQUEST` round-trip; LabelWriter 550
+  detects, 450 does not; LabelManager never detects.
+- `print()` and `createPreview()` use `lastStatus.detectedMedia` as
+  default if no media is provided. So calling `getStatus()` once after
+  open lets the driver infer media for subsequent calls.
+
+**Web Serial — only QL-820NWB(c)**: `DEVICES.QL_820NWB.transports`
+includes `'web-serial'`. We construct the adapter manually:
+`new WebBrotherQLPrinter(QL_820NWB, await WebSerialTransport.request())`.
+LabelWriter and LabelManager are USB-only on the web.
+
+**Auto-reconnect path**: `navigator.usb.getDevices()` returns
+previously authorised `USBDevice`s without prompting. Match each
+against the union of all family device registries via `findDevice()`,
+dispatch to the right family's `fromUSBDevice()`. Web Serial paired
+ports are similarly listed via `navigator.serial.getPorts()`; we only
+auto-reconnect USB for now (Bluetooth pairing is rare and the picker
+is fast enough on demand).
+
+**Designer→printer image conversion**: `designer.render()` returns
+`{ width, height, data: Uint8ClampedArray }`. `PrinterAdapter.print()`
+expects `data: Uint8Array`. We coerce by viewing the same buffer:
+`new Uint8Array(rgba.data.buffer, rgba.data.byteOffset, rgba.data.byteLength)`.

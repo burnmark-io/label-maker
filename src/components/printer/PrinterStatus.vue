@@ -1,5 +1,11 @@
 <template>
-  <button class="status" type="button" :title="label">
+  <button
+    class="status"
+    type="button"
+    :title="label"
+    :aria-expanded="open"
+    aria-haspopup="dialog"
+  >
     <span class="status__dot" :class="`status__dot--${dotClass}`" aria-hidden="true" />
     <span class="status__label">{{ label }}</span>
   </button>
@@ -10,38 +16,39 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
 
+defineProps<{ open?: boolean }>();
+
 const { t } = useI18n();
 const printer = usePrinterStore();
 
 const dotClass = computed(() => {
-  switch (printer.state.status) {
+  switch (printer.connection.kind) {
     case 'connected':
       return 'green';
-    case 'paired':
     case 'connecting':
       return 'yellow';
     case 'error':
       return 'red';
     default:
-      return 'gray';
+      return printer.lastPaired ? 'yellow' : 'gray';
   }
 });
 
 const label = computed(() => {
-  const s = printer.state;
-  switch (s.status) {
-    case 'connected':
-      if (s.media) return t('printer.connectedWithMedia', { model: s.model, media: s.media });
-      return t('printer.connectedSelectMedia', { model: s.model });
-    case 'paired':
-      return t('printer.paired', { model: s.model });
-    case 'connecting':
-      return t('printer.connecting');
-    case 'error':
-      return t('printer.error', { model: s.model });
-    default:
-      return t('printer.disconnected');
+  const c = printer.connection;
+  if (c.kind === 'connected') {
+    const media = printer.effectiveMedia;
+    if (media) return t('printer.connectedWithMedia', { model: c.model, media: media.name });
+    return t('printer.connectedSelectMedia', { model: c.model });
   }
+  if (c.kind === 'connecting') return t('printer.connecting');
+  if (c.kind === 'error') {
+    return c.model ? t('printer.error', { model: c.model }) : t('printer.errorGeneric');
+  }
+  if (printer.lastPaired) {
+    return t('printer.paired', { model: printer.lastPaired.model });
+  }
+  return t('printer.disconnected');
 });
 </script>
 
@@ -60,6 +67,11 @@ const label = computed(() => {
 }
 
 .status:hover {
+  background: var(--color-bg-panel);
+  color: var(--color-text);
+}
+
+.status[aria-expanded='true'] {
   background: var(--color-bg-panel);
   color: var(--color-text);
 }

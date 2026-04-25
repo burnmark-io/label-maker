@@ -5,6 +5,7 @@ import type {
   LabelObject,
   LabelObjectInput,
   LabelDocument,
+  RawImageData,
 } from '@burnmark-io/designer-core';
 import { BurnmarkAssetLoader } from '@/services/asset-loader';
 
@@ -55,6 +56,17 @@ export const useDesignerStore = defineStore('designer', () => {
     composable.setCanvas(patch);
   }
 
+  /**
+   * Render the document to full-colour RGBA. The composable's `render()`
+   * is fire-and-forget (updates `bitmap.value` and returns void); this
+   * goes straight to the underlying `LabelDesigner.render()` for the
+   * raw image, which is what the printer's `print()` and
+   * `createPreview()` expect.
+   */
+  function renderToRGBA(variables?: Record<string, string>): Promise<RawImageData> {
+    return composable.designer.render(variables);
+  }
+
   return {
     document: composable.document,
     selection: composable.selection,
@@ -81,6 +93,7 @@ export const useDesignerStore = defineStore('designer', () => {
     getPlaceholders: composable.getPlaceholders,
     applyVariables: composable.applyVariables,
     render: composable.render,
+    renderToRGBA,
     toJSON: composable.toJSON,
     fromJSON: composable.fromJSON,
     get: composable.get,
