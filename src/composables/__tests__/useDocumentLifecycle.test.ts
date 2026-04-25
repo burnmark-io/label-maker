@@ -89,11 +89,23 @@ describe('useDocumentLifecycle.confirmDestructiveSwap', () => {
     expect(await promise).toBe(false);
   });
 
-  it('uses the generic replaceConfirm copy', async () => {
+  it('uses the generic replaceConfirm copy when called without an incoming name', async () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
     const promise = lifecycle.confirmDestructiveSwap();
     expect(lifecycle.confirmer.options.value?.message).toContain('unsaved changes will be lost');
+    lifecycle.confirmer.resolve();
+    await promise;
+  });
+
+  it('uses the name-aware replaceConfirmWithIncoming copy when called with an incoming name', async () => {
+    const lifecycle = withSetup();
+    designerState.canUndo = true;
+    designerState.document.name = 'My great label';
+    const promise = lifecycle.confirmDestructiveSwap({ incomingName: 'colleague.label' });
+    const message = lifecycle.confirmer.options.value?.message ?? '';
+    expect(message).toContain('My great label');
+    expect(message).toContain('colleague.label');
     lifecycle.confirmer.resolve();
     await promise;
   });

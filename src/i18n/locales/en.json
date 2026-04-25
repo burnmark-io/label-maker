@@ -18,6 +18,7 @@
     "saveCurrent": "Save",
     "newLabel": "New label",
     "saveAsNew": "Save as new",
+    "import": "Import…",
     "exportPdf": "PDF",
     "exportPng": "PNG",
     "exportLabel": ".label file",
@@ -450,6 +451,7 @@
     "cantSaveAsNew": "Library is full — delete a design first to save a new copy.",
     "replaceConfirmTitle": "Replace the current label?",
     "replaceConfirm": "Your unsaved changes will be lost. Save them first to keep them.",
+    "replaceConfirmWithIncoming": "Replace \"{current}\" with \"{incoming}\"? Unsaved changes will be lost.",
     "replaceConfirmAction": "Replace",
     "slotsHint": "Each slot holds a separate label. Use New label or Save as new to fill more slots.",
     "untitled": "Untitled",
@@ -479,7 +481,7 @@
     "copy": "Copy",
     "copied": "Copied!",
     "size": "{size} of {limit} bytes",
-    "tooLarge": "This design is too large for a share link. Export it as a .label file instead.",
+    "tooLarge": "This design is too large for a share link. Export it as a .label file and share that — recipients can use the Import menu to open it.",
     "exportLabel": "Export .label",
     "imported": "Label loaded from shared link"
   },
@@ -489,6 +491,20 @@
     "labelDownloaded": ".label file downloaded",
     "zipDownloaded": ".zip bundle downloaded",
     "zipMissing": "{count} assets were missing from the bundle"
+  },
+  "import": {
+    "loading": "Importing…",
+    "success": "Label imported",
+    "successWithMissing": "Label imported — {count} assets were missing",
+    "dropOverlayTitle": "Drop a .label or .zip to open",
+    "errors": {
+      "too-large": "File is too large to import (limit 50 MB).",
+      "unknown-format": "Pick a .label or .zip file.",
+      "invalid-json": "That .label file is malformed.",
+      "invalid-zip": "That doesn't look like a .zip bundle.",
+      "bundle-missing-label": "This .zip doesn't contain a label.",
+      "bundle-label-malformed": "The label inside this .zip is malformed."
+    }
   },
   "install": {
     "title": "Install burnmark",

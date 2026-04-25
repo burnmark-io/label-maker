@@ -22,6 +22,7 @@
     <AppFooter />
     <ToastStack />
     <InstallPrompt />
+    <ImportDropOverlay />
 
     <BatchPanel :open="batchOpen" @close="batchOpen = false" />
     <SheetDialog :open="sheetOpen" @close="sheetOpen = false" />
@@ -45,6 +46,7 @@ import MainToolbar from '@/components/toolbar/MainToolbar.vue';
 import CanvasActions from '@/components/toolbar/CanvasActions.vue';
 import ToastStack from '@/components/common/ToastStack.vue';
 import InstallPrompt from '@/components/common/InstallPrompt.vue';
+import ImportDropOverlay from './ImportDropOverlay.vue';
 import BatchPanel from '@/components/batch/BatchPanel.vue';
 import SheetDialog from '@/components/sheets/SheetDialog.vue';
 import DesignLibrary from '@/components/library/DesignLibrary.vue';
@@ -61,6 +63,7 @@ import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import { useBorderResize } from '@/composables/useBorderResize';
 import { useAutoReconnect } from '@/composables/useAutoReconnect';
 import { readDocumentFromHash } from '@/services/share-encoder';
+import { useLabelImport } from '@/composables/useLabelImport';
 import { useToast } from '@/composables/useToast';
 import { useUiDialogs } from '@/composables/useUiDialogs';
 import { SUPPORTED_LOCALES } from '@/i18n';
@@ -70,6 +73,7 @@ const designer = useDesignerStore();
 const prefs = usePreferencesStore();
 const library = useLibraryStore();
 const { show } = useToast();
+const labelImport = useLabelImport();
 const { aboutOpen, helpOpen, tourActive, openHelp, startTour, closeTour } = useUiDialogs();
 
 const batchOpen = ref(false);
@@ -132,6 +136,31 @@ onMounted(async () => {
   }
 
   await library.load();
+
+  // 0. PWA file_handlers — if the OS routed a file open at us via launchQueue
+  //    (Chromium-only), drain the queue and import the first file. Wins over
+  //    the share-URL hash because it's an explicit OS-level user action.
+  if (typeof window !== 'undefined' && 'launchQueue' in window) {
+    type LaunchParams = { files?: FileSystemFileHandle[] };
+    const queue = (
+      window as unknown as {
+        launchQueue: { setConsumer(cb: (p: LaunchParams) => void): void };
+      }
+    ).launchQueue;
+    queue.setConsumer(async (params: LaunchParams) => {
+      const files = params.files;
+      if (!files || files.length === 0) return;
+      try {
+        const file = await files[0].getFile();
+        await labelImport.runImport(file);
+        if (window.location.pathname === '/open') {
+          window.history.replaceState(null, '', '/');
+        }
+      } catch {
+        // Swallow — the runImport flow handles its own error surfacing.
+      }
+    });
+  }
 
   // 1. Shared design via URL hash takes top priority — explicit user action.
   if (typeof window !== 'undefined' && window.location.hash.length > 1) {

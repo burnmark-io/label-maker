@@ -325,3 +325,65 @@ existing slot.
 - [x] format
 - [x] test
 - [x] build
+
+## Phase 13: `.label` and `.zip` import
+
+Implementing `amendment-label-import.md` — accept `.label` JSON files
+and `.zip` bundles via a new **Import…** menu entry, full-window drag
+overlay, and PWA `file_handlers` so installed apps open the formats
+directly. Single shared `runImport` flow for all surfaces; bundle
+assets restored via `assetLoader.set(key, bytes)`; imports always rewrite
+the document `id` + timestamps so they cannot silently overwrite a
+library slot.
+
+- [x] 13.A.1 `services/label-import.ts` — `importLabelFile`,
+      `ImportError`, `MAX_IMPORT_SIZE`, JSON branch, fresh-id rewrite
+- [x] 13.A.2 Hidden file input + **Import…** menu entry in
+      `CanvasActions.vue`. `runImport` extracted to
+      `composables/useLabelImport.ts`
+- [x] 13.A.3 Extend `confirmDestructiveSwap()` with optional
+      `{ incomingName }`; new `library.replaceConfirmWithIncoming` i18n
+      key (en + nl)
+- [x] 13.A.4 Wire `runImport` to call `confirmDestructiveSwap({ incomingName: file.name })`
+- [x] 13.A.5 Toast wiring (loading / success / error)
+- [x] 13.A.6 i18n keys (`actions.import`, `import.*`)
+- [x] 13.A.7 Tests for `importLabelFile` JSON branch
+- [x] 13.A.8 Tests for the extended helper (parameterless vs.
+      `incomingName` paths)
+- [x] 13.B.1 `jszip` added as a direct dep of label-maker
+- [x] 13.B.2 `services/label-import.bundle.ts` — `parseBundle`
+- [x] 13.B.3 Bundle branch wired into `importLabelFile` —
+      `assetLoader.set(key, bytes)` per asset
+- [x] 13.B.4 Missing-assets toast variant
+      (`import.successWithMissing`)
+- [x] 13.B.5 Dev-only SHA-1 verification (`console.warn` on mismatch),
+      skipped in tests + production
+- [x] 13.B.6 Tests — round-trip, missing-asset case, malformed bundle,
+      missing `label.json`, corrupt zip
+- [x] 13.C.1 `components/layout/ImportDropOverlay.vue` with
+      entry-counter logic
+- [x] 13.C.2 Mounted in `AppShell.vue`; shares `useLabelImport.runImport`
+- [x] 13.C.3 CSS — full-window overlay, fade-in, respects
+      `prefers-reduced-motion`
+- [x] 13.C.4 CSV dropzone uses `.prevent.stop` on drag handlers so the
+      global overlay never activates while the cursor is inside it
+- [x] 13.C.5 Test: `dataTransfer.types` filter (only show for file drags)
+- [x] 13.C.6 Test: drop runs the import handler; overlay clears
+- [x] 13.D.1 `share.tooLarge` updated to point users at the Import menu
+- [x] 13.E.1 `ConfirmDialog` already in use (lifecycle.confirmer) —
+      no `window.confirm` introduced
+- [x] 13.E.2 Telemetry-free — no analytics added
+- [x] 13.E.3 `nl.json` mirror complete; flagged in `PLACEHOLDERS.md`
+- [x] 13.E.4 Decisions D41–D46 added to `DECISIONS.md`
+- [x] 13.F.1 `file_handlers` entry added to PWA manifest in
+      `vite.config.ts`
+- [x] 13.F.2 `launchQueue` consumer in `AppShell.vue` drains the queue
+      before share-URL hash; routes through `runImport`; replaces
+      `/open` URL with `/`
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test (275 passing)
+- [x] build

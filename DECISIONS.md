@@ -511,3 +511,82 @@ sure the SPA fallback doesn't intercept it. The file is hand-maintained
 to mirror `docker-compose.yml` at the repo root — they're tiny, and the
 two filenames serve different purposes (compose.yml is for clones,
 compose.yaml is for download).
+
+## D41 — `.label` and `.zip` import is a first-class menu action plus drag-and-drop
+
+Two surfaces share one handler. The Save dropdown gets an **Import…**
+entry above the Export divider so the order reads *Save → Library |
+Import | Export PDF / PNG / .label / .zip*; clicking it opens a
+hidden `<input type="file" accept=".label,.zip,application/json,application/zip">`.
+The app-shell mounts a full-window drop overlay that activates on any
+file drag (`dataTransfer.types.includes('Files')`) and falls through to
+the same `runImport` path on drop.
+
+Menu = discoverable + keyboard-friendly; drag-drop = fast for the
+common "I just downloaded this from a colleague" case. One handler,
+one branch (`isZip` → `parseBundle`, otherwise → `fromJSON`), no
+duplicated plumbing.
+
+## D42 — Bundle assets are restored via `assetLoader.set(key, bytes)`, not `store(bytes)`
+
+`InMemoryAssetLoader.store(bytes)` re-hashes the input and returns a
+fresh key. That's wrong for bundle import: the document already
+references `assetKey` strings the bundle filenames were written from,
+and `store()` would return new keys that don't match. `set(key, bytes)`
+is the public bypass — it puts bytes under a caller-supplied key with
+no re-hash.
+
+Dev-only integrity check: when running in `import.meta.env.DEV` and not
+under the test runner, recompute SHA-1 and `console.warn` on mismatch.
+Production skips the check; the renderer's missing-asset placeholder
+covers tampered bundles.
+
+## D43 — Imported documents land on the canvas, not in the library
+
+Mirrors the share-URL import flow. After parsing, the editor shows the
+imported document, history is cleared, no library entry is created,
+and an informational toast says "Label imported." If the user wants to
+keep it, they click **Save** in the Save dropdown — the imported doc
+has no library id, so Save lands it in the next free slot. No
+auto-save (would bloat the library with throwaway templates), no
+"Save to library" toast action (would conflict with the discoverable
+Save dropdown).
+
+## D44 — `.label` / `.zip` imports always get a fresh `id` + timestamps
+
+Every imported document is rewritten with `crypto.randomUUID()` and a
+fresh `createdAt`/`updatedAt` immediately before `loadDocument`. Mirrors
+the share-URL rewrite (D38, already shipped in `readDocumentFromHash`).
+Without this, importing a `.label` whose id collides with an existing
+library slot would silently overwrite that slot on the next Save.
+
+The cost is that round-tripping an export through Import creates a new
+slot rather than re-occupying the original. That's correct: import is
+"bring in," not "restore in place." To update a library entry, the user
+opens it from the library.
+
+## D45 — Replace-confirm reuses `confirmDestructiveSwap()` with an optional `incomingName`
+
+The library-slots amendment (D36) already routes all destructive swaps
+through `confirmDestructiveSwap()`, gated on `designer.canUndo`. The
+import flow extends this helper with an optional `{ incomingName }`
+parameter so the prompt can name the file being imported ("Replace 'My
+label' with 'colleague.label'?"). Existing parameterless callers (the
+`+` button, **New label**) keep using the generic `library.replaceConfirm`
+copy unchanged; the import flow uses the new
+`library.replaceConfirmWithIncoming` key.
+
+This is the only edit to library-slots' shipped code.
+
+## D46 — PWA `file_handlers` registers `.label` and `.zip` as openable types
+
+The PWA manifest declares `file_handlers` with `action: '/open'` and
+`launch_type: 'single-client'`. On Chromium installed PWAs the OS
+routes double-clicks of `.label` / `.zip` to the running (or freshly
+launched) app via `launchQueue`. AppShell drains the queue before any
+share-URL hash check — the file open is a more explicit user action.
+Safari/Firefox ignore the field; no harm.
+
+The launchQueue handler delegates to the same `useLabelImport.runImport`
+that the menu and drop overlay use, so the confirm-replace and missing-
+assets toasts are uniform across all entry points.

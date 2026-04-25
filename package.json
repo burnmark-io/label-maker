@@ -30,6 +30,7 @@
     "@thermal-label/transport": "latest",
     "@vueuse/core": "^11.0.0",
     "idb": "^8.0.0",
+    "jszip": "^3.10.1",
     "konva": "^9.0.0",
     "pako": "^2.0.0",
     "pinia": "^2.0.0",

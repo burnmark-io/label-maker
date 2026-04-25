@@ -38,6 +38,16 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        file_handlers: [
+          {
+            action: '/open',
+            accept: {
+              'application/json': ['.label'],
+              'application/zip': ['.zip'],
+            },
+            launch_type: 'single-client',
+          },
+        ],
       },
     }),
   ],

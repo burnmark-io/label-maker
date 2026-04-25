@@ -18,6 +18,7 @@
     "saveCurrent": "Opslaan",
     "newLabel": "Nieuw label",
     "saveAsNew": "Opslaan als nieuw",
+    "import": "Importeren…",
     "exportPdf": "PDF",
     "exportPng": "PNG",
     "exportLabel": ".label bestand",
@@ -450,6 +451,7 @@
     "cantSaveAsNew": "Bibliotheek is vol — verwijder eerst een ontwerp om een kopie op te slaan.",
     "replaceConfirmTitle": "Huidig label vervangen?",
     "replaceConfirm": "Je niet-opgeslagen wijzigingen gaan verloren. Sla ze eerst op om ze te behouden.",
+    "replaceConfirmWithIncoming": "Vervang \"{current}\" door \"{incoming}\"? Niet-opgeslagen wijzigingen gaan verloren.",
     "replaceConfirmAction": "Vervangen",
     "slotsHint": "Elke plek bevat een apart label. Gebruik Nieuw label of Opslaan als nieuw om meer plekken te vullen.",
     "untitled": "Naamloos",
@@ -479,7 +481,7 @@
     "copy": "Kopieer",
     "copied": "Gekopieerd!",
     "size": "{size} van {limit} bytes",
-    "tooLarge": "Dit ontwerp is te groot voor een deel-link. Exporteer het als .label-bestand.",
+    "tooLarge": "Dit ontwerp is te groot voor een deel-link. Exporteer het als .label-bestand en deel dat — ontvangers kunnen het via het Importeren-menu openen.",
     "exportLabel": "Exporteer .label",
     "imported": "Label geladen vanaf gedeelde link"
   },
@@ -489,6 +491,20 @@
     "labelDownloaded": ".label-bestand gedownload",
     "zipDownloaded": ".zip-bundel gedownload",
     "zipMissing": "{count} assets ontbraken in de bundel"
+  },
+  "import": {
+    "loading": "Importeren…",
+    "success": "Label geïmporteerd",
+    "successWithMissing": "Label geïmporteerd — {count} assets ontbraken",
+    "dropOverlayTitle": "Sleep een .label of .zip hier om te openen",
+    "errors": {
+      "too-large": "Bestand is te groot om te importeren (limiet 50 MB).",
+      "unknown-format": "Kies een .label- of .zip-bestand.",
+      "invalid-json": "Dat .label-bestand is beschadigd.",
+      "invalid-zip": "Dat lijkt geen .zip-bundel.",
+      "bundle-missing-label": "Deze .zip bevat geen label.",
+      "bundle-label-malformed": "Het label in deze .zip is beschadigd."
+    }
   },
   "install": {
     "title": "burnmark installeren",

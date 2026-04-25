@@ -26,10 +26,10 @@
         @click="onClickDropzone"
         @keydown.enter.prevent="onClickDropzone"
         @keydown.space.prevent="onClickDropzone"
-        @dragenter.prevent="setDragging(true)"
-        @dragover.prevent="setDragging(true)"
-        @dragleave.prevent="onDragLeave"
-        @drop.prevent="onDrop"
+        @dragenter.prevent.stop="setDragging(true)"
+        @dragover.prevent.stop="setDragging(true)"
+        @dragleave.prevent.stop="onDragLeave"
+        @drop.prevent.stop="onDrop"
       >
         <span class="dropzone__icon" aria-hidden="true">📂</span>
         <p class="dropzone__line">{{ t('data.import.dropPrompt') }}</p>

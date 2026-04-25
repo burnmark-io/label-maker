@@ -126,6 +126,12 @@
         </li>
         <li class="actions__divider" aria-hidden="true" />
         <li>
+          <button type="button" role="menuitem" @click="onImport">
+            {{ t('actions.import') }}
+          </button>
+        </li>
+        <li class="actions__divider" aria-hidden="true" />
+        <li>
           <button type="button" role="menuitem" @click="onExportPdf">
             {{ t('actions.exportPdf') }}
           </button>
@@ -159,6 +165,16 @@
       </ul>
     </div>
 
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept=".label,.zip,application/json,application/zip"
+      class="actions__file-input"
+      aria-hidden="true"
+      tabindex="-1"
+      @change="onFilePicked"
+    />
+
     <ConfirmDialog
       :open="lifecycle.confirmer.open.value"
       :title="lifecycle.confirmer.options.value?.title ?? ''"
@@ -181,6 +197,7 @@ import { useDataStore } from '@/stores/data';
 import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
+import { useLabelImport } from '@/composables/useLabelImport';
 import { downloadBlob, safeFileName } from '@/services/file-download';
 import { applyMappingToRow } from '@/services/column-mapper';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
@@ -199,6 +216,7 @@ const data = useDataStore();
 const library = useLibraryStore();
 const { show, update, dismiss } = useToast();
 const lifecycle = useDocumentLifecycle();
+const labelImport = useLabelImport();
 
 const dropdownOpen = ref(false);
 const optionsOpen = ref(false);
@@ -206,6 +224,7 @@ const copies = ref(1);
 const density = ref<'light' | 'normal' | 'dark'>('normal');
 const printRootRef = ref<HTMLElement | null>(null);
 const saveRootRef = ref<HTMLElement | null>(null);
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 async function onPrint(): Promise<void> {
   if (!printer.isConnected) {
@@ -286,6 +305,18 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 
 async function onSave(): Promise<void> {
   await persistCurrentDoc('library.saved');
+}
+
+function onImport(): void {
+  fileInputRef.value?.click();
+}
+
+async function onFilePicked(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  await labelImport.runImport(file);
 }
 
 async function onNewLabel(): Promise<void> {
@@ -524,5 +555,18 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
   height: 1px;
   background: var(--color-border);
   margin: var(--space-1) 0;
+}
+
+.actions__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
 }
 </style>

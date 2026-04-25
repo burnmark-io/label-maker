@@ -4,7 +4,7 @@ import { useConfirm, type ConfirmController } from './useConfirm';
 
 export interface DocumentLifecycle {
   confirmer: ConfirmController;
-  confirmDestructiveSwap(): Promise<boolean>;
+  confirmDestructiveSwap(opts?: { incomingName?: string }): Promise<boolean>;
   newBlankDocument(): void;
   assignNewId(): string;
 }
@@ -31,11 +31,17 @@ export function useDocumentLifecycle(): DocumentLifecycle {
    * call `clearHistory()` on load, so canUndo === false reliably means
    * "nothing the user could be surprised to lose."
    */
-  async function confirmDestructiveSwap(): Promise<boolean> {
+  async function confirmDestructiveSwap(opts: { incomingName?: string } = {}): Promise<boolean> {
     if (!designer.canUndo) return true;
+    const messageKey = opts.incomingName
+      ? 'library.replaceConfirmWithIncoming'
+      : 'library.replaceConfirm';
     return confirmer.confirm({
       title: t('library.replaceConfirmTitle'),
-      message: t('library.replaceConfirm'),
+      message: t(messageKey, {
+        current: designer.document.name,
+        incoming: opts.incomingName ?? '',
+      }),
       confirmLabel: t('library.replaceConfirmAction'),
       cancelLabel: t('common.cancel'),
       tone: 'danger',
