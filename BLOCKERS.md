@@ -3,14 +3,35 @@
 Genuinely blocking issues that need human input. Each entry: what was tried,
 what's needed, what was worked around in the meantime.
 
+> **Reverting workarounds**: every `(soft)` entry below that lists a
+> "Revert when fixed" checklist describes a hack that exists only to
+> compensate for an unreleased dependency fix. When the dependency
+> ships, work through the checklist top-to-bottom — each item is the
+> exact path to delete or revert.
+
 ## (soft) designer-core ships a Node-aware bundle
 
-`@burnmark-io/designer-core@0.1.0` imports `node:crypto`, `node:url`,
-`node:path`, and dynamically `@napi-rs/canvas`. Browser builds need
-shims to satisfy the bundler. **Not blocking** — see D1 in DECISIONS.md
-for the alias-to-shim workaround. A future designer-core release should
-expose a `./browser` export that doesn't touch the Node modules; once
-available, drop the shims and the vite aliases.
+**Affected version:** `@burnmark-io/designer-core@0.1.0`
+**See also:** D1 in DECISIONS.md.
+
+The bundle imports `node:crypto`, `node:url`, `node:path`, and
+dynamically imports `@napi-rs/canvas`. The runtime guards
+(`globalThis.FontFace`, `globalThis.crypto.randomUUID`) ensure the Node
+paths are unreachable in a browser, but bundlers still need to resolve
+the imports.
+
+**Upstream fix (designer-core):** add a `./browser` export condition in
+`package.json` that points at a build with the Node paths stripped.
+The browser path can either inline a tiny `randomUUID()` polyfill or
+require the WebCrypto-backed one. `@napi-rs/canvas` should be lazy-
+imported only on the Node code path.
+
+**Revert when fixed (this repo):**
+- [ ] Delete `src/shims/node-crypto.ts`
+- [ ] Delete `src/shims/node-url.ts`
+- [ ] Delete `src/shims/node-path.ts`
+- [ ] Delete `src/shims/napi-canvas.ts`
+- [ ] Remove the four matching aliases from `vite.config.ts`
 
 ## (soft) No git remote configured
 
@@ -19,22 +40,105 @@ are no-ops. The operator should `git remote add origin
 git@github.com:burnmark-io/label-maker.git` (once the repo exists)
 and push the local branch.
 
-## (soft) designer-core barcode path needs SVG → ImageBitmap workaround
+## (soft) designer-core barcode path can't render in Chromium
 
-`@burnmark-io/designer-core@0.1.0`'s browser barcode renderer calls
-`createImageBitmap(svgBlob)`, which Chromium does not support — every
-document containing a barcode throws `InvalidStateError: The source
-image could not be decoded`. Worked around in this app via
-`src/shims/createImageBitmap-svg.ts` (see DECISIONS.md D17). Upstream
-fix: in `BarcodeEngine.renderToImage`, pipe the SVG through an
-`HTMLImageElement` (`img.decode()` + native `createImageBitmap(img)`)
-instead of decoding the blob directly. Once that ships, drop the shim.
+**Affected version:** `@burnmark-io/designer-core@0.1.0`
+**Affected code:** `dist/render/barcode.js` →
+`BarcodeEngine.renderToImage()` (browser branch)
+**See also:** D17 in DECISIONS.md.
+
+The browser branch renders barcodes via:
+
+```js
+const svg = bwip.toSVG(opts);                          // viewBox-only SVG
+const blob = new Blob([svg], { type: 'image/svg+xml' });
+const bitmap = await createImageBitmap(blob);          // (1)
+return { image: bitmap, width: bitmap.width, height: bitmap.height };
+```
+
+This trips two Chromium gaps in succession:
+
+1. **`createImageBitmap(svgBlob)` is unsupported in Chromium** —
+   throws `InvalidStateError: The source image could not be decoded`.
+   Firefox decodes SVG blobs natively; Chromium has never shipped it
+   (open issue since at least 2018).
+2. **Even with an `HTMLImageElement` indirection, bwip-js's `toSVG()`
+   output has only `viewBox`, no `width`/`height` attributes** — so
+   the decoded image has zero `naturalWidth`/`naturalHeight`. Calling
+   `createImageBitmap(img)` then fails ("no resize options are
+   specified"); supplying `resizeWidth`/`resizeHeight` instead scales
+   a 0×0 source to the target size, yielding a fully transparent
+   bitmap (no error, but the barcode renders blank).
+
+**Upstream fix options (designer-core), pick one:**
+
+a) **Use bwip-js's `toCanvas(canvas, opts)`** in the browser branch.
+   It rasterises directly to a Canvas2D, no SVG involved — bypasses
+   both bugs in one stroke. Wrap with `createImageBitmap(canvas)` for
+   the existing return shape.
+
+b) **Keep the SVG approach but inject `width`/`height` from the
+   viewBox before blobbing**, then go through an `HTMLImageElement`:
+   ```js
+   const svg = bwip.toSVG(opts);
+   const sized = injectWidthHeightFromViewBox(svg);
+   const blob = new Blob([sized], { type: 'image/svg+xml' });
+   const url = URL.createObjectURL(blob);
+   try {
+     const img = new Image();
+     img.src = url;
+     await img.decode();
+     return { image: await createImageBitmap(img), width: img.naturalWidth, height: img.naturalHeight };
+   } finally {
+     URL.revokeObjectURL(url);
+   }
+   ```
+
+(a) is simpler. (b) matches what we're doing here in the shim.
+
+**Worked around with:** `src/shims/createImageBitmap-svg.ts` —
+patches `globalThis.createImageBitmap` at app startup so SVG blobs
+get the inject-then-image-element treatment transparently. Every
+other input flows to native unchanged.
+
+**Revert when fixed (this repo):**
+- [ ] Delete `src/shims/createImageBitmap-svg.ts`
+- [ ] Delete `src/shims/__tests__/createImageBitmap-svg.test.ts`
+- [ ] Remove the `patchCreateImageBitmap()` import + call from
+      `src/main.ts`
+- [ ] Delete decision **D17** from `DECISIONS.md` (or move it to a
+      "historical" section)
+- [ ] Verify QR code in the first-visit sample label still renders in
+      Chrome and Firefox
 
 ## (soft) `LabelObjectInput` distributes Omit over the union
 
-The exposed `add()` method's parameter type loses subtype-specific
-fields. We wrapped it (D2) so consumers can pass typed discriminated
-inputs. **Not blocking.**
+**Affected version:** `@burnmark-io/designer-core@0.1.0`
+**Affected code:** `add()` parameter type in `dist/designer.d.ts`
+**See also:** D2 in DECISIONS.md.
+
+`LabelDesigner.add(object: LabelObjectInput)` accepts the union
+`Omit<LabelObject, 'id'>`. TypeScript's `Omit` over a union returns
+the intersection of common keys, dropping subtype-specific fields like
+`shape: 'rectangle'` or `content: string`.
+
+**Upstream fix (designer-core):** distribute `Omit` across the union:
+```ts
+type LabelObjectInput = LabelObject extends infer T
+  ? T extends LabelObject
+    ? Omit<T, 'id'>
+    : never
+  : never;
+```
+or define the input type per subtype.
+
+**Revert when fixed (this repo):**
+- [ ] Replace the generic `addObject<T>` wrapper in
+      `src/stores/designer.ts` with a direct `add: composable.add`
+      forward
+- [ ] Update every `addObject<TextObject>(…)` / `<ShapeObject>` /
+      `<ImageObject>` / `<BarcodeObject>` call site (sample-label,
+      shape registry, panel handlers) — drop the type argument
 
 ## (env) Linux: usblp + ipp-usb hold interface 0 from WebUSB
 
