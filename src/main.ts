@@ -14,6 +14,6 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 app.use(i18n);
-app.use(VueKonva);
+app.use(VueKonva, { prefix: 'V' });
 
 app.mount('#app');

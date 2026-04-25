@@ -2,9 +2,13 @@
   <div class="properties-panel">
     <h2 class="panel__title">{{ t('panel.properties') }}</h2>
     <p v-if="!selected" class="panel__empty">{{ t('panel.noSelection') }}</p>
-    <div v-else class="properties-panel__form">
-      <p class="properties-panel__type">{{ selected.type }}</p>
-    </div>
+    <template v-else>
+      <CommonProperties :object="selected" />
+      <TextProperties v-if="selected.type === 'text'" :object="selected" />
+      <ImageProperties v-else-if="selected.type === 'image'" :object="selected" />
+      <BarcodeProperties v-else-if="selected.type === 'barcode'" :object="selected" />
+      <ShapeProperties v-else-if="selected.type === 'shape'" :object="selected" />
+    </template>
   </div>
 </template>
 
@@ -13,6 +17,11 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
 import type { LabelObject } from '@burnmark-io/designer-core';
+import CommonProperties from './CommonProperties.vue';
+import TextProperties from './TextProperties.vue';
+import ImageProperties from './ImageProperties.vue';
+import BarcodeProperties from './BarcodeProperties.vue';
+import ShapeProperties from './ShapeProperties.vue';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
@@ -28,7 +37,7 @@ const selected = computed<LabelObject | undefined>(() => {
 .properties-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .panel__title {
@@ -42,19 +51,6 @@ const selected = computed<LabelObject | undefined>(() => {
 .panel__empty {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-}
-
-.properties-panel__form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.properties-panel__type {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: var(--weight-medium);
+  padding: var(--space-4) 0;
 }
 </style>

@@ -16,23 +16,23 @@ Tracking the phase/step plan from `PLAN.md` section 22. Tick boxes as steps comp
 - [x] build
 
 ## Phase 2: Design Canvas
-- [ ] 6. Konva canvas — stage, background layer, grid overlay
-- [ ] 7. Text objects — add, select, move, resize, edit inline
-- [ ] 8. Image objects — import (with resize), fit modes, drag
-- [ ] 9. Shape objects — basic shapes (rect, circle, line)
-- [ ] 10. Barcode objects — format picker, data input, live preview
-- [ ] 11. Selection — multi-select, handles, alignment guides, snapping
-- [ ] 12. Properties panel — text, image, barcode, shape properties
-- [ ] 13. Objects panel — z-order list, visibility, lock
-- [ ] 14. Paper direction indicator — feed arrow, cut line for continuous
-- [ ] 15. Keyboard shortcuts
-- [ ] 16. Gate: can design a label with all object types, undo/redo works
+- [x] 6. Konva canvas — stage, background layer, grid overlay
+- [x] 7. Text objects — add, select, move, resize, edit inline
+- [x] 8. Image objects — import (with resize), fit modes, drag
+- [x] 9. Shape objects — basic shapes (rect, circle, line)
+- [x] 10. Barcode objects — format picker, data input, live preview
+- [x] 11. Selection — multi-select, handles, alignment guides, snapping
+- [x] 12. Properties panel — text, image, barcode, shape properties
+- [x] 13. Objects panel — z-order list, visibility, lock
+- [x] 14. Paper direction indicator — feed arrow, cut line for continuous
+- [x] 15. Keyboard shortcuts
+- [x] 16. Gate: can design a label with all object types, undo/redo works
 
 **Gate check:**
-- [ ] typecheck
-- [ ] lint
-- [ ] test
-- [ ] build
+- [x] typecheck
+- [x] lint
+- [x] test
+- [x] build
 
 ## Phase 3+ (later sessions)
 

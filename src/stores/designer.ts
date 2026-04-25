@@ -6,6 +6,7 @@ import type {
   LabelObjectInput,
   LabelDocument,
 } from '@burnmark-io/designer-core';
+import { BurnmarkAssetLoader } from '@/services/asset-loader';
 
 /**
  * Designer store — wraps `useLabelDesigner` from `@burnmark-io/designer-vue`
@@ -15,6 +16,8 @@ import type {
  * objects panel — they're all views over this state.
  */
 export const useDesignerStore = defineStore('designer', () => {
+  const assetLoader = new BurnmarkAssetLoader();
+
   const composable = useLabelDesigner({
     canvas: {
       widthDots: 696,
@@ -23,6 +26,7 @@ export const useDesignerStore = defineStore('designer', () => {
     },
     name: 'Untitled label',
     renderOnMount: false,
+    assetLoader,
   });
 
   /**
@@ -82,5 +86,6 @@ export const useDesignerStore = defineStore('designer', () => {
     get: composable.get,
     getAll: composable.getAll,
     designer: composable.designer,
+    assetLoader,
   };
 });

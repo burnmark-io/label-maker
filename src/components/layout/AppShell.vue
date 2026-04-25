@@ -4,6 +4,7 @@
     <main class="app-shell__main">
       <section class="app-shell__canvas-area" :aria-label="t('canvas.ariaLabel')">
         <DesignCanvas />
+        <MainToolbar />
       </section>
       <SidePanel v-if="prefs.sidePanelOpen" />
     </main>
@@ -19,14 +20,18 @@ import TopBar from './TopBar.vue';
 import SidePanel from './SidePanel.vue';
 import AppFooter from './AppFooter.vue';
 import DesignCanvas from '@/components/canvas/DesignCanvas.vue';
+import MainToolbar from '@/components/toolbar/MainToolbar.vue';
 
 import { useDesignerStore } from '@/stores/designer';
 import { usePreferencesStore } from '@/stores/preferences';
 import { loadFirstVisitDocument } from '@/services/sample-label';
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
 const prefs = usePreferencesStore();
+
+useKeyboardShortcuts();
 
 onMounted(() => {
   prefs.sessionCount += 1;
@@ -57,11 +62,9 @@ onMounted(() => {
 
 .app-shell__canvas-area {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
   background: var(--color-bg-canvas);
   position: relative;
+  min-width: 0;
 }
 </style>

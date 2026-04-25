@@ -12,6 +12,13 @@ for the alias-to-shim workaround. A future designer-core release should
 expose a `./browser` export that doesn't touch the Node modules; once
 available, drop the shims and the vite aliases.
 
+## (soft) No git remote configured
+
+The repo has no `origin` remote. Each phase commits locally; pushes
+are no-ops. The operator should `git remote add origin
+git@github.com:burnmark-io/label-maker.git` (once the repo exists)
+and push the local branch.
+
 ## (soft) `LabelObjectInput` distributes Omit over the union
 
 The exposed `add()` method's parameter type loses subtype-specific
