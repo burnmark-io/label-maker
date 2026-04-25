@@ -1,7 +1,5 @@
 <template>
   <div class="data-panel">
-    <h2 class="panel__title">{{ t('panel.data') }}</h2>
-
     <section class="data-panel__section">
       <h3 class="data-panel__heading">{{ t('data.placeholders.title') }}</h3>
       <p v-if="data.placeholders.length === 0" class="data-panel__empty">

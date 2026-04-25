@@ -404,8 +404,8 @@
     "step1Body": "This is a sample — click any element to edit, or start fresh.",
     "step2Title": "Add things from the toolbar",
     "step2Body": "Text, images, barcodes, shapes — pick one and click the label.",
-    "step3Title": "Adjust in the side panel",
-    "step3Body": "Select any object and tweak its font, size, colour, and more.",
+    "step3Title": "Edit objects in the side panel",
+    "step3Body": "Click any object in the list to edit its properties.",
     "step4Title": "Connect and print",
     "step4Body": "Connect your printer and hit print. That's it!"
   },

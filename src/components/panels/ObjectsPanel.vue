@@ -1,6 +1,5 @@
 <template>
   <div class="objects-panel">
-    <h2 class="panel__title">{{ t('panel.objects') }}</h2>
     <p v-if="!objects.length" class="panel__empty">{{ t('panel.emptyObjects') }}</p>
     <ul v-else class="objects-list" role="list">
       <li

@@ -1,9 +1,7 @@
 <template>
   <div class="preview">
-    <header class="preview__header">
-      <h3 class="preview__title">{{ t('preview.title') }}</h3>
+    <header v-if="printer.isConnected" class="preview__header">
       <button
-        v-if="printer.isConnected"
         class="preview__refresh"
         type="button"
         :aria-label="t('preview.refresh')"

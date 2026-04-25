@@ -27,7 +27,6 @@
       class="side-panel__body"
     >
       <ObjectsPanel v-if="prefs.sidePanelTab === 'objects'" />
-      <PropertiesPanel v-else-if="prefs.sidePanelTab === 'properties'" />
       <DataPanel v-else-if="prefs.sidePanelTab === 'data'" @open-batch="emit('open-batch')" />
       <PrintPreview v-else-if="prefs.sidePanelTab === 'preview'" />
     </div>
@@ -39,7 +38,6 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePreferencesStore, type SidePanelTab } from '@/stores/preferences';
 import ObjectsPanel from '@/components/panels/ObjectsPanel.vue';
-import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
 import DataPanel from '@/components/panels/DataPanel.vue';
 import PrintPreview from '@/components/printer/PrintPreview.vue';
 
@@ -52,7 +50,6 @@ const prefs = usePreferencesStore();
 
 const tabs = computed<{ id: SidePanelTab; label: string }[]>(() => [
   { id: 'objects', label: t('panel.objects') },
-  { id: 'properties', label: t('panel.properties') },
   { id: 'data', label: t('panel.data') },
   { id: 'preview', label: t('panel.preview') },
 ]);

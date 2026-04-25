@@ -14,7 +14,7 @@ describe('preferences store', () => {
     expect(prefs.showGrid).toBe(true);
     expect(prefs.snapToGrid).toBe(true);
     expect(prefs.sidePanelOpen).toBe(true);
-    expect(prefs.sidePanelTab).toBe('properties');
+    expect(prefs.sidePanelTab).toBe('objects');
   });
 
   it('persists changes to localStorage', async () => {
@@ -25,8 +25,16 @@ describe('preferences store', () => {
   });
 
   it('reads existing localStorage values', () => {
-    window.localStorage.setItem('burnmark.sidePanelTab', 'objects');
+    window.localStorage.setItem('burnmark.sidePanelTab', 'data');
+    const prefs = usePreferencesStore();
+    expect(prefs.sidePanelTab).toBe('data');
+  });
+
+  it('migrates legacy "properties" tab value to "objects"', async () => {
+    window.localStorage.setItem('burnmark.sidePanelTab', 'properties');
     const prefs = usePreferencesStore();
     expect(prefs.sidePanelTab).toBe('objects');
+    await nextTick();
+    expect(window.localStorage.getItem('burnmark.sidePanelTab')).toBe('objects');
   });
 });

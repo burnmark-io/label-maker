@@ -129,6 +129,26 @@ Tracking the phase/step plan from `PLAN.md` section 22. Tick boxes as steps comp
 - [x] test
 - [x] build
 
+## Phase 10: Side-panel and data UX
+
+Implementing `amendment-side-panel-and-data.md` — merge Objects+Properties into
+an accordion, grow the Data tab into a real workspace with a global dataset
+pool (≤10 sets, ≤30 rows each, IndexedDB-persisted, cross-design).
+
+### Phase A: Tab structure & migration
+- [x] A1. Reduce tabs to 3 (`objects` / `data` / `preview`); `SidePanelTab` type pruned; one-shot migration maps legacy `'properties'` value → `'objects'` at store init
+- [x] A2. i18n — `panel.properties` kept as a string but no longer used as a tab label; locale parity preserved
+- [x] A3. Onboarding tour step 3 copy updated ("Edit objects in the side panel" / "Click any object in the list to edit its properties.") in en + nl
+- [x] A4. Help / shortcuts modal: no Properties-tab references; nothing to update
+- [x] A5. Dropped redundant `<h2 class="panel__title">{{ t('panel.X') }}</h2>` headers from `ObjectsPanel.vue`, `DataPanel.vue`, `PrintPreview.vue`
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
 ## Phase 9: Final
 - [x] 63. Verify all gate checks across phases
 - [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)
