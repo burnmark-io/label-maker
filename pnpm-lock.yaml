@@ -36,11 +36,11 @@ importers:
         specifier: latest
         version: 0.2.1(typescript@5.5.4)
       '@thermal-label/labelwriter-core':
-        specifier: ^0.2.1
-        version: 0.2.1
+        specifier: ^0.2.2
+        version: 0.2.2
       '@thermal-label/labelwriter-web':
-        specifier: latest
-        version: 0.2.1(typescript@5.5.4)
+        specifier: ^0.2.2
+        version: 0.2.2(typescript@5.5.4)
       '@thermal-label/transport':
         specifier: latest
         version: 0.2.0
@@ -1180,12 +1180,12 @@ packages:
     peerDependencies:
       typescript: '>=5.0'
 
-  '@thermal-label/labelwriter-core@0.2.1':
-    resolution: {integrity: sha512-GsT6040WsUFb6ZS+r3DwitS6mt5D4Hctu4ud/BR6XK/hZJLsIzMJ7j4UgJEu5nKpEJo65Hd2VMAMD+AL1VtvIg==}
+  '@thermal-label/labelwriter-core@0.2.2':
+    resolution: {integrity: sha512-wPFKBbFpsKpoPGsaUGGwb4864r1Yzd3QiTyfSEHNVSZ1fAkdImRF4cseRl6odY0egJ6H7MWv3tVJaRrBmkPTwg==}
     engines: {node: '>=24.0.0'}
 
-  '@thermal-label/labelwriter-web@0.2.1':
-    resolution: {integrity: sha512-v+xk/nHB6gc+9wBNkYFEblfvFwwN1P8raOLxJFtSA+Qgx6t2Fal/EWMJUxdZfg9WPnJMrD4eo/+Jv3iKF5CkOw==}
+  '@thermal-label/labelwriter-web@0.2.2':
+    resolution: {integrity: sha512-2xJtTaaUmoPNGiLVl44ahGYJledSB5QjZQDkWDrwXTLwygnN2v7wTv+C9jA3BqAH50r/CXP3GbvefBU8MoBbJg==}
     peerDependencies:
       typescript: '>=5.0'
 
@@ -4619,15 +4619,15 @@ snapshots:
       - serialport
       - usb
 
-  '@thermal-label/labelwriter-core@0.2.1':
+  '@thermal-label/labelwriter-core@0.2.2':
     dependencies:
       '@mbtech-nl/bitmap': 0.1.0
       '@thermal-label/contracts': 0.1.2
 
-  '@thermal-label/labelwriter-web@0.2.1(typescript@5.5.4)':
+  '@thermal-label/labelwriter-web@0.2.2(typescript@5.5.4)':
     dependencies:
       '@thermal-label/contracts': 0.1.2
-      '@thermal-label/labelwriter-core': 0.2.1
+      '@thermal-label/labelwriter-core': 0.2.2
       '@thermal-label/transport': 0.2.0
       typescript: 5.5.4
     transitivePeerDependencies:
