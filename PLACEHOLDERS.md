@@ -22,6 +22,7 @@ Temporary values that need to be replaced before launch. Operator will fill thes
 | Favicon | `public/favicon.svg` — amber rounded rectangle with hand-drawn mock text | Replace with proper logo |
 | App logo (top bar) | 🏷️ emoji + text "burnmark" | Replace with proper logo |
 | Sample label first-visit | code in `src/services/sample-label.ts` | Working sample (greeting + QR), but design polish welcome |
+| PWA icons (192, 512, maskable) | `public/icons/icon-{192,512,maskable}.png` — solid amber squares with "bm" text generated via ImageMagick | Replace with proper logo art |
 
 ## Copy
 

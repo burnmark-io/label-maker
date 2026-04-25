@@ -1,11 +1,41 @@
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import { VitePWA } from 'vite-plugin-pwa';
 
 const r = (p: string): string => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icons/*.png', 'compose.yaml'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        navigateFallbackDenylist: [/^\/compose\.yaml$/],
+      },
+      manifest: {
+        name: 'burnmark',
+        short_name: 'burnmark',
+        description: 'Design beautiful labels',
+        theme_color: '#f59e0b',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/',
+        icons: [
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: 'icons/icon-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': r('./src'),

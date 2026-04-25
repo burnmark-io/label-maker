@@ -3,7 +3,20 @@
     "allow": [
       "Bash(lsusb -d 04f9:209d)",
       "Read(//sys/bus/usb/drivers/usblp/**)",
-      "Bash(sudo -n lsof /dev/bus/usb/003/056)"
+      "Bash(sudo -n lsof /dev/bus/usb/003/056)",
+      "Bash(convert --version)",
+      "Bash(convert -size 192x192 xc:'#f59e0b' -gravity center -fill '#fffbeb' -font DejaVu-Sans-Bold -pointsize 88 -annotate +0+0 'bm' public/icons/icon-192.png)",
+      "Bash(convert -size 512x512 xc:'#f59e0b' -gravity center -fill '#fffbeb' -font DejaVu-Sans-Bold -pointsize 240 -annotate +0+0 'bm' public/icons/icon-512.png)",
+      "Bash(convert -size 512x512 xc:'#f59e0b' -gravity center -fill '#fffbeb' -font DejaVu-Sans-Bold -pointsize 180 -annotate +0+0 'bm' public/icons/icon-maskable.png)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(docker build *)",
+      "Bash(docker run *)",
+      "Bash(curl -fsSI http://localhost:18080/)",
+      "Bash(curl -fsSI http://localhost:18080/manifest.webmanifest)",
+      "Bash(curl -fsSI http://localhost:18080/sw.js)",
+      "Bash(curl -fsSI http://localhost:18080/compose.yaml)",
+      "Bash(docker stop *)"
     ]
   }
 }

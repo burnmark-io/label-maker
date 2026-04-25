@@ -340,3 +340,40 @@ every target browser. All other inputs pass through to the native
 implementation unchanged. Logged in BLOCKERS.md as a soft issue against
 designer-core — a clean fix upstream is to use the `Image` indirection
 inside `BarcodeEngine.renderToImage` directly.
+
+## D27 — PWA install prompt is a custom toast, not a generic Toast
+
+The plan calls for a "subtle toast" with `[Install] [Maybe later]` actions.
+The existing `useToast` queue only exposes `message + kind`, no action
+buttons. Rather than retrofit the toast queue (Phase 8 concern), I added
+a dedicated `InstallPrompt.vue` component. It listens for
+`beforeinstallprompt`, gates on `prefs.sessionCount >= 2`, and persists
+"Maybe later" via `prefs.installPromptDismissedAt` for 7 days.
+
+The component is rendered alongside `<ToastStack>` in `AppShell.vue` so
+it shares the same bottom-of-screen real estate but has its own layout.
+
+## D28 — Service worker registration is `immediate: true`
+
+`registerSW({ immediate: true })` in `main.ts`. We have no UI yet for
+"a new version is available — refresh?" (a Phase 8 polish item). With
+`registerType: 'autoUpdate'` plus `immediate`, the SW silently picks up
+the new bundle on next reload — acceptable for a tool whose users open
+it, design, print, close.
+
+## D29 — Docker image uses workspace pnpm via corepack
+
+`Dockerfile` uses `corepack enable && pnpm install --frozen-lockfile`
+inside `node:24-slim`. corepack ships with Node 24 so no extra apt
+install is needed; the slim image is ~80MB before our app, against
+~15MB for the final nginx:alpine stage that actually ships.
+
+## D30 — `compose.yaml` published in `public/` (not generated)
+
+PLAN section 12.3 wants `compose.yaml` at `burnmark-io.github.io/compose.yaml`.
+Putting it in `public/` is the simplest path: Vite copies `public/*` to
+the dist root verbatim, and the SW's `navigateFallbackDenylist` makes
+sure the SPA fallback doesn't intercept it. The file is hand-maintained
+to mirror `docker-compose.yml` at the repo root — they're tiny, and the
+two filenames serve different purposes (compose.yml is for clones,
+compose.yaml is for download).

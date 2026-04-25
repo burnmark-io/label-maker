@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import VueKonva from 'vue-konva';
+import { registerSW } from 'virtual:pwa-register';
 
 import App from './App.vue';
 import { router } from './router';
@@ -9,6 +10,8 @@ import { patchCreateImageBitmap } from './shims/createImageBitmap-svg';
 
 import './styles/variables.css';
 import './styles/base.css';
+
+registerSW({ immediate: true });
 
 // Designer-core's barcode path uses createImageBitmap on SVG blobs,
 // which Chromium does not support. See DECISIONS.md D17.

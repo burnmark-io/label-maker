@@ -1,0 +1,16 @@
+services:
+  app:
+    image: ghcr.io/burnmark-io/app:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  proxy:
+    image: ghcr.io/thermal-label/print-proxy:latest
+    ports:
+      - "3000:3000"
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    volumes:
+      - ./proxy.config.json:/app/proxy.config.json
+    restart: unless-stopped

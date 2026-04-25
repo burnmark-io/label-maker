@@ -303,5 +303,11 @@
     "zipDownloaded": ".zip-bundel gedownload",
     "zipMissing": "{count} assets ontbraken in de bundel"
   },
+  "install": {
+    "title": "burnmark installeren",
+    "message": "Installeer burnmark voor snelle toegang vanaf je bureaublad",
+    "install": "Installeren",
+    "later": "Later misschien"
+  },
   "placeholderNote": "burnmark UI strings"
 }

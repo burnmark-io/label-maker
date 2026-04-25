@@ -303,5 +303,11 @@
     "zipDownloaded": ".zip bundle downloaded",
     "zipMissing": "{count} assets were missing from the bundle"
   },
+  "install": {
+    "title": "Install burnmark",
+    "message": "Install burnmark for quick access from your desktop",
+    "install": "Install",
+    "later": "Maybe later"
+  },
   "placeholderNote": "burnmark UI strings"
 }

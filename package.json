@@ -62,7 +62,8 @@
     "vite-plugin-pwa": "^0.20.0",
     "vitest": "^2.0.0",
     "vue-eslint-parser": "^10.4.0",
-    "vue-tsc": "^2.0.0"
+    "vue-tsc": "^2.0.0",
+    "workbox-window": "^7.4.0"
   },
   "prettier": "@mbtech-nl/prettier-config"
 }

@@ -93,6 +93,20 @@ Tracking the phase/step plan from `PLAN.md` section 22. Tick boxes as steps comp
 - [x] test
 - [x] build
 
-## Phase 7+ (later sessions)
+## Phase 7: PWA and Docker
+- [x] 44. PWA — vite-plugin-pwa, manifest, icons, install prompt (after 2nd session, 7-day "maybe later")
+- [x] 45. Offline mode — IndexedDB designs, no external CDN deps; SW caches all static assets
+- [x] 46. Dockerfile — two-stage build (node:24-slim → nginx:alpine), serves on port 80
+- [x] 47. docker-compose.yml — app on 8080, proxy sidecar on 3000 with /dev/bus/usb mount
+- [x] 48. compose.yaml published to public/ for download at burnmark-io.github.io/compose.yaml
+- [x] 49. Gate: PWA manifest valid, SW registers, Docker builds and runs (smoke-tested with curl)
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] test
+- [x] build
+
+## Phase 8+ (later sessions)
 
 See `PLAN.md` section 22 for the remaining phases.

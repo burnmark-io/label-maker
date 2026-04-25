@@ -16,6 +16,7 @@
     </main>
     <AppFooter />
     <ToastStack />
+    <InstallPrompt />
 
     <BatchPanel :open="batchOpen" @close="batchOpen = false" />
     <SheetDialog :open="sheetOpen" @close="sheetOpen = false" />
@@ -35,6 +36,7 @@ import DesignCanvas from '@/components/canvas/DesignCanvas.vue';
 import MainToolbar from '@/components/toolbar/MainToolbar.vue';
 import CanvasActions from '@/components/toolbar/CanvasActions.vue';
 import ToastStack from '@/components/common/ToastStack.vue';
+import InstallPrompt from '@/components/common/InstallPrompt.vue';
 import BatchPanel from '@/components/batch/BatchPanel.vue';
 import SheetDialog from '@/components/sheets/SheetDialog.vue';
 import DesignLibrary from '@/components/library/DesignLibrary.vue';
