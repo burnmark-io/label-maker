@@ -73,11 +73,20 @@ export function buildShareUrl(doc: LabelDocument, origin: string): string {
  * Read an encoded design from `location.hash`, returning `null` if the
  * hash is empty or invalid. Always swallows decoding errors — a bad
  * hash should never crash the app.
+ *
+ * The decoded document is rewritten with a fresh id + timestamps before
+ * returning, so a shared link can never silently overwrite an existing
+ * library slot whose id happens to match.
  */
 export function readDocumentFromHash(hash: string): LabelDocument | null {
   if (!hash || hash.length < 2) return null;
   try {
-    return decodeDocument(hash.slice(1));
+    const doc = decodeDocument(hash.slice(1));
+    const now = new Date().toISOString();
+    doc.id = crypto.randomUUID();
+    doc.createdAt = now;
+    doc.updatedAt = now;
+    return doc;
   } catch {
     return null;
   }

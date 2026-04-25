@@ -77,11 +77,29 @@ describe('share encoder', () => {
     expect(readDocumentFromHash('#not-base64-or-deflated!!')).toBeNull();
   });
 
-  it('readDocumentFromHash decodes a valid hash', () => {
+  it('readDocumentFromHash decodes a valid hash and preserves content', () => {
     const doc = tinyDoc();
     const encoded = encodeDocument(doc);
     const hash = `#${encoded}`;
     const decoded = readDocumentFromHash(hash);
-    expect(decoded?.id).toBe(doc.id);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.objects).toHaveLength(1);
+    expect((decoded?.objects[0] as TextObject).content).toBe('Hello');
+  });
+
+  it('readDocumentFromHash rewrites the id and timestamps so imports cannot collide with a library slot', () => {
+    const doc = tinyDoc();
+    const encoded = encodeDocument(doc);
+    const before = new Date().toISOString();
+    const decoded = readDocumentFromHash(`#${encoded}`);
+    expect(decoded).not.toBeNull();
+    expect(decoded?.id).not.toBe(doc.id);
+    expect(typeof decoded?.id).toBe('string');
+    expect(decoded?.id.length).toBeGreaterThan(0);
+    expect(decoded?.createdAt).toBeDefined();
+    expect(decoded?.updatedAt).toBeDefined();
+    expect(decoded?.createdAt).toBe(decoded?.updatedAt);
+    // The fresh timestamp should be at-or-after the test start.
+    expect(decoded!.createdAt! >= before).toBe(true);
   });
 });

@@ -98,8 +98,25 @@
       </button>
       <ul v-if="dropdownOpen" class="actions__dropdown" role="menu" @click="dropdownOpen = false">
         <li>
+          <button type="button" role="menuitem" @click="onNewLabel">
+            {{ t('actions.newLabel') }}
+          </button>
+        </li>
+        <li class="actions__divider" aria-hidden="true" />
+        <li>
           <button type="button" role="menuitem" @click="onSave">
             {{ t('actions.saveCurrent') }}
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            role="menuitem"
+            :disabled="library.isFull"
+            :title="library.isFull ? t('library.cantSaveAsNew') : ''"
+            @click="onSaveAsNew"
+          >
+            {{ t('actions.saveAsNew') }}
           </button>
         </li>
         <li>
@@ -141,6 +158,17 @@
         </li>
       </ul>
     </div>
+
+    <ConfirmDialog
+      :open="lifecycle.confirmer.open.value"
+      :title="lifecycle.confirmer.options.value?.title ?? ''"
+      :message="lifecycle.confirmer.options.value?.message ?? ''"
+      :confirm-label="lifecycle.confirmer.options.value?.confirmLabel ?? ''"
+      :cancel-label="lifecycle.confirmer.options.value?.cancelLabel ?? ''"
+      :tone="lifecycle.confirmer.options.value?.tone ?? 'primary'"
+      @confirm="lifecycle.confirmer.resolve"
+      @cancel="lifecycle.confirmer.cancel"
+    />
   </div>
 </template>
 
@@ -152,8 +180,10 @@ import { useDesignerStore } from '@/stores/designer';
 import { useDataStore } from '@/stores/data';
 import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useToast } from '@/composables/useToast';
+import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import { downloadBlob, safeFileName } from '@/services/file-download';
 import { applyMappingToRow } from '@/services/column-mapper';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;
@@ -168,6 +198,7 @@ const designer = useDesignerStore();
 const data = useDataStore();
 const library = useLibraryStore();
 const { show, update, dismiss } = useToast();
+const lifecycle = useDocumentLifecycle();
 
 const dropdownOpen = ref(false);
 const optionsOpen = ref(false);
@@ -223,27 +254,54 @@ function onPrintBatch(): void {
   emit('open-batch');
 }
 
-async function onSave(): Promise<void> {
+async function persistCurrentDoc(successKey: string): Promise<void> {
+  let dataUrl: string | undefined;
   try {
     const blob = await designer.exportPng(undefined, 0.25);
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        await library.save(designer.document, { thumbnail: String(reader.result) });
-        show(t('library.saved'), 'success');
-      } catch (err) {
-        if (err instanceof LibraryFullError) {
-          show(t('library.fullToast'), 'error');
-          emit('open-library');
-        } else {
-          show(err instanceof Error ? err.message : String(err), 'error');
-        }
-      }
-    };
-    reader.readAsDataURL(blob);
-  } catch (err) {
-    show(err instanceof Error ? err.message : String(err), 'error');
+    dataUrl = await blobToDataUrl(blob);
+  } catch {
+    // Render failures shouldn't block saving — fall through with no thumbnail.
   }
+  try {
+    await library.save(designer.document, { thumbnail: dataUrl });
+    show(t(successKey), 'success');
+  } catch (err) {
+    if (err instanceof LibraryFullError) {
+      show(t('library.fullToast'), 'error');
+      emit('open-library');
+    } else {
+      show(err instanceof Error ? err.message : String(err), 'error');
+    }
+  }
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function onSave(): Promise<void> {
+  await persistCurrentDoc('library.saved');
+}
+
+async function onNewLabel(): Promise<void> {
+  if (!(await lifecycle.confirmDestructiveSwap())) return;
+  lifecycle.newBlankDocument();
+  show(t('library.newLabelToast'), 'success');
+}
+
+async function onSaveAsNew(): Promise<void> {
+  if (library.isFull) {
+    show(t('library.cantSaveAsNew'), 'error');
+    emit('open-library');
+    return;
+  }
+  lifecycle.assignNewId();
+  await persistCurrentDoc('library.savedAsNew');
 }
 
 async function onExportPng(): Promise<void> {

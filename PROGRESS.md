@@ -261,6 +261,54 @@ Never blocks save/print.
 - [x] test
 - [x] build
 
+## Phase 14: Library slot semantics
+
+Implementing `amendment-library-slots.md` — surface explicit
+**New label**, **Save**, and **Save as new** actions so the 10-slot
+library is fully reachable, fix the empty-slot `+` button to actually
+create a new entry, and ensure imports never silently overwrite an
+existing slot.
+
+- [x] 14.1 `useDocumentLifecycle` composable — `confirmDestructiveSwap`,
+      `assignNewId` (app-side via `loadDocument`, no designer-core
+      change), `newBlankDocument`. Shared by toolbar and library modal
+- [x] 14.2 Share-URL imports get a fresh id + timestamps in
+      `readDocumentFromHash` so a colliding id can never overwrite an
+      existing library slot
+- [x] 14.3 Toolbar Save dropdown — added **New label** above Save and
+      **Save as new** below; both wired to the lifecycle composable
+- [x] 14.4 `DesignLibrary` — `+` button re-bound to `onNewBlankSlot`
+      (creates a fresh-id blank entry instead of overwriting the active
+      slot); **Save as new** added to the footer when the current doc
+      already exists in the library; `ConfirmDialog` rendered for the
+      shared confirmer
+- [x] 14.5 i18n — `actions.newLabel`, `actions.saveAsNew`,
+      `library.saveAsNew`, `library.newSlot` (re-purposed),
+      `library.newLabelToast`, `library.savedAsNew`,
+      `library.cantSaveAsNew`, `library.replaceConfirmTitle`,
+      `library.replaceConfirm`, `library.replaceConfirmAction`,
+      `library.slotsHint` added in en + nl; nl flagged in
+      `PLACEHOLDERS.md`
+- [x] 14.6 Library modal header carries a one-line slots hint when the
+      grid isn't full (in lieu of the optional `HelpDialog` change —
+      the help menu has no natural slot for an info-only line, the
+      library modal is where the user is making the slot decision)
+- [x] 14.7 Tests — `useDocumentLifecycle`: confirm-skip when canUndo is
+      false, confirm-prompt-and-resolve/cancel when canUndo is true,
+      `assignNewId` reloads with fresh id + timestamps + clears history,
+      `newBlankDocument` resets and clears history, integration test
+      that save-after-`assignNewId` creates a new entry without touching
+      the original. Share-encoder: `readDocumentFromHash` rewrites id +
+      timestamps. 252 tests pass overall (up from 244)
+- [x] 14.8 Decisions D35–D40 added in `DECISIONS.md`
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
 ## Phase 9: Final
 - [x] 63. Verify all gate checks across phases
 - [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)

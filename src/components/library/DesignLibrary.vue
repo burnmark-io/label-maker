@@ -6,6 +6,7 @@
           {{ t('library.counter', { used: library.entries.length, total: library.MAX_SLOTS }) }}
         </p>
         <p v-if="library.isFull" class="library__hint">{{ t('library.fullHint') }}</p>
+        <p v-else class="library__hint">{{ t('library.slotsHint') }}</p>
       </header>
 
       <LimitBanner v-if="library.isFull" :cta="t('library.feedbackCta')">
@@ -62,9 +63,9 @@
           <button
             type="button"
             class="library__plus"
-            :disabled="!hasUnsavedToSave"
+            :disabled="library.isFull"
             :aria-label="t('library.newSlot')"
-            @click="onSaveCurrent"
+            @click="onNewBlankSlot"
           >
             <span aria-hidden="true">+</span>
             <span class="library__plus-label">{{ t('library.newSlot') }}</span>
@@ -78,6 +79,16 @@
         {{ t('common.close') }}
       </button>
       <button
+        v-if="designAlreadyExists"
+        type="button"
+        class="library__btn"
+        :disabled="library.isFull"
+        :title="library.isFull ? t('library.cantSaveAsNew') : ''"
+        @click="onSaveAsNew"
+      >
+        {{ t('library.saveAsNew') }}
+      </button>
+      <button
         type="button"
         class="library__btn library__btn--primary"
         :disabled="library.isFull && !designAlreadyExists"
@@ -88,6 +99,17 @@
       </button>
     </template>
   </Modal>
+
+  <ConfirmDialog
+    :open="lifecycle.confirmer.open.value"
+    :title="lifecycle.confirmer.options.value?.title ?? ''"
+    :message="lifecycle.confirmer.options.value?.message ?? ''"
+    :confirm-label="lifecycle.confirmer.options.value?.confirmLabel ?? ''"
+    :cancel-label="lifecycle.confirmer.options.value?.cancelLabel ?? ''"
+    :tone="lifecycle.confirmer.options.value?.tone ?? 'primary'"
+    @confirm="lifecycle.confirmer.resolve"
+    @cancel="lifecycle.confirmer.cancel"
+  />
 </template>
 
 <script setup lang="ts">
@@ -96,8 +118,10 @@ import { useI18n } from 'vue-i18n';
 import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useDesignerStore } from '@/stores/designer';
 import { useToast } from '@/composables/useToast';
+import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import LimitBanner from '@/components/common/LimitBanner.vue';
 import Modal from '@/components/common/Modal.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
@@ -106,14 +130,13 @@ const { t, locale } = useI18n();
 const library = useLibraryStore();
 const designer = useDesignerStore();
 const { show } = useToast();
+const lifecycle = useDocumentLifecycle();
 
 const emptySlots = computed(() => Math.max(0, library.MAX_SLOTS - library.entries.length));
 
 const designAlreadyExists = computed(() =>
   library.entries.some(e => e.id === designer.document.id),
 );
-
-const hasUnsavedToSave = computed(() => !library.isFull || designAlreadyExists.value);
 
 function formatDate(iso: string): string {
   try {
@@ -145,11 +168,11 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-async function onSaveCurrent(): Promise<void> {
-  const thumbnail = await buildThumbnail();
+async function persistCurrentDoc(toastKey: string, withThumbnail = true): Promise<void> {
+  const thumbnail = withThumbnail ? await buildThumbnail() : undefined;
   try {
     await library.save(designer.document, { thumbnail });
-    show(t('library.saved'), 'success');
+    show(t(toastKey), 'success');
   } catch (err) {
     if (err instanceof LibraryFullError) {
       show(t('library.fullToast'), 'error');
@@ -157,6 +180,27 @@ async function onSaveCurrent(): Promise<void> {
       show(err instanceof Error ? err.message : String(err), 'error');
     }
   }
+}
+
+async function onSaveCurrent(): Promise<void> {
+  await persistCurrentDoc('library.saved');
+}
+
+async function onSaveAsNew(): Promise<void> {
+  if (library.isFull) {
+    show(t('library.cantSaveAsNew'), 'error');
+    return;
+  }
+  lifecycle.assignNewId();
+  await persistCurrentDoc('library.savedAsNew');
+}
+
+async function onNewBlankSlot(): Promise<void> {
+  if (!(await lifecycle.confirmDestructiveSwap())) return;
+  lifecycle.newBlankDocument();
+  // Skip the thumbnail — a blank canvas is an empty white rectangle.
+  // The next save (after the user adds anything) renders one.
+  await persistCurrentDoc('library.newLabelToast', false);
 }
 
 async function onOpen(id: string): Promise<void> {

@@ -419,6 +419,89 @@ families collapse to one entry per family (the 4-digit `310x`/`320x`
 decimal-position variant resolves to the 3-digit prefix). Structured
 AI builder (dropdowns + value field) is intentionally deferred.
 
+## D35 — Library "new id" actions live app-side, not in designer-core
+
+`amendment-library-slots.md` originally proposed a new `assignNewId`
+method on `LabelDesigner`. designer-core treats document ids as
+arbitrary strings (single-user, single-machine context, collision
+chance ≈ 0), so there is no benefit to coupling a cross-package
+release to this UI fix.
+
+`useDocumentLifecycle.assignNewId` mints a UUID via `crypto.randomUUID`
+and pipes the current document back through `designer.loadDocument`
+with the new id + fresh `createdAt`/`updatedAt`. `clearHistory` is
+called immediately after so undo cannot revert the id and silently
+re-attach the editor to the original library slot. Same observable
+behaviour as the proposed core method, no version bump, no shim.
+
+## D36 — Confirm-destructive-swap reduces to `canUndo === true`
+
+The amendment §3.4 listed two separate signals (`canUndo` OR
+`objects.length > 0 AND id not in library`) plus three skip cases
+(first-visit sample, freshly opened library doc, fresh share import).
+In practice every "safe to swap" path already calls
+`designer.clearHistory()` immediately after loading content
+(`loadFirstVisitDocument`, `library.loadDesign` callers in the library
+modal and AppShell, the share-URL import branch in AppShell), so
+`canUndo === false` is a sufficient proxy for "no work to lose."
+
+`useDocumentLifecycle.confirmDestructiveSwap` therefore prompts iff
+`designer.canUndo === true`. Save-as-new never confirms — the user is
+forking a copy, not discarding work.
+
+## D37 — Save as new mutates the current doc id in place; toast announces the swap
+
+"Save as new" on a library-known design forks: the original entry is
+left intact, a copy is saved as a new entry, and **the editor
+continues editing the new entry** (subsequent Saves write to the
+copy). This matches the universal desktop "Save As" convention.
+
+The mental-model jump from "Save = update X" to "Save = update X' (the
+copy)" is silent — the UI offers no explicit indicator that the
+underlying id changed. To close that gap, `library.savedAsNew` reads
+"Saved as a new copy. Now editing the new label." A separate verb
+"Duplicate" (snapshot to a new slot, keep editing the original)
+remains a possible future addition; out of scope for this amendment.
+
+## D38 — Imports always rewrite the document id
+
+Share-URL imports go through `readDocumentFromHash`, which now
+overwrites `id` + `createdAt` + `updatedAt` before returning. Same
+rule will apply to `.label`/`.zip` imports when the import amendment
+lands. The cost is that round-tripping a shared design no longer
+re-occupies the original slot: importing is "bring in," not "restore
+in place." If the user wants to update the original, they open it
+from the library.
+
+This makes silent slot clobbering impossible regardless of the source
+doc's id provenance.
+
+## D39 — Empty-slot `+` creates a fresh-id blank entry; only `library.isFull` disables it
+
+Pre-amendment, `+` called `onSaveCurrent`, which writes to the active
+doc's id — so clicking `+` on an empty slot updated whatever the user
+was editing instead of creating a new slot. The 10-slot grid was
+visual fiction.
+
+Post-amendment, `+` calls `onNewBlankSlot`: confirm-replace if dirty →
+`newDocument()` → `library.save({}, no thumbnail)`. The slot fills
+with an "Untitled" entry the user can rename inline. The old
+`hasUnsavedToSave` gating is gone; the only condition that disables
+`+` is `library.isFull`, since the action requires a free slot.
+
+Save (via Save dropdown) is unchanged in semantics — id-keyed update
+or create. The two paths now have distinct intents: Save updates *this
+label*, `+` creates *a new label*.
+
+## D40 — Slots hint lives in the library modal header, not in HelpDialog
+
+The amendment §14.E.3 suggested adding a one-sentence "How slots
+work" line to `HelpDialog`. The help menu is structured as
+clickable drill-down rows; an info-only paragraph would feel out of
+place. The library modal header — which the user opens precisely
+when slot semantics matter — is the contextually correct surface.
+`library.slotsHint` renders there when the grid isn't full.
+
 ## D30 — `compose.yaml` published in `public/` (not generated)
 
 PLAN section 12.3 wants `compose.yaml` at `burnmark-io.github.io/compose.yaml`.
