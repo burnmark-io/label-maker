@@ -35,34 +35,41 @@
 
     <div class="toolbar__divider" aria-hidden="true" />
 
-    <IconButton :label="t('toolbar.shapeRectangle')" @click="addShape('rectangle')">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
-        <rect x="4" y="6" width="16" height="12" rx="2" />
-      </svg>
-    </IconButton>
-    <IconButton :label="t('toolbar.shapeCircle')" @click="addShape('ellipse')">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="8" />
-      </svg>
-    </IconButton>
-    <IconButton :label="t('toolbar.shapeLine')" @click="addShape('line')">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <line x1="5" y1="18" x2="19" y2="6" />
-      </svg>
-    </IconButton>
+    <div class="toolbar__shape-slot">
+      <IconButton
+        :label="t('toolbar.shapeLibrary')"
+        :data-shape-library-trigger="true"
+        :aria-expanded="libraryOpen"
+        @click="toggleLibrary"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+          <rect x="3" y="3" width="8" height="8" rx="1.5" />
+          <circle cx="17" cy="7" r="4" />
+          <path d="M3 17l4-4 4 4-4 4z" />
+          <path d="M14 14h7v7h-7z" />
+        </svg>
+      </IconButton>
+      <ShapeLibrary v-if="libraryOpen" @close="libraryOpen = false" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { TextObject, BarcodeObject, ShapeObject, ImageObject } from '@burnmark-io/designer-core';
+import type { TextObject, BarcodeObject, ImageObject } from '@burnmark-io/designer-core';
 import { useDesignerStore } from '@/stores/designer';
 import IconButton from '@/components/common/IconButton.vue';
+import ShapeLibrary from './ShapeLibrary.vue';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const libraryOpen = ref(false);
+
+function toggleLibrary(): void {
+  libraryOpen.value = !libraryOpen.value;
+}
 
 function nextDropPoint(): { x: number; y: number } {
   // Drop new objects near the centre of the label, offset slightly so
@@ -120,30 +127,6 @@ function addBarcode(): void {
     format: 'qrcode',
     data: 'https://burnmark.io',
     options: { eclevel: 'M', scale: 4 },
-  });
-  designer.select([id]);
-}
-
-function addShape(shape: ShapeObject['shape']): void {
-  const { x, y } = nextDropPoint();
-  const isLine = shape === 'line';
-  const id = designer.addObject<ShapeObject>({
-    type: 'shape',
-    x,
-    y,
-    width: isLine ? 200 : 160,
-    height: isLine ? 4 : 100,
-    rotation: 0,
-    opacity: 1,
-    locked: false,
-    visible: true,
-    color: '#1c1917',
-    shape,
-    fill: !isLine,
-    strokeWidth: isLine ? 4 : 2,
-    invert: false,
-    cornerRadius: shape === 'rectangle' ? 8 : 0,
-    ...(isLine ? { lineDirection: 'horizontal' as const } : {}),
   });
   designer.select([id]);
 }
@@ -211,5 +194,11 @@ async function onImageSelected(e: Event): Promise<void> {
   height: 24px;
   background: var(--color-border);
   margin: 0 var(--space-1);
+}
+
+.toolbar__shape-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 </style>

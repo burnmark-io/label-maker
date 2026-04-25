@@ -37,9 +37,36 @@
     "addImage": "Add image",
     "addBarcode": "Add barcode",
     "addShape": "Add shape",
+    "shapeLibrary": "Shapes & borders",
     "shapeRectangle": "Rectangle",
     "shapeCircle": "Circle",
     "shapeLine": "Line"
+  },
+  "shapes": {
+    "categories": {
+      "basic": "Basic",
+      "decorative": "Decorative",
+      "borders": "Borders"
+    },
+    "basic": {
+      "rectangle": "Rectangle",
+      "ellipse": "Circle",
+      "line": "Line"
+    },
+    "decorative": {
+      "heart": "Heart",
+      "star": "Star",
+      "diamond": "Diamond",
+      "arrow": "Arrow",
+      "badge": "Badge",
+      "ribbon": "Ribbon"
+    },
+    "borders": {
+      "simple": "Simple frame",
+      "classical": "Classical frame",
+      "playful": "Scalloped frame",
+      "dotted": "Dotted frame"
+    }
   },
   "panel": {
     "objects": "Objects",

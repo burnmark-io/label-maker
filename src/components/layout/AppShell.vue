@@ -28,12 +28,14 @@ import { useDesignerStore } from '@/stores/designer';
 import { usePreferencesStore } from '@/stores/preferences';
 import { loadFirstVisitDocument } from '@/services/sample-label';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
+import { useBorderResize } from '@/composables/useBorderResize';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
 const prefs = usePreferencesStore();
 
 useKeyboardShortcuts();
+useBorderResize();
 
 onMounted(() => {
   prefs.sessionCount += 1;

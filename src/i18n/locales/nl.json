@@ -37,9 +37,36 @@
     "addImage": "Afbeelding toevoegen",
     "addBarcode": "Barcode toevoegen",
     "addShape": "Vorm toevoegen",
+    "shapeLibrary": "Vormen & kaders",
     "shapeRectangle": "Rechthoek",
     "shapeCircle": "Cirkel",
     "shapeLine": "Lijn"
+  },
+  "shapes": {
+    "categories": {
+      "basic": "Basis",
+      "decorative": "Decoratief",
+      "borders": "Kaders"
+    },
+    "basic": {
+      "rectangle": "Rechthoek",
+      "ellipse": "Cirkel",
+      "line": "Lijn"
+    },
+    "decorative": {
+      "heart": "Hartje",
+      "star": "Ster",
+      "diamond": "Ruit",
+      "arrow": "Pijl",
+      "badge": "Stempel",
+      "ribbon": "Lint"
+    },
+    "borders": {
+      "simple": "Eenvoudig kader",
+      "classical": "Klassiek kader",
+      "playful": "Schulprand",
+      "dotted": "Stippelrand"
+    }
   },
   "panel": {
     "objects": "Objecten",
