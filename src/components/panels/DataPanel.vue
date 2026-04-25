@@ -13,7 +13,10 @@
     </section>
 
     <section class="data-panel__section">
-      <h3 class="data-panel__heading">{{ t('data.import.title') }}</h3>
+      <DatasetSwitcher @open-editor="editorOpen = true" @import-file="onClickDropzone" />
+    </section>
+
+    <section class="data-panel__section">
       <div
         class="dropzone"
         :class="{ 'dropzone--active': isDragging, 'dropzone--busy': importing }"
@@ -39,32 +42,18 @@
           @change="onFileChange"
         />
       </div>
+      <button
+        v-if="canBootstrapManual"
+        type="button"
+        class="data-panel__bootstrap"
+        @click="onBootstrapManual"
+      >
+        {{ t('data.import.manualBootstrap') }}
+      </button>
       <p v-if="importError" class="data-panel__error">{{ importError.message }}</p>
     </section>
 
     <section v-if="data.hasData" class="data-panel__section">
-      <header class="data-panel__heading-row">
-        <h3 class="data-panel__heading">{{ t('data.rows.title') }}</h3>
-        <button
-          v-if="data.hasData"
-          type="button"
-          class="data-panel__link-btn"
-          @click="data.clear()"
-        >
-          {{ t('data.rows.clear') }}
-        </button>
-      </header>
-      <p class="data-panel__file">
-        {{
-          data.lastImport?.fileName
-            ? t('data.rows.summary', {
-                file: data.lastImport.fileName,
-                rows: data.rows.length,
-              })
-            : t('data.rows.summaryShort', { rows: data.rows.length })
-        }}
-      </p>
-
       <LimitBanner v-if="data.limited" :cta="t('data.rows.feedbackCta')">
         {{
           t('data.rows.limitMessage', {
@@ -73,6 +62,18 @@
           })
         }}
       </LimitBanner>
+
+      <div class="data-panel__row-card">
+        <ul class="data-panel__row-summary">
+          <li v-for="entry in compactRow" :key="entry.placeholder">
+            <span class="data-panel__row-key">{{ entry.placeholder }}</span>
+            <span class="data-panel__row-value">{{ entry.value }}</span>
+          </li>
+          <li v-if="extraCount > 0" class="data-panel__row-extra" :title="extraTooltip">
+            … (+{{ extraCount }} more)
+          </li>
+        </ul>
+      </div>
 
       <div class="data-panel__preview-controls">
         <button
@@ -105,21 +106,55 @@
         </label>
       </div>
 
-      <ColumnMapper v-if="data.placeholders.length > 0" />
+      <div class="data-panel__row-actions">
+        <button
+          type="button"
+          class="data-panel__row-action"
+          :disabled="data.rows.length >= data.ROW_LIMIT"
+          @click="data.addRowToActive()"
+        >
+          + {{ t('data.rowsAddInline') }}
+        </button>
+        <button type="button" class="data-panel__row-action" @click="editorOpen = true">
+          ✏️ {{ t('data.editor.title') }}
+        </button>
+      </div>
+
+      <ColumnMapper v-if="data.placeholders.length > 0 && data.headers.length > 0" />
 
       <button type="button" class="data-panel__primary" @click="emit('open-batch')">
         {{ t('data.batch.open') }}
       </button>
     </section>
+
+    <ImportChoiceDialog
+      :open="importDialog.open.value"
+      :ctx="importDialog.ctx.value"
+      @choose="importDialog.resolve"
+      @cancel="importDialog.cancel"
+    />
+    <DataEditorDialog
+      :open="editorOpen"
+      @close="editorOpen = false"
+      @import-file="onImportFromEditor"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDataStore } from '@/stores/data';
-import { useCsvImport } from '@/composables/useCsvImport';
+import { usePreferencesStore } from '@/stores/preferences';
+import {
+  useCsvImport,
+  type ImportDecision,
+  type ImportRouteContext,
+} from '@/composables/useCsvImport';
 import ColumnMapper from './ColumnMapper.vue';
+import DatasetSwitcher from './DatasetSwitcher.vue';
+import ImportChoiceDialog from './ImportChoiceDialog.vue';
+import DataEditorDialog from './DataEditorDialog.vue';
 import LimitBanner from '@/components/common/LimitBanner.vue';
 
 const emit = defineEmits<{
@@ -128,12 +163,99 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const data = useDataStore();
-const { isImporting: importing, error: importError, importFiles } = useCsvImport();
+const prefs = usePreferencesStore();
+
+// Active route-context for the import dialog. Exposed as a small bag of
+// refs so the dropzone handler can `await` the user's choice.
+const importDialog = (() => {
+  const open = ref(false);
+  const ctx = ref<ImportRouteContext | null>(null);
+  let resolver: ((d: ImportDecision) => void) | null = null;
+
+  function ask(input: ImportRouteContext): Promise<ImportDecision> {
+    ctx.value = input;
+    open.value = true;
+    return new Promise<ImportDecision>(resolve => {
+      resolver = resolve;
+    });
+  }
+
+  function resolve(action: 'append' | 'new', remember: boolean): void {
+    if (remember) prefs.csvImportBehavior = action;
+    open.value = false;
+    resolver?.({ kind: action });
+    resolver = null;
+  }
+
+  function cancel(): void {
+    open.value = false;
+    resolver?.({ kind: 'cancel' });
+    resolver = null;
+  }
+
+  return { open, ctx, ask, resolve, cancel };
+})();
+
+const {
+  isImporting: importing,
+  error: importError,
+  importFiles,
+} = useCsvImport({
+  onAsk: importDialog.ask,
+});
+
+const editorOpen = ref(false);
 
 const OPEN = '{{';
 const CLOSE = '}}';
 function formatPlaceholder(ph: string): string {
   return `${OPEN}${ph}${CLOSE}`;
+}
+
+const COMPACT_ROW_LIMIT = 4;
+const compactRow = computed<{ placeholder: string; value: string }[]>(() => {
+  const vars = data.currentVariables;
+  const ordered = data.placeholders.filter(ph => ph in vars);
+  return ordered
+    .slice(0, COMPACT_ROW_LIMIT)
+    .map(ph => ({ placeholder: ph, value: vars[ph] ?? '' }));
+});
+const extraCount = computed(() => {
+  const vars = data.currentVariables;
+  const total = data.placeholders.filter(ph => ph in vars).length;
+  return Math.max(0, total - COMPACT_ROW_LIMIT);
+});
+const extraTooltip = computed(() => {
+  const vars = data.currentVariables;
+  const ordered = data.placeholders.filter(ph => ph in vars);
+  return ordered
+    .slice(COMPACT_ROW_LIMIT)
+    .map(ph => `${ph}: ${vars[ph] ?? ''}`)
+    .join('\n');
+});
+
+const canBootstrapManual = computed(() => {
+  if (data.placeholders.length === 0) return false;
+  const ds = data.activeDataset;
+  if (!ds) return true;
+  return ds.rows.length === 0;
+});
+
+function onBootstrapManual(): void {
+  let ds = data.activeDataset;
+  if (!ds || (ds.source !== 'manual' && ds.rows.length === 0)) {
+    const created = data.createDataset({
+      source: 'manual',
+      headers: [...data.placeholders],
+      rows: [{}],
+    });
+    if (created) data.setActiveDataset(created.id);
+    ds = data.activeDataset;
+  } else if (ds.rows.length === 0) {
+    // Existing manual set with no rows — seed one.
+    data.addRowToActive();
+  }
+  editorOpen.value = true;
 }
 
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -144,7 +266,6 @@ function setDragging(value: boolean): void {
 }
 
 function onDragLeave(event: DragEvent): void {
-  // Only clear when actually leaving the dropzone, not just crossing a child.
   const related = event.relatedTarget as Node | null;
   const target = event.currentTarget as Node | null;
   if (target && related && target.contains(related)) return;
@@ -165,6 +286,11 @@ async function onFileChange(event: Event): Promise<void> {
   await importFiles(input.files);
   input.value = '';
 }
+
+function onImportFromEditor(): void {
+  editorOpen.value = false;
+  fileInput.value?.click();
+}
 </script>
 
 <style scoped>
@@ -174,36 +300,19 @@ async function onFileChange(event: Event): Promise<void> {
   gap: var(--space-4);
 }
 
-.panel__title {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
-}
-
 .data-panel__section {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-.data-panel__heading,
-.data-panel__heading-row h3 {
+.data-panel__heading {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
 
-.data-panel__heading-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.data-panel__empty,
-.data-panel__file {
+.data-panel__empty {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
 }
@@ -277,6 +386,60 @@ async function onFileChange(event: Event): Promise<void> {
   pointer-events: none;
 }
 
+.data-panel__bootstrap {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: var(--space-1) 0;
+}
+
+.data-panel__bootstrap:hover {
+  color: var(--color-primary-text);
+}
+
+.data-panel__row-card {
+  background: var(--color-bg-canvas);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.data-panel__row-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  list-style: none;
+  padding: 0;
+}
+
+.data-panel__row-summary li {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.data-panel__row-key {
+  font-family: var(--font-mono);
+  color: var(--color-primary-text);
+  flex-shrink: 0;
+}
+
+.data-panel__row-value {
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.data-panel__row-extra {
+  color: var(--color-text-muted);
+  cursor: help;
+}
+
 .data-panel__preview-controls {
   display: flex;
   align-items: center;
@@ -312,6 +475,32 @@ async function onFileChange(event: Event): Promise<void> {
   color: var(--color-text-secondary);
 }
 
+.data-panel__row-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.data-panel__row-action {
+  flex: 1;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-panel);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.data-panel__row-action:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.data-panel__row-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .data-panel__primary {
   margin-top: var(--space-2);
   padding: var(--space-2) var(--space-3);
@@ -324,18 +513,6 @@ async function onFileChange(event: Event): Promise<void> {
 
 .data-panel__primary:hover {
   background: var(--color-primary-hover);
-}
-
-.data-panel__link-btn {
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  background: transparent;
-  border: none;
-}
-
-.data-panel__link-btn:hover {
-  color: var(--color-text);
-  text-decoration: underline;
 }
 
 .data-panel__error {

@@ -276,6 +276,25 @@ export const useDataStore = defineStore('data', () => {
     schedulePersist(ds.id);
   }
 
+  function duplicateDataset(
+    id: string,
+    options: { onEvictManual?: (victim: StoredDataset) => boolean } = {},
+  ): StoredDataset | null {
+    const source = datasets.value.find(d => d.id === id);
+    if (!source) return null;
+    return createDataset(
+      {
+        source: source.source,
+        fileName: source.fileName,
+        headers: [...source.headers],
+        rows: source.rows.map(r => ({ ...r })),
+        totalRowsInFile: source.totalRowsInFile,
+        name: `${source.name} (copy)`,
+      },
+      options,
+    );
+  }
+
   function removeDataset(id: string): void {
     const idx = datasets.value.findIndex(d => d.id === id);
     if (idx < 0) return;
@@ -328,6 +347,84 @@ export const useDataStore = defineStore('data', () => {
     touch(ds);
     schedulePersist(ds.id);
     currentIndex.value = 0;
+  }
+
+  /** Add an empty row to the active dataset (capped at ROW_LIMIT). */
+  function addRowToActive(): void {
+    const ds = activeDataset.value;
+    if (!ds || ds.rows.length >= ROW_LIMIT) return;
+    const empty: Record<string, string> = {};
+    for (const h of ds.headers) empty[h] = '';
+    ds.rows = [...ds.rows, empty];
+    ds.totalRowsInFile = ds.rows.length;
+    touch(ds);
+    schedulePersist(ds.id);
+    currentIndex.value = ds.rows.length - 1;
+  }
+
+  function updateActiveRow(rowIndex: number, header: string, value: string): void {
+    const ds = activeDataset.value;
+    if (!ds) return;
+    const row = ds.rows[rowIndex];
+    if (!row) return;
+    if (!ds.headers.includes(header)) return;
+    row[header] = value;
+    touch(ds);
+    schedulePersist(ds.id);
+  }
+
+  function deleteActiveRow(rowIndex: number): void {
+    const ds = activeDataset.value;
+    if (!ds) return;
+    if (rowIndex < 0 || rowIndex >= ds.rows.length) return;
+    ds.rows = ds.rows.filter((_, i) => i !== rowIndex);
+    ds.totalRowsInFile = ds.rows.length;
+    touch(ds);
+    schedulePersist(ds.id);
+    if (currentIndex.value >= ds.rows.length) {
+      currentIndex.value = Math.max(0, ds.rows.length - 1);
+    }
+  }
+
+  function duplicateActiveRow(rowIndex: number): void {
+    const ds = activeDataset.value;
+    if (!ds || ds.rows.length >= ROW_LIMIT) return;
+    const src = ds.rows[rowIndex];
+    if (!src) return;
+    const copy = { ...src };
+    ds.rows = [...ds.rows.slice(0, rowIndex + 1), copy, ...ds.rows.slice(rowIndex + 1)];
+    ds.totalRowsInFile = ds.rows.length;
+    touch(ds);
+    schedulePersist(ds.id);
+  }
+
+  function moveActiveRow(rowIndex: number, delta: -1 | 1): void {
+    const ds = activeDataset.value;
+    if (!ds) return;
+    const target = rowIndex + delta;
+    if (target < 0 || target >= ds.rows.length) return;
+    const next = [...ds.rows];
+    [next[rowIndex], next[target]] = [next[target], next[rowIndex]];
+    ds.rows = next;
+    touch(ds);
+    schedulePersist(ds.id);
+  }
+
+  function addColumnToActive(name?: string): string | null {
+    const ds = activeDataset.value;
+    if (!ds) return null;
+    let header = (name ?? '').trim();
+    if (!header) {
+      let n = ds.headers.length + 1;
+      while (ds.headers.includes(`column_${n}`)) n += 1;
+      header = `column_${n}`;
+    }
+    if (ds.headers.includes(header)) return null;
+    ds.headers = [...ds.headers, header];
+    for (const row of ds.rows) row[header] = '';
+    touch(ds);
+    schedulePersist(ds.id);
+    return header;
   }
 
   /** Empty the active dataset's rows (keeps headers, keeps the dataset). */
@@ -478,8 +575,15 @@ export const useDataStore = defineStore('data', () => {
     createDataset,
     setActiveDataset,
     renameDataset,
+    duplicateDataset,
     removeDataset,
     appendRowsToActive,
+    addRowToActive,
+    updateActiveRow,
+    deleteActiveRow,
+    duplicateActiveRow,
+    moveActiveRow,
+    addColumnToActive,
     clearActive,
     resetAll,
     hydrate,

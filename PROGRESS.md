@@ -183,6 +183,25 @@ pool (≤10 sets, ≤30 rows each, IndexedDB-persisted, cross-design).
 - [x] test
 - [x] build
 
+### Phase D: Manual rows, popup grid, dataset switcher, import dialog
+- [x] D1. `DatasetSwitcher.vue` — single component used in the Data tab and in `DataEditorDialog`'s header. Renders the active set's name + row count + the "M / 10" counter. Menu lists every set (most-recent first) with set-active / rename / duplicate / delete; footer carries "+ New manual dataset", "📂 Import a file…", "Reset all data" (with confirms)
+- [x] D2. `ImportChoiceDialog.vue` — fires from the dropzone via `useCsvImport.onAsk`. Three actions (append / new / cancel); a "Remember this choice" checkbox writes through to `prefs.csvImportBehavior` so the next drop skips the dialog. Reuses `Modal.vue`
+- [x] D3. `DataEditorDialog.vue` — `lg` modal (≥720px) hosting an editable grid for the *active* set. Header carries a `DatasetSwitcher` so the user can hop between sets without closing
+- [x] D4. Editable grid markup — sticky header row with column-name + per-column "→ {{placeholder}}" remap dropdown (writes through to D21 immediately). Body rows are text-input cells. Per-row actions: ↑ / ↓ to reorder (drag-to-reorder deferred per Risks §6), duplicate, delete
+- [x] D5. "Add row" + "Add column" footer buttons — `addRowToActive` / `addColumnToActive`. "Add column" is disabled outside `source: 'manual'` to avoid drift with imported headers
+- [x] D6. Caps & banners — existing `LimitBanner` reused inside the popup; "Datasets: M / 10" rendered by the switcher; row-cap message under the grid when at 30
+- [x] D7. Compact inline preview — `DataPanel`'s heading row replaced with the switcher; row card shows up to 4 mapped placeholders with overflow tooltip; "Add row" + "Edit dataset ✏️" buttons next to the prev/next stepper
+- [x] D8. Manual-mode bootstrap — when placeholders exist and the active set is empty, an "Or add rows by hand →" CTA seeds a manual dataset with placeholders as headers + one empty row, then opens the editor
+- [x] D9. Mapping inline + popup — `ColumnMapper` continues to render below the row card; the popup grid header repeats the column ↔ placeholder remap so users don't have to bounce. Both write through `data.setColumnFor` (D21 cache) so the two surfaces stay coherent
+- [x] D10. Tests — composable tests for `useCsvImport` covering each routing branch (no-active → create, append, new, ask→append, ask→cancel) plus row-level data-store tests (add / update / delete / duplicate / move row, addColumnToActive auto-numbering and dedup, duplicateDataset independence). 88 tests pass overall (up from 77)
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
 ## Phase 9: Final
 - [x] 63. Verify all gate checks across phases
 - [x] 64. Designed for Chrome/Edge desktop full flow; Firefox/Safari fall back to design+export only (banner via `noWebUsb` string)

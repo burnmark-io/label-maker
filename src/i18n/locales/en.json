@@ -240,7 +240,60 @@
     },
     "batch": {
       "open": "Open batch preview"
-    }
+    },
+    "switcher": {
+      "active": "{name} · {count} rows",
+      "activeOne": "{name} · 1 row",
+      "activeEmpty": "{name} · empty",
+      "noActive": "No dataset",
+      "noActiveHint": "Drop a CSV or add rows by hand to get started.",
+      "menuLabel": "Switch dataset",
+      "rename": "Rename",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "newManual": "+ New manual dataset",
+      "importFile": "📂 Import a file…",
+      "resetAll": "Reset all data",
+      "confirmDelete": "Delete \"{name}\"?",
+      "confirmReset": "Delete all datasets? This can't be undone.",
+      "confirmEvictManual": "Replace \"{name}\" (manual entry)? Hand-typed rows will be lost.",
+      "datasetCount": "Datasets: {used} / {total}",
+      "renamePrompt": "New name"
+    },
+    "import": {
+      "title": "Import data",
+      "dropPrompt": "Drop a CSV or Excel file here",
+      "dropHint": "Or click to choose a file (.csv, .tsv, .xlsx)",
+      "dropzoneAria": "Drop a CSV or Excel file here, or activate to choose a file",
+      "manualBootstrap": "Or add rows by hand →",
+      "dialogTitle": "How should we import this file?",
+      "dialogIntro": "\"{file}\" — what should happen to the {rows} new rows?",
+      "appendTo": "Append to \"{name}\"",
+      "appendHint": "Adds the new rows to the active dataset, merging columns.",
+      "newSet": "Start a new dataset",
+      "newSetHint": "Keeps the active dataset; activates the imported one.",
+      "remember": "Remember this choice"
+    },
+    "editor": {
+      "title": "Edit dataset",
+      "addRow": "Add row",
+      "addColumn": "Add column",
+      "addColumnPrompt": "Column name",
+      "rowActions": "Row actions",
+      "duplicateRow": "Duplicate row",
+      "deleteRow": "Delete row",
+      "moveRowUp": "Move up",
+      "moveRowDown": "Move down",
+      "rowAtCap": "Row limit reached ({limit}).",
+      "columnHeader": "Column",
+      "mappedTo": "→ {{{placeholder}}}",
+      "unusedColumn": "(unused)",
+      "remapColumn": "Map column to placeholder",
+      "noPlaceholders": "No placeholders in the design yet.",
+      "done": "Done",
+      "addRowsHint": "Click \"Add row\" below to enter your first row."
+    },
+    "rowsAddInline": "Add row"
   },
   "batch": {
     "title": "Batch print",

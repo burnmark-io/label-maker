@@ -240,7 +240,60 @@
     },
     "batch": {
       "open": "Open batchpreview"
-    }
+    },
+    "switcher": {
+      "active": "{name} · {count} rijen",
+      "activeOne": "{name} · 1 rij",
+      "activeEmpty": "{name} · leeg",
+      "noActive": "Geen dataset",
+      "noActiveHint": "Sleep een CSV of voeg handmatig rijen toe om te beginnen.",
+      "menuLabel": "Wissel van dataset",
+      "rename": "Hernoemen",
+      "duplicate": "Dupliceren",
+      "delete": "Verwijderen",
+      "newManual": "+ Nieuwe handmatige dataset",
+      "importFile": "📂 Bestand importeren…",
+      "resetAll": "Alles wissen",
+      "confirmDelete": "\"{name}\" verwijderen?",
+      "confirmReset": "Alle datasets verwijderen? Dit kan niet ongedaan gemaakt worden.",
+      "confirmEvictManual": "\"{name}\" (handmatige invoer) vervangen? Handgetypte rijen gaan verloren.",
+      "datasetCount": "Datasets: {used} / {total}",
+      "renamePrompt": "Nieuwe naam"
+    },
+    "import": {
+      "title": "Data importeren",
+      "dropPrompt": "Sleep een CSV- of Excelbestand hier",
+      "dropHint": "Of klik om een bestand te kiezen (.csv, .tsv, .xlsx)",
+      "dropzoneAria": "Sleep een CSV- of Excelbestand hier, of activeer om een bestand te kiezen",
+      "manualBootstrap": "Of typ rijen zelf →",
+      "dialogTitle": "Hoe importeren we dit bestand?",
+      "dialogIntro": "\"{file}\" — wat doen we met de {rows} nieuwe rijen?",
+      "appendTo": "Toevoegen aan \"{name}\"",
+      "appendHint": "Voegt de nieuwe rijen toe aan de actieve dataset en koppelt kolommen samen.",
+      "newSet": "Start een nieuwe dataset",
+      "newSetHint": "Behoudt de actieve dataset; maakt de geïmporteerde actief.",
+      "remember": "Onthoud mijn keuze"
+    },
+    "editor": {
+      "title": "Dataset bewerken",
+      "addRow": "Rij toevoegen",
+      "addColumn": "Kolom toevoegen",
+      "addColumnPrompt": "Kolomnaam",
+      "rowActions": "Rij-acties",
+      "duplicateRow": "Rij dupliceren",
+      "deleteRow": "Rij verwijderen",
+      "moveRowUp": "Omhoog",
+      "moveRowDown": "Omlaag",
+      "rowAtCap": "Rijlimiet bereikt ({limit}).",
+      "columnHeader": "Kolom",
+      "mappedTo": "→ {{{placeholder}}}",
+      "unusedColumn": "(niet gebruikt)",
+      "remapColumn": "Koppel kolom aan variabele",
+      "noPlaceholders": "Nog geen variabelen in het ontwerp.",
+      "done": "Klaar",
+      "addRowsHint": "Klik op \"Rij toevoegen\" hieronder om je eerste rij in te voeren."
+    },
+    "rowsAddInline": "Rij toevoegen"
   },
   "batch": {
     "title": "Batch printen",

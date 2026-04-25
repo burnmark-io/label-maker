@@ -272,3 +272,87 @@ describe('data store — global dataset pool', () => {
     expect(data.activeDataset).toBeNull();
   });
 });
+
+describe('data store — row-level mutators', () => {
+  beforeEach(async () => {
+    setActivePinia(createPinia());
+    window.localStorage.clear();
+    await resetIdb();
+  });
+
+  function seedManual(headers: string[] = ['name'], rows: Record<string, string>[] = []): string {
+    const data = useDataStore();
+    const ds = data.createDataset({ source: 'manual', headers, rows });
+    data.setActiveDataset(ds!.id);
+    return ds!.id;
+  }
+
+  it('adds an empty row and steps the preview to it', () => {
+    seedManual(['name'], [{ name: 'A' }]);
+    const data = useDataStore();
+    expect(data.rows).toHaveLength(1);
+    data.addRowToActive();
+    expect(data.rows).toHaveLength(2);
+    expect(data.rows[1]).toEqual({ name: '' });
+    expect(data.currentIndex).toBe(1);
+  });
+
+  it('caps row insertion at ROW_LIMIT', () => {
+    const headers = ['name'];
+    const seed = Array.from({ length: ROW_LIMIT }, (_, i) => ({ name: `n${i}` }));
+    seedManual(headers, seed);
+    const data = useDataStore();
+    expect(data.rows).toHaveLength(ROW_LIMIT);
+    data.addRowToActive();
+    expect(data.rows).toHaveLength(ROW_LIMIT);
+  });
+
+  it('updates a cell, deletes a row, duplicates a row, moves a row', () => {
+    seedManual(['name'], [{ name: 'A' }, { name: 'B' }, { name: 'C' }]);
+    const data = useDataStore();
+
+    data.updateActiveRow(1, 'name', 'B!');
+    expect(data.rows[1]).toEqual({ name: 'B!' });
+
+    data.duplicateActiveRow(0);
+    expect(data.rows.map(r => r.name)).toEqual(['A', 'A', 'B!', 'C']);
+
+    data.moveActiveRow(0, 1);
+    expect(data.rows.map(r => r.name)).toEqual(['A', 'A', 'B!', 'C']);
+
+    data.deleteActiveRow(2);
+    expect(data.rows.map(r => r.name)).toEqual(['A', 'A', 'C']);
+  });
+
+  it('addColumnToActive seeds existing rows with empty strings', () => {
+    seedManual(['name'], [{ name: 'A' }, { name: 'B' }]);
+    const data = useDataStore();
+    const created = data.addColumnToActive('city');
+    expect(created).toBe('city');
+    expect(data.headers).toEqual(['name', 'city']);
+    expect(data.rows[0]).toEqual({ name: 'A', city: '' });
+    expect(data.rows[1]).toEqual({ name: 'B', city: '' });
+  });
+
+  it('addColumnToActive auto-numbers when no name is given and refuses duplicates', () => {
+    seedManual(['name']);
+    const data = useDataStore();
+    expect(data.addColumnToActive()).toBe('column_2');
+    expect(data.addColumnToActive('name')).toBeNull();
+    expect(data.headers).toEqual(['name', 'column_2']);
+  });
+
+  it('duplicateDataset creates an independent copy', () => {
+    seedManual(['name'], [{ name: 'A' }]);
+    const data = useDataStore();
+    const original = data.activeDataset!;
+    const dup = data.duplicateDataset(original.id);
+    expect(dup).not.toBeNull();
+    expect(dup!.id).not.toBe(original.id);
+    expect(dup!.rows).toEqual([{ name: 'A' }]);
+    // Mutating the duplicate must not bleed into the original.
+    data.setActiveDataset(dup!.id);
+    data.updateActiveRow(0, 'name', 'B');
+    expect(data.datasets.find(d => d.id === original.id)?.rows[0]).toEqual({ name: 'A' });
+  });
+});
