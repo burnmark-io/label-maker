@@ -1,12 +1,18 @@
 import type { LabelBitmap } from '@mbtech-nl/bitmap';
 
+export interface RgbaImage {
+  width: number;
+  height: number;
+  data: Uint8ClampedArray;
+}
+
 /**
- * Render a 1bpp `LabelBitmap` into a freshly allocated RGBA `ImageData`,
- * using `displayColor` for set pixels and transparent for unset. Apps
- * composite multiple planes by drawing them onto the same canvas in
- * order.
+ * Render a 1bpp `LabelBitmap` into RGBA bytes, using `displayColor` for
+ * set pixels and transparent for unset. The caller wraps the result in
+ * an `ImageData` (browser) or paints directly. Plane composition (for
+ * two-colour previews) is the caller's job.
  */
-export function bitmapToImageData(bitmap: LabelBitmap, displayColor: string): ImageData {
+export function bitmapToRgba(bitmap: LabelBitmap, displayColor: string): RgbaImage {
   const { widthPx, heightPx, data } = bitmap;
   const bytesPerRow = Math.ceil(widthPx / 8);
   const rgba = new Uint8ClampedArray(widthPx * heightPx * 4);
@@ -26,7 +32,7 @@ export function bitmapToImageData(bitmap: LabelBitmap, displayColor: string): Im
       }
     }
   }
-  return new ImageData(rgba, widthPx, heightPx);
+  return { width: widthPx, height: heightPx, data: rgba };
 }
 
 function parseColor(css: string): [number, number, number] {

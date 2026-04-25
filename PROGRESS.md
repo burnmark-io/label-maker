@@ -46,6 +46,22 @@ Tracking the phase/step plan from `PLAN.md` section 22. Tick boxes as steps comp
 - [x] test
 - [x] build
 
-## Phase 4+ (later sessions)
+## Phase 4: Printer Integration
+- [x] 21. Printer connection lib (registry, drivers, connect helpers) and refactored store
+- [x] 22. "Connect Printer" button (PrinterPopover) + auto-reconnect composable
+- [x] 23. Printer status indicator (connected/paired/disconnected/error)
+- [x] 24. Media auto-detection from getStatus() + manual selector
+- [x] 25. Print preview panel rendering createPreview() planes (incl. two-colour)
+- [x] 26. Print button flow with copies/density popover and toast feedback
+- [x] 27. Web Serial alongside WebUSB for Bluetooth SPP (QL-820NWB)
+- [x] 28. Gate: connect→preview→print works against mocked drivers
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] test
+- [x] build
+
+## Phase 5+ (later sessions)
 
 See `PLAN.md` section 22 for the remaining phases.

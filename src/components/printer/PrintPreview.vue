@@ -53,7 +53,7 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
 import { useDesignerStore } from '@/stores/designer';
-import { bitmapToImageData } from '@/lib/printer/preview';
+import { bitmapToRgba } from '@/lib/printer/preview';
 
 const { t } = useI18n();
 const printer = usePrinterStore();
@@ -111,7 +111,8 @@ function paint(): void {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (const plane of result.planes) {
-    const imageData = bitmapToImageData(plane.bitmap, plane.displayColor);
+    const rgba = bitmapToRgba(plane.bitmap, plane.displayColor);
+    const imageData = new ImageData(rgba.data, rgba.width, rgba.height);
     // Composite by drawing through an offscreen canvas — putImageData
     // overwrites alpha, which would erase earlier planes.
     const off = document.createElement('canvas');
