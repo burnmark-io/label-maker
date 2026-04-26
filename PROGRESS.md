@@ -387,3 +387,151 @@ library slot.
 - [x] format
 - [x] test (275 passing)
 - [x] build
+
+## Phase 12: Canvas sizing and media selection
+
+Implementing `amendments/implemented/amendment-canvas-sizing.md` —
+decouple canvas size from printer connection so users without a thermal
+printer aren't locked out, and make label dimensions a first-class
+design choice with overrides for wrongly-detected media.
+
+- [x] 12.1 `lib/media/common-sizes.ts` — driver-agnostic registry of
+      common label sizes (Brother QL, LabelWriter, P-touch / D1,
+      generic). Format-aware (`continuous` / `fixed`)
+- [x] 12.2 `stores/media.ts` — last-used size persisted in
+      localStorage (`burnmark.lastLabelSize`); printer-detected media
+      is a suggestion, never a lock; user-set continuous length lives
+      here so the AppShell out-of-bounds watcher can react to it
+- [x] 12.3 `components/media/LabelSizeSelector.vue` — persistent
+      dropdown in the top bar with sections: From printer (detected)
+      / Common sizes / From sticker sheet / Custom. Replaces the
+      printer-popover-only `MediaSelector.vue` (deleted)
+- [x] 12.4 `components/media/CustomSizeInput.vue` — free-form mm
+      width/height input; leave height empty or `0` for a continuous
+      label
+- [x] 12.5 `components/media/SheetPickerDialog.vue` — search/filter
+      over the sticker-sheet registry; pick a sheet, the canvas
+      resizes to its single-label dimensions
+- [x] 12.6 `components/canvas/ContinuousResizeHandle.vue` — drag the
+      canvas bottom edge to set the continuous length manually
+- [x] 12.7 `composables/useOutOfBounds.ts` — flag objects that fall
+      outside the label after a resize. AppShell watches canvas
+      dimensions + continuous length and toasts (count-aware) when
+      the effective frame shrinks
+- [x] 12.8 PaperBackground / DesignCanvas / useCanvasViewport /
+      printer store / ObjectsPanel adjusted for the decoupled flow;
+      ObjectsPanel surfaces the out-of-bounds tooltip
+- [x] 12.9 i18n — `printer.detectedMedia` / `noMediaDetected` /
+      `changeSizeHint`, `canvas.continuousLength` /
+      `outOfBoundsTooltip` / `outOfBoundsResizeToast`, full
+      `media.*` namespace (selector, fromPrinter, commonSizes,
+      fromSheet, format, sheet, custom, toast). en + nl
+- [x] 12.10 Tests — `stores/__tests__/media.test.ts` covers the
+      selector, sheet pick, and printer-detected interaction
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test
+- [x] build
+
+## Phase 15: Local data encryption
+
+Implementing `amendments/implemented/amendment-local-data-encryption.md`
+— ship opt-in encryption-at-rest for every user-data record we keep on
+the device (designs, datasets, assets, column-mapper cache), fronted
+by a footer Privacy page that explains the storage model honestly and
+a one-click reset. Password gone = data gone. No recovery, no hint, no
+second factor.
+
+- [x] 15.1 `services/crypto.ts` — Web Crypto wrapper. PBKDF2-SHA-256
+      @ 600k iterations (OWASP) → AES-GCM-256. Encrypt/decrypt of
+      bytes and strings, verifier mechanism, base64 helpers for the
+      localStorage path
+- [x] 15.2 `services/storage.ts` — value-level envelope wrapping for
+      `designs` / `datasets` / `assets`. Listing decrypts envelopes
+      when the key is set so design names don't leak in plaintext.
+      New API: `setStorageKey`, `migrateEncryption`, `countAssets`,
+      `clearAllStores`
+- [x] 15.3 `services/column-mapper.ts` — async hydration with
+      in-memory cache; sync reads preserved (the existing computeds
+      and store call-sites stay synchronous), plaintext writes go
+      straight through, encrypted writes are debounced
+- [x] 15.4 `stores/crypto.ts` — orchestrator. `init` /
+      `setupEncryption` / `unlock` / `changePassword` /
+      `disableEncryption` / `resetAllUserData`. Holds only the
+      derived `CryptoKey` for the session — never the password
+- [x] 15.5 `main.ts` — boot gate: read `enc.enabled` from `meta`
+      before any other store hydrates. When enabled and locked, the
+      AppShell renders `<UnlockScreen />` instead of the editor
+- [x] 15.6 `components/layout/AppShell.vue` — `v-if`-branches the
+      editor for the unlock screen when locked; AppFooter /
+      AboutDialog / HelpDialog / PrivacyDialog / ResetDataDialog stay
+      mounted in both states. Heavy `onMounted` body extracted into
+      `bootstrapAfterUnlock()`; `watch` on `crypto.locked` re-runs it
+      on the unlock transition
+- [x] 15.7 `components/common/PrivacyDialog.vue` — storage explainer,
+      live counters (designs / datasets / assets / storage MB),
+      encryption status with inline change-password and disable
+      forms, reset entry
+- [x] 15.8 `components/common/EncryptionSetup.vue` — two warnings
+      (irreversible + scope), password+confirm, length hint, "I
+      understand" checkbox, 8-character minimum
+- [x] 15.9 `components/common/UnlockScreen.vue` — full-viewport,
+      password field, "Forgot password? Reset all data" escape hatch
+- [x] 15.10 `components/common/ResetDataDialog.vue` — typed
+      confirmation (`reset`, untranslated), wipes IDB + every
+      `burnmark.*` localStorage key, reloads the app
+- [x] 15.11 `AppFooter.vue` — Privacy link between Help and GitHub;
+      `useUiDialogs.ts` gains `privacyOpen` / `openPrivacy()`
+- [x] 15.12 i18n — `privacy.*` /
+      `encryption.{setup,unlock,change,disable}.*` / `reset.*` in
+      en + nl
+- [x] 15.13 Tests — `services/__tests__/crypto.test.ts` (round-trip,
+      wrong-key reject, IV uniqueness, verifier, KDF iteration),
+      `services/__tests__/storage.test.ts` extended (encrypted
+      records, listing, migration plaintext↔encrypted, change-password,
+      countAssets, clearAllStores), `stores/__tests__/crypto.test.ts`
+      (setup, lock/unlock, changePassword, disable, mapping
+      persistence, resetAllUserData). 321 passing (up from 274)
+- [x] 15.14 v2 plan committed alongside —
+      `amendments/backlog/amendment-passkey-unlock.md` (WebAuthn PRF
+      unlock with master-key wrapping indirection). Backlog only
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test (321 passing)
+- [x] build
+
+## Backlog
+
+Amendments captured in `amendments/backlog/` waiting on a sibling
+designer-core change, an upstream dependency, or just a scheduling
+slot. Listed shortest-summary-first so each is scannable.
+
+- **`amendment-canvas-orientation.md`** — vertical/horizontal toggle
+  for the canvas. Spun out of canvas-sizing §4 because it requires a
+  designer-core change (`orientation` on `CanvasConfig`). Lands once
+  `designer-core-amendment-canvas-orientation.md` ships.
+- **`amendment-text-overflow.md`** — sizing modes / overflow / auto-
+  shrink / ellipsis on text objects. Depends on designer-core's
+  `TextObject.sizingMode` + `overflow` + `minFontSize` +
+  `measureTextHeight` helper landing first.
+- **`amendment-tables-and-autogrow.md`** — open stub. Auto-grow story
+  for continuous labels + tape printers + dataset-driven nutrition /
+  ingredients tables. Deliberately deferred from canvas-sizing; not
+  scheduled.
+- **`amendment-barcode-content-helpers.md`** — 2D barcode content
+  templates (URL, WiFi, vCard, geo, email, phone, calendar) + QR
+  styling panel (logo, dot styles, colours). Depends on the shipped
+  barcode-validation amendment (✅) and a designer-core qr-styling
+  bump. Mobile QoL piggybacks (Contact Picker, Geolocation).
+- **`amendment-passkey-unlock.md`** — WebAuthn PRF unlock for the
+  encryption flow shipped in Phase 15. Master-key wrapping
+  indirection so password and any registered passkey can both unlock,
+  with the password staying as the canonical recovery path. Real
+  workload is browser/authenticator-quirk fixing; rough estimate
+  1–3 days when picked up.
