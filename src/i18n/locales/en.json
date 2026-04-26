@@ -57,7 +57,10 @@
     "popoverTitle": "Printer connection",
     "media": "Media",
     "mediaPick": "Pick a label size…",
-    "autoDetected": "auto-detected"
+    "autoDetected": "auto-detected",
+    "detectedMedia": "Detected: {name}",
+    "noMediaDetected": "No media detected.",
+    "changeSizeHint": "Change the label size from the top-bar size selector."
   },
   "preview": {
     "title": "Print preview",
@@ -296,7 +299,49 @@
     "cutLine": "cut here",
     "zoom": "{percent}%",
     "summaryEmpty": "Empty canvas. Use the toolbar to add a text, image, barcode or shape.",
-    "summary": "Canvas with {count} object | Canvas with {count} objects"
+    "summary": "Canvas with {count} object | Canvas with {count} objects",
+    "continuousLength": "{mm}mm",
+    "outOfBoundsTooltip": "Part of this object is past the label edge — it won't print.",
+    "outOfBoundsResizeToast": "{count} object is now outside the label edge. | {count} objects are now outside the label edge."
+  },
+  "media": {
+    "selector": {
+      "label": "Label size"
+    },
+    "fromPrinter": "From printer",
+    "fromPrinterModel": "From {model}",
+    "detected": "detected",
+    "commonSizes": "Common sizes",
+    "fromSheet": "From sticker sheet",
+    "format": {
+      "continuous": "{width}mm continuous",
+      "fixed": "{width}×{height}mm"
+    },
+    "sheet": {
+      "picker": "Pick a sheet…",
+      "dialogTitle": "Pick a sticker sheet",
+      "searchPlaceholder": "Search by brand or product code",
+      "searchLabel": "Search sticker sheets",
+      "allBrands": "All brands",
+      "resultCount": "{count} matching sheets",
+      "listAria": "Sticker sheet results",
+      "detail": "{width}×{height}mm on {paper} — {perPage} labels per page",
+      "truncated": "Showing first {shown} of {total} — narrow your search to see the rest."
+    },
+    "custom": {
+      "label": "Custom",
+      "width": "Width",
+      "height": "Height",
+      "heightPlaceholder": "(continuous)",
+      "hint": "Leave height empty or 0 for a continuous label.",
+      "apply": "Apply"
+    },
+    "toast": {
+      "appliedSheet": "Canvas resized to {name}.",
+      "appliedDetected": "Canvas resized to match your printer — {name}.",
+      "snapToClosest": "Resized to {name} to match your printer — some objects may need repositioning.",
+      "overrodeDetected": "Using {name} for printing — your pick overrides the printer's auto-detect."
+    }
   },
   "footer": {
     "about": "About",

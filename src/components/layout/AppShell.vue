@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import TopBar from './TopBar.vue';
@@ -58,6 +58,7 @@ import OnboardingTour from '@/components/common/OnboardingTour.vue';
 import { useDesignerStore } from '@/stores/designer';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useLibraryStore } from '@/stores/library';
+import { useMediaStore } from '@/stores/media';
 import { loadFirstVisitDocument } from '@/services/sample-label';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import { useBorderResize } from '@/composables/useBorderResize';
@@ -72,7 +73,40 @@ const { t } = useI18n();
 const designer = useDesignerStore();
 const prefs = usePreferencesStore();
 const library = useLibraryStore();
+const media = useMediaStore();
 const { show } = useToast();
+
+// Out-of-bounds toast on canvas resize. Watch only canvas dimensions
+// (and the user-set continuous length) — object moves shouldn't fire it.
+watch(
+  () => [
+    designer.document.canvas.widthDots,
+    designer.document.canvas.heightDots,
+    media.continuousLengthMm,
+  ],
+  (next, prev) => {
+    if (!prev) return;
+    const [, prevH, prevContLen] = prev as number[];
+    const [, nextH, nextContLen] = next as number[];
+    // Effective height = continuousLengthMm dots when continuous, else heightDots.
+    const dpi = designer.document.canvas.dpi || 300;
+    const prevEff = prevH === 0 ? Math.round((prevContLen * dpi) / 25.4) : prevH;
+    const nextEff = nextH === 0 ? Math.round((nextContLen * dpi) / 25.4) : nextH;
+    // Only toast when the effective height shrunk (a smaller frame can push
+    // objects out — a bigger frame can't).
+    if (nextEff >= prevEff && next[0] >= prev[0]) return;
+    let count = 0;
+    for (const o of designer.document.objects) {
+      if (!o.visible) continue;
+      const right = o.x + o.width;
+      const bottom = o.y + o.height;
+      if (o.x < 0 || o.y < 0 || right > next[0] || bottom > nextEff) count += 1;
+    }
+    if (count > 0) {
+      show(t('canvas.outOfBoundsResizeToast', { count }, count), 'info', { ttlMs: 5000 });
+    }
+  },
+);
 const labelImport = useLabelImport();
 const { aboutOpen, helpOpen, tourActive, openHelp, startTour, closeTour } = useUiDialogs();
 

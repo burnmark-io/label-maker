@@ -87,6 +87,21 @@ export const useDesignerStore = defineStore('designer', () => {
   }
 
   /**
+   * Patch `document.metadata`. Designer-core's `metadata: Record<string, unknown>`
+   * survives `toJSON`/`fromJSON`, so anything written here round-trips
+   * through the share-encoder, IndexedDB and `.label` exports.
+   *
+   * Mutates in place + triggers the document ref so reactive consumers see
+   * the new values. Not recorded in undo history — metadata isn't
+   * undo-relevant (canvas source flag, sheet code, continuous length, etc.).
+   */
+  function setDocumentMetadata(patch: Record<string, unknown>): void {
+    const raw = composable.designer.document;
+    raw.metadata = { ...raw.metadata, ...patch };
+    triggerRef(composable.document);
+  }
+
+  /**
    * Render the document to full-colour RGBA. The composable's `render()`
    * is fire-and-forget (updates `bitmap.value` and returns void); this
    * goes straight to the underlying `LabelDesigner.render()` for the
@@ -117,6 +132,7 @@ export const useDesignerStore = defineStore('designer', () => {
     loadDocument,
     newDocument: composable.newDocument,
     setCanvas,
+    setDocumentMetadata,
     undo: composable.undo,
     redo: composable.redo,
     clearHistory: composable.clearHistory,

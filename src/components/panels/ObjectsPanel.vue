@@ -28,6 +28,14 @@
         >
           <span class="objects-list__icon" aria-hidden="true">{{ iconFor(obj.type) }}</span>
           <span class="objects-list__label">{{ obj.name ?? labelFor(obj.type) }}</span>
+          <span
+            v-if="oob.isOut(obj.id)"
+            class="objects-list__warn"
+            :title="t('canvas.outOfBoundsTooltip')"
+            :aria-label="t('canvas.outOfBoundsTooltip')"
+          >
+            ⚠️
+          </span>
           <button
             type="button"
             class="objects-list__action"
@@ -152,6 +160,7 @@
 import { computed, nextTick, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
+import { useOutOfBounds } from '@/composables/useOutOfBounds';
 import type { LabelObject } from '@burnmark-io/designer-core';
 import CommonProperties from './CommonProperties.vue';
 import TextProperties from './TextProperties.vue';
@@ -161,6 +170,7 @@ import ShapeProperties from './ShapeProperties.vue';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
+const oob = useOutOfBounds();
 
 const objects = computed<LabelObject[]>(() => designer.document.objects);
 // Top-of-list = top-of-z-order
@@ -329,6 +339,14 @@ function sendBackward(id: string): void {
   overflow: hidden;
   text-overflow: ellipsis;
   text-transform: none;
+}
+
+.objects-list__warn {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--color-warning, #d97706);
+  flex-shrink: 0;
+  cursor: help;
 }
 
 .objects-list__action {

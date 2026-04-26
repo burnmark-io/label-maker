@@ -37,8 +37,9 @@ This fails for:
 - Users who know what label size they want before connecting
 - Users who want to design for a specific media without hardware present
 - Users who want a weird custom size (logo design, craft projects)
-- Tape label users (D1, P-touch) — orientation handled by
-  `amendment-canvas-orientation.md`
+- Tape label users (D1, P-touch) without a printer connected — same
+  gap as above. Orientation for tape is handled separately in
+  `amendment-canvas-orientation.md`.
 
 ---
 
@@ -174,8 +175,8 @@ like 100mm give for narrow tapes.
 
 ### 3.3 Drag to Resize
 
-A drag handle on the cut line (dashed bottom edge for vertical, dashed
-right edge for horizontal) lets the user set the label length:
+A drag handle on the cut line (dashed bottom edge) lets the user set
+the label length:
 
 ```
               ┌────────────────────┐
@@ -188,8 +189,11 @@ right edge for horizontal) lets the user set the label length:
 ```
 
 The drag handle is a visible affordance — a small grab bar centred on
-the cut line. Cursor changes to `ns-resize` (or `ew-resize` for horizontal)
-on hover. Drag snaps to grid. Each drag commit is one history entry.
+the cut line. Cursor changes to `ns-resize` on hover. Drag snaps to
+grid. Each drag commit is one history entry.
+
+The right-edge variant (cut line on the right, `ew-resize` cursor)
+ships with `amendment-canvas-orientation.md` when horizontal lands.
 
 ### 3.4 Minimum Length
 
@@ -258,6 +262,20 @@ interface CanvasState {
   sheetCode?: string;             // if derived from a sheet template
 }
 ```
+
+**`source` semantics:**
+
+- `'detected'` — set by us, either from printer auto-detect or as the
+  first-visit default (62mm continuous, or last value from
+  localStorage). Not the user's deliberate choice.
+- `'manual'` — user explicitly picked from "Common sizes".
+- `'sheet'` — user picked from "From sticker sheet"; `sheetCode`
+  identifies which.
+- `'custom'` — user entered free-form dimensions.
+
+Auto-resize-on-printer-connect (§2.2) fires only when
+`source === 'detected'`. Once the user touches the selector the
+choice replaces detection until they revisit.
 
 **mm lives in the editor, dots live in the document.** Designer-core's
 `CanvasConfig` keeps `widthDots`/`heightDots`/`dpi` as today — this
@@ -409,6 +427,11 @@ tape, custom dimensions, and any descriptor without the field render
 square corners. If the radius matters, the descriptor needs to declare
 it.
 
+Today only `SheetTemplate` exposes `cornerRadiusMm`; the per-driver
+`MediaDescriptor` types don't yet. Die-cut Brother labels render
+square in the editor until the field is added — planned via the
+`media-catalog` work, out of scope here.
+
 ### 7.7 Dead Zones
 
 Some printers have non-printable margins — the print head physically
@@ -478,7 +501,7 @@ Media selection:
 □ Common sizes list (hardcoded, covers all current driver families)
 □ Sheet-derived size (pick sheet → extract label dimensions)
 □ Custom size input (free-form width/height in mm; "leave empty or 0
-  for continuous" — match copy across §2.1 and §2.4)
+  for continuous")
 □ Printer detection updates media selector (suggestion, not lock)
 □ Connect-after-manual: snap to closest available size + repositioning toast
 □ Toast on auto-resize: "Canvas resized to match your printer"
@@ -510,3 +533,51 @@ i18n:
 □ Out-of-bounds warning strings
 □ Connect-after-manual repositioning toast
 ```
+
+---
+
+## 10. Tests
+
+State + persistence (`stores/__tests__/designer.test.ts`,
+`services/__tests__/share-encoder.test.ts`):
+- mm → dots round-trip preserves grid-aligned values exactly
+- mm → dots round-trip is lossy for non-grid values; doc store remains
+  dots-canonical
+- Loading a pre-amendment doc fills `source: 'manual'` and recovers
+  mm via stored DPI (not connected printer's DPI)
+- localStorage round-trips last-used size; new docs honour it,
+  existing docs ignore it
+- `source` transitions: `'detected'` → `'manual'` on selector pick,
+  `'manual'` stays `'manual'` on printer connect
+
+Media selector (`components/media/__tests__/`):
+- "From printer" section appears when printer connected, hides
+  otherwise
+- Picking a sheet sets `source: 'sheet'`, `sheetCode`, and the
+  derived dimensions
+- Custom input accepts empty or 0 height as continuous
+- Auto-resize-on-connect fires only when `source === 'detected'`
+- Connect-after-manual snap toast appears with "may need
+  repositioning" copy
+
+Continuous drag-to-resize:
+- Starting length = `round(mediaWidthMm × 4 / 3)` for fresh continuous
+- Minimum length = bottom edge of lowest object + margin
+- Drag commit produces exactly one history entry
+- Existing `heightMm` not overwritten on media reselect
+
+Out-of-bounds:
+- Object partly outside renders in-bounds normally; out-of-bounds
+  portion dimmed + striped
+- Object fully outside still appears in objects panel with ⚠️
+- ⚠️ tooltip text matches i18n key
+- Print/export bitmap is clipped to canvas bounds
+- Resizing canvas smaller emits "N objects are now outside" toast
+  with correct N
+
+Border radius and dead zones:
+- `cornerRadiusMm` drawn when present on `SheetTemplate`; missing →
+  square
+- Margin shading drawn when descriptor exposes margins; missing →
+  clean edges, no warning
+- Both visual guides absent from designer-core render output

@@ -14,6 +14,7 @@
           :height="viewport.labelHeightDots.value"
           :scale="viewport.zoom.value"
           :fill="document.canvas.background"
+          :corner-radius-dots="cornerRadiusDots"
         />
         <GridOverlay
           v-if="prefs.showGrid"
@@ -65,6 +66,12 @@
       </VLayer>
 
       <VLayer>
+        <ContinuousResizeHandle
+          v-if="viewport.isContinuous.value"
+          :width="viewport.labelWidthDots.value"
+          :height="viewport.labelHeightDots.value"
+          :scale="viewport.zoom.value"
+        />
         <SelectionTransformer
           :selected-ids="visibleSelection"
           :stage="konvaStage"
@@ -100,12 +107,16 @@ import PaperBackground from './PaperBackground.vue';
 import GridOverlay from './GridOverlay.vue';
 import PaperDirection from './PaperDirection.vue';
 import CutLine from './CutLine.vue';
+import ContinuousResizeHandle from './ContinuousResizeHandle.vue';
 import CanvasObject from './CanvasObject.vue';
 import AlignmentGuides from './AlignmentGuides.vue';
 import SelectionTransformer from './SelectionTransformer.vue';
 import InlineTextEditor from './InlineTextEditor.vue';
 
+import { findSheet } from '@burnmark-io/sheet-templates';
+
 import { useDesignerStore } from '@/stores/designer';
+import { useMediaStore, dotsFromMm } from '@/stores/media';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useCanvasViewport } from '@/composables/useCanvasViewport';
 import { computeSnap } from '@/composables/useSnapping';
@@ -113,7 +124,20 @@ import type { KonvaStage } from './konva-types';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
+const media = useMediaStore();
 const prefs = usePreferencesStore();
+
+/**
+ * Per amendment §7.6 — when the canvas size came from a sticker sheet
+ * with a declared `cornerRadiusMm`, draw it as a visual guide. No
+ * fallback when the media descriptor doesn't expose the field.
+ */
+const cornerRadiusDots = computed<number | undefined>(() => {
+  if (media.source !== 'sheet' || !media.sheetCode) return undefined;
+  const sheet = findSheet(media.sheetCode);
+  if (!sheet?.cornerRadiusMm) return undefined;
+  return dotsFromMm(sheet.cornerRadiusMm, designer.document.canvas.dpi || 300);
+});
 
 const { document } = storeToRefs(designer);
 

@@ -57,7 +57,10 @@
     "popoverTitle": "Printerverbinding",
     "media": "Media",
     "mediaPick": "Kies een labelmaat…",
-    "autoDetected": "automatisch gedetecteerd"
+    "autoDetected": "automatisch gedetecteerd",
+    "detectedMedia": "Gedetecteerd: {name}",
+    "noMediaDetected": "Geen media gedetecteerd.",
+    "changeSizeHint": "Wijzig de labelmaat via de maatkiezer in de bovenbalk."
   },
   "preview": {
     "title": "Print voorbeeld",
@@ -296,7 +299,49 @@
     "cutLine": "hier afsnijden",
     "zoom": "{percent}%",
     "summaryEmpty": "Leeg canvas. Gebruik de toolbar om tekst, afbeelding, barcode of vorm toe te voegen.",
-    "summary": "Canvas met {count} object | Canvas met {count} objecten"
+    "summary": "Canvas met {count} object | Canvas met {count} objecten",
+    "continuousLength": "{mm}mm",
+    "outOfBoundsTooltip": "Een deel van dit object valt buiten het label — dat wordt niet afgedrukt.",
+    "outOfBoundsResizeToast": "{count} object valt nu buiten het label. | {count} objecten vallen nu buiten het label."
+  },
+  "media": {
+    "selector": {
+      "label": "Labelmaat"
+    },
+    "fromPrinter": "Van printer",
+    "fromPrinterModel": "Voor {model}",
+    "detected": "gedetecteerd",
+    "commonSizes": "Veelvoorkomende maten",
+    "fromSheet": "Vanaf stickervel",
+    "format": {
+      "continuous": "{width}mm doorlopend",
+      "fixed": "{width}×{height}mm"
+    },
+    "sheet": {
+      "picker": "Kies een vel…",
+      "dialogTitle": "Kies een stickervel",
+      "searchPlaceholder": "Zoek op merk of artikelnummer",
+      "searchLabel": "Zoek stickervellen",
+      "allBrands": "Alle merken",
+      "resultCount": "{count} passende vellen",
+      "listAria": "Resultaten stickervellen",
+      "detail": "{width}×{height}mm op {paper} — {perPage} labels per pagina",
+      "truncated": "Eerste {shown} van {total} getoond — verfijn je zoekopdracht voor de rest."
+    },
+    "custom": {
+      "label": "Aangepast",
+      "width": "Breedte",
+      "height": "Hoogte",
+      "heightPlaceholder": "(doorlopend)",
+      "hint": "Laat hoogte leeg of vul 0 in voor een doorlopend label.",
+      "apply": "Toepassen"
+    },
+    "toast": {
+      "appliedSheet": "Canvas aangepast aan {name}.",
+      "appliedDetected": "Canvas aangepast aan je printer — {name}.",
+      "snapToClosest": "Aangepast aan {name} voor je printer — sommige objecten moeten wellicht verplaatst worden.",
+      "overrodeDetected": "Bij printen wordt {name} gebruikt — jouw keuze gaat boven automatische detectie."
+    }
   },
   "footer": {
     "about": "Over",

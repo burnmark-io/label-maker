@@ -89,6 +89,10 @@ export const usePrinterStore = defineStore('printer', () => {
       writeLastConnected(lastPaired.value);
     } else {
       detectedMedia.value = null;
+      // Clear the override too — selectedMedia carries driver-specific
+      // fields, so leaving it set across a disconnect risks handing a
+      // Brother descriptor to a LabelWriter on the next connect.
+      selectedMedia.value = null;
       lastPreview.value = null;
       if (connection.value.kind === 'connected') {
         connection.value = { kind: 'disconnected' };
@@ -128,9 +132,12 @@ export const usePrinterStore = defineStore('printer', () => {
     try {
       const status = await adapter.value.getStatus();
       detectedMedia.value = status.detectedMedia ?? null;
-      // Clear manual selection once auto-detect comes through; user can
-      // override again via the manual selector if they want.
-      if (status.detectedMedia) selectedMedia.value = null;
+      // Don't clear `selectedMedia` here — auto-detection is a
+      // suggestion, not a lock (canvas-sizing amendment §2.2). When the
+      // user has explicitly overridden detected media (e.g. their roll
+      // is DK-22251 two-colour but the printer reports DK-22205), that
+      // override should survive every status refresh. The override is
+      // cleared only on disconnect (`setAdapter(null)`).
     } catch (err) {
       console.warn('[burnmark] getStatus failed', err);
     }

@@ -1,8 +1,11 @@
 <template>
   <header class="topbar" role="banner">
-    <div class="topbar__brand">
-      <span class="topbar__logo" aria-hidden="true">🏷️</span>
-      <span class="topbar__name">{{ t('app.name') }}</span>
+    <div class="topbar__left">
+      <div class="topbar__brand">
+        <span class="topbar__logo" aria-hidden="true">🏷️</span>
+        <span class="topbar__name">{{ t('app.name') }}</span>
+      </div>
+      <LabelSizeSelector data-tour="label-size" />
     </div>
 
     <div class="topbar__center" data-tour="printer">
@@ -124,6 +127,7 @@
 import { useI18n } from 'vue-i18n';
 import IconButton from '@/components/common/IconButton.vue';
 import PrinterPopover from '@/components/printer/PrinterPopover.vue';
+import LabelSizeSelector from '@/components/media/LabelSizeSelector.vue';
 import { useDesignerStore } from '@/stores/designer';
 import { useUiDialogs } from '@/composables/useUiDialogs';
 
@@ -150,11 +154,18 @@ const { openHelp } = useUiDialogs();
   flex-shrink: 0;
 }
 
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex-shrink: 1;
+}
+
 .topbar__brand {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-width: 180px;
 }
 
 .topbar__logo {

@@ -23,7 +23,11 @@
 
         <div v-else class="popover__section">
           <p class="popover__heading">{{ printer.model }}</p>
-          <MediaSelector />
+          <p v-if="detectedName" class="popover__detected">
+            {{ t('printer.detectedMedia', { name: detectedName }) }}
+          </p>
+          <p v-else class="popover__note">{{ t('printer.noMediaDetected') }}</p>
+          <p class="popover__hint">{{ t('printer.changeSizeHint') }}</p>
           <button class="popover__btn" type="button" @click="disconnect">
             {{ t('printer.disconnect') }}
           </button>
@@ -37,7 +41,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PrinterStatus from './PrinterStatus.vue';
-import MediaSelector from './MediaSelector.vue';
 import { usePrinterStore } from '@/stores/printer';
 import { isWebSerialAvailable, isWebUsbAvailable, requestUsbPrinter } from '@/lib/printer/connect';
 import { openBrotherQLViaSerial } from '@/lib/printer/drivers';
@@ -51,6 +54,7 @@ const connectError = ref<string | null>(null);
 
 const usbAvailable = computed(() => isWebUsbAvailable());
 const serialAvailable = computed(() => isWebSerialAvailable());
+const detectedName = computed(() => printer.detectedMedia?.name ?? null);
 
 function toggle(): void {
   open.value = !open.value;
@@ -192,6 +196,19 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+}
+
+.popover__detected {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.popover__hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .popover__error {

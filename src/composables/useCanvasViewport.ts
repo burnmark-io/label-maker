@@ -1,16 +1,13 @@
 import { computed, ref, watch, type Ref } from 'vue';
 import { useResizeObserver } from '@vueuse/core';
 import { useDesignerStore } from '@/stores/designer';
+import { useMediaStore, dotsFromMm } from '@/stores/media';
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 8;
 const ZOOM_STEP = 1.15;
 /** Padding around the label in viewport pixels at any zoom. */
 const VIEWPORT_PADDING = 48;
-/** Continuous-label fallback height (used while there is no content). */
-const CONTINUOUS_MIN_HEIGHT_DOTS = 240;
-/** Extra dots below the lowest object on continuous labels. */
-const CONTINUOUS_TAIL_DOTS = 80;
 
 export interface ViewportState {
   /** Container size in CSS px (the available canvas area). */
@@ -38,6 +35,7 @@ export interface ViewportState {
 
 export function useCanvasViewport(): ViewportState {
   const designer = useDesignerStore();
+  const media = useMediaStore();
 
   const width = ref(800);
   const height = ref(600);
@@ -46,15 +44,17 @@ export function useCanvasViewport(): ViewportState {
 
   const isContinuous = computed(() => designer.document.canvas.heightDots === 0);
 
+  /**
+   * Continuous canvases display at the user's manual length per
+   * `amendment-canvas-sizing.md` §3 — no auto-grow. The length lives
+   * in `media.continuousLengthMm` (computed: defaults to 4:3 starting
+   * ratio when nothing has been set yet, see store §3.2). The renderer
+   * still receives `heightDots: 0` and crops at the bitmap level — that
+   * is a separate concern.
+   */
   const labelHeightDots = computed(() => {
     if (!isContinuous.value) return designer.document.canvas.heightDots;
-    let lowest = 0;
-    for (const o of designer.document.objects) {
-      if (!o.visible) continue;
-      const bottom = o.y + o.height;
-      if (bottom > lowest) lowest = bottom;
-    }
-    return Math.max(CONTINUOUS_MIN_HEIGHT_DOTS, Math.ceil(lowest) + CONTINUOUS_TAIL_DOTS);
+    return dotsFromMm(media.continuousLengthMm, designer.document.canvas.dpi);
   });
 
   const fitZoom = computed(() => {
