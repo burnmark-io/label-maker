@@ -20,7 +20,12 @@
       "Bash(awk '/^## 18\\\\./,/^## 19\\\\./' /home/mannes/burnmark-io/label-maker/PLAN.md)",
       "Bash(awk '/^### 14\\\\.2/,/^### 14\\\\.[3-9]|^## 15/' /home/mannes/burnmark-io/label-maker/PLAN.md)",
       "Bash(awk '/^## 19\\\\. Help/,/^## 20/' /home/mannes/burnmark-io/label-maker/PLAN.md)",
-      "WebFetch(domain:www.123inkt.nl)"
+      "WebFetch(domain:www.123inkt.nl)",
+      "Bash(grep -E \"\\\\.\\(ts|json\\)$\")",
+      "Bash(grep -r \"LabelDocument\\\\|CanvasConfig\" /home/mannes/burnmark-io/label-maker/node_modules -name \"*.d.ts\")",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npm run *)",
+      "Bash(echo \"TYPECHECK_EXIT=$?\")"
     ],
     "additionalDirectories": [
       "/home/mannes/burnmark-io/designer-core"

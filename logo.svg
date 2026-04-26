@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Label — large, slightly rotated -->
+  <g transform="translate(256, 264) rotate(-3)">
+    <rect x="-155" y="-195" width="310" height="390" rx="24"
+          fill="white" opacity="0.95"/>
+
+    <!-- Text lines -->
+    <line x1="-110" y1="-130" x2="110" y2="-130" stroke="#e7e5e4" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-110" y1="-95" x2="70" y2="-95" stroke="#e7e5e4" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-110" y1="-60" x2="95" y2="-60" stroke="#e7e5e4" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-110" y1="-25" x2="55" y2="-25" stroke="#e7e5e4" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-110" y1="10" x2="85" y2="10" stroke="#e7e5e4" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- Barcode -->
+    <g transform="translate(-82, 105)">
+      <rect x="0" y="0" width="5" height="52" fill="#d6d3d1"/>
+      <rect x="9" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="16" y="0" width="7" height="52" fill="#d6d3d1"/>
+      <rect x="27" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="34" y="0" width="5" height="52" fill="#d6d3d1"/>
+      <rect x="43" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="50" y="0" width="7" height="52" fill="#d6d3d1"/>
+      <rect x="61" y="0" width="5" height="52" fill="#d6d3d1"/>
+      <rect x="70" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="77" y="0" width="7" height="52" fill="#d6d3d1"/>
+      <rect x="88" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="95" y="0" width="5" height="52" fill="#d6d3d1"/>
+      <rect x="104" y="0" width="7" height="52" fill="#d6d3d1"/>
+      <rect x="115" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="122" y="0" width="5" height="52" fill="#d6d3d1"/>
+      <rect x="131" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="138" y="0" width="5" height="52" fill="#d6d3d1"/>
+      <rect x="147" y="0" width="3" height="52" fill="#d6d3d1"/>
+      <rect x="154" y="0" width="7" height="52" fill="#d6d3d1"/>
+    </g>
+  </g>
+
+  <!-- Fire emoji — higher, centred between text lines and barcode -->
+  <text x="256" y="248" font-size="180" text-anchor="middle" dominant-baseline="central">🔥</text>
+</svg>
