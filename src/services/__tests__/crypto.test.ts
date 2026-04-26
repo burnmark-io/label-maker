@@ -9,13 +9,17 @@ import {
   deserializeEnvelope,
   encryptBytes,
   encryptString,
+  generateMasterKey,
+  importPrfKey,
   IV_BYTES,
   newIv,
   newSalt,
   SALT_BYTES,
   serializeEnvelope,
+  unwrapKey,
   VERIFIER_PLAINTEXT,
   verifyKey,
+  wrapKey,
 } from '../crypto';
 
 const TEST_KDF = { iterations: 1_000, hash: 'SHA-256' as const };
@@ -100,5 +104,55 @@ describe('crypto', () => {
     const env = await encryptString(key, 'hello');
     const restored = deserializeEnvelope(serializeEnvelope(env));
     expect(await decryptString(key, restored)).toBe('hello');
+  });
+
+  describe('master-key wrap helpers', () => {
+    it('generateMasterKey produces a usable AES-GCM key', async () => {
+      const mk = await generateMasterKey();
+      const env = await encryptString(mk, 'records');
+      expect(await decryptString(mk, env)).toBe('records');
+    });
+
+    it('two generateMasterKey calls produce different keys', async () => {
+      const a = await generateMasterKey();
+      const b = await generateMasterKey();
+      const env = await encryptString(a, 'x');
+      // Different MK → unwrap fails.
+      await expect(decryptString(b, env)).rejects.toBeDefined();
+    });
+
+    it('wrap/unwrap round-trips MK through a KEK', async () => {
+      const mk = await generateMasterKey();
+      const kek = await deriveKey('pw', newSalt(), TEST_KDF);
+      const wrapped = await wrapKey(kek, mk);
+      const restored = await unwrapKey(kek, wrapped);
+
+      // The unwrapped key encrypts/decrypts the same data the original did.
+      const probe = await encryptString(mk, 'abc');
+      expect(await decryptString(restored, probe)).toBe('abc');
+    });
+
+    it('unwrap with the wrong KEK throws (auth-tag failure)', async () => {
+      const mk = await generateMasterKey();
+      const kek = await deriveKey('right', newSalt(), TEST_KDF);
+      const wrong = await deriveKey('wrong', newSalt(), TEST_KDF);
+      const wrapped = await wrapKey(kek, mk);
+      await expect(unwrapKey(wrong, wrapped)).rejects.toBeDefined();
+    });
+
+    it('importPrfKey accepts 32 bytes and produces a key that wraps MK', async () => {
+      const prfBytes = new Uint8Array(32).fill(7);
+      const kek = await importPrfKey(prfBytes);
+      const mk = await generateMasterKey();
+      const wrapped = await wrapKey(kek, mk);
+      const restored = await unwrapKey(kek, wrapped);
+      const probe = await encryptString(mk, 'roundtrip');
+      expect(await decryptString(restored, probe)).toBe('roundtrip');
+    });
+
+    it('importPrfKey rejects results that are not 32 bytes', async () => {
+      await expect(importPrfKey(new Uint8Array(31))).rejects.toThrow();
+      await expect(importPrfKey(new Uint8Array(33))).rejects.toThrow();
+    });
   });
 });

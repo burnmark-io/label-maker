@@ -142,3 +142,62 @@ export function serializeEnvelope(env: Envelope): SerializedEnvelope {
 export function deserializeEnvelope(serialized: SerializedEnvelope): Envelope {
   return { iv: base64ToBytes(serialized.iv), ciphertext: base64ToBytes(serialized.ct) };
 }
+
+// ---- Master-key indirection (v2) -----------------------------------------
+//
+// In v2, the active record-encryption key (MK) is random and never derived
+// from the password. The password (and any registered passkey) instead
+// produce a key-encryption key (KEK) that wraps MK. Wrapping = AES-GCM
+// over the raw 32 bytes of MK; unwrapping = decrypt + import.
+
+const MK_BYTES = 32;
+
+/**
+ * Generate a fresh random master key. `extractable: true` so it can be
+ * exported to bytes and wrapped under a KEK. The exported bytes never
+ * leave the wrap envelope.
+ */
+export async function generateMasterKey(): Promise<CryptoKey> {
+  const raw = crypto.getRandomValues(new Uint8Array(MK_BYTES));
+  return SUBTLE().importKey('raw', raw as BufferSource, { name: 'AES-GCM' }, true, [
+    'encrypt',
+    'decrypt',
+  ]);
+}
+
+/**
+ * Wrap a 32-byte AES-GCM key under a KEK. The KEK can be password-derived
+ * (PBKDF2) or PRF-derived (WebAuthn). AES-GCM auth tag on the wrap doubles
+ * as a "right KEK?" check on unwrap.
+ */
+export async function wrapKey(kek: CryptoKey, key: CryptoKey): Promise<Envelope> {
+  const raw = new Uint8Array(await SUBTLE().exportKey('raw', key));
+  return encryptBytes(kek, raw);
+}
+
+/**
+ * Unwrap a wrapped key. Throws on auth-tag failure (wrong KEK / tampered
+ * envelope).
+ */
+export async function unwrapKey(kek: CryptoKey, env: Envelope): Promise<CryptoKey> {
+  const raw = await decryptBytes(kek, env);
+  return SUBTLE().importKey('raw', raw as BufferSource, { name: 'AES-GCM' }, true, [
+    'encrypt',
+    'decrypt',
+  ]);
+}
+
+/**
+ * Import a 32-byte WebAuthn PRF result as an AES-GCM key. The PRF result
+ * is the output of the authenticator's hmac-secret extension; it acts as
+ * a per-credential KEK for wrapping MK.
+ */
+export async function importPrfKey(prfBytes: Uint8Array): Promise<CryptoKey> {
+  if (prfBytes.length !== MK_BYTES) {
+    throw new Error(`Expected ${MK_BYTES}-byte PRF result, got ${prfBytes.length}.`);
+  }
+  return SUBTLE().importKey('raw', prfBytes as BufferSource, { name: 'AES-GCM' }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
+}

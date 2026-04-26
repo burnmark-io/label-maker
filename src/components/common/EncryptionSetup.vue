@@ -2,11 +2,11 @@
   <Modal
     :open="open"
     size="md"
-    :title="t('encryption.setup.title')"
+    :title="step === 'nudge' ? t('passkey.nudge.title') : t('encryption.setup.title')"
     :close-label="t('common.close')"
     @close="onClose"
   >
-    <div class="setup">
+    <div v-if="step === 'form'" class="setup">
       <div class="setup__warning">
         <strong>⚠ {{ t('encryption.setup.warningRecoveryHeading') }}</strong>
         <p>{{ t('encryption.setup.warningRecovery') }}</p>
@@ -55,18 +55,34 @@
       </form>
     </div>
 
+    <div v-else class="nudge">
+      <div class="nudge__icon" aria-hidden="true">✨</div>
+      <p class="nudge__body">{{ t('passkey.nudge.body') }}</p>
+      <p v-if="nudgeError" class="nudge__error" role="alert">{{ t(nudgeError) }}</p>
+    </div>
+
     <template #footer>
-      <button type="button" class="btn btn--ghost" :disabled="busy" @click="onClose">
-        {{ t('encryption.setup.cancel') }}
-      </button>
-      <button
-        type="button"
-        class="btn btn--primary"
-        :disabled="!canSubmit || busy"
-        @click="onSubmit"
-      >
-        {{ busy ? t('encryption.setup.encrypting') : t('encryption.setup.submit') }}
-      </button>
+      <template v-if="step === 'form'">
+        <button type="button" class="btn btn--ghost" :disabled="busy" @click="onClose">
+          {{ t('encryption.setup.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          :disabled="!canSubmit || busy"
+          @click="onSubmit"
+        >
+          {{ busy ? t('encryption.setup.encrypting') : t('encryption.setup.submit') }}
+        </button>
+      </template>
+      <template v-else>
+        <button type="button" class="btn btn--ghost" :disabled="nudgeBusy" @click="onSkipNudge">
+          {{ t('passkey.nudge.maybeLater') }}
+        </button>
+        <button type="button" class="btn btn--primary" :disabled="nudgeBusy" @click="onAcceptNudge">
+          {{ nudgeBusy ? t('passkey.nudge.adding') : addPasskeyLabel }}
+        </button>
+      </template>
     </template>
   </Modal>
 </template>
@@ -76,6 +92,11 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Modal from './Modal.vue';
 import { useCryptoStore } from '@/stores/crypto';
+import {
+  detectPasskeyPlatform,
+  isPrfLikelySupported,
+  isWebAuthnAvailable,
+} from '@/services/webauthn';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -90,6 +111,10 @@ const acknowledged = ref(false);
 const busy = ref(false);
 const errorKey = ref<string | null>(null);
 
+const step = ref<'form' | 'nudge'>('form');
+const nudgeBusy = ref(false);
+const nudgeError = ref<string | null>(null);
+
 const canSubmit = computed(
   () =>
     password.value.length >= MIN_PASSWORD_LENGTH &&
@@ -97,21 +122,33 @@ const canSubmit = computed(
     acknowledged.value,
 );
 
+const addPasskeyLabel = computed(() => {
+  const platform = detectPasskeyPlatform();
+  if (platform === 'touchid') return t('passkey.add.touchid');
+  if (platform === 'windows-hello') return t('passkey.add.windowsHello');
+  return t('passkey.add.generic');
+});
+
 watch(
   () => props.open,
   isOpen => {
     if (!isOpen) {
+      // Reset all transient state every time the dialog closes — including
+      // after a successful flow — so the next open starts clean.
       password.value = '';
       confirm.value = '';
       acknowledged.value = false;
       errorKey.value = null;
       busy.value = false;
+      step.value = 'form';
+      nudgeBusy.value = false;
+      nudgeError.value = null;
     }
   },
 );
 
 function onClose(): void {
-  if (busy.value) return;
+  if (busy.value || nudgeBusy.value) return;
   emit('close');
 }
 
@@ -130,12 +167,50 @@ async function onSubmit(): Promise<void> {
   try {
     await crypto.setupEncryption(password.value);
     emit('done');
-    emit('close');
+    // Drop the password from local refs ASAP — we still need to decide
+    // whether to show the nudge or close, but we don't need the string.
+    password.value = '';
+    confirm.value = '';
+
+    if (isWebAuthnAvailable() && (await isPrfLikelySupported())) {
+      step.value = 'nudge';
+    } else {
+      emit('close');
+    }
   } catch (err) {
     errorKey.value = 'encryption.setup.errorGeneric';
     console.error('[burnmark] setupEncryption failed:', err);
   } finally {
     busy.value = false;
+  }
+}
+
+function onSkipNudge(): void {
+  if (nudgeBusy.value) return;
+  emit('close');
+}
+
+async function onAcceptNudge(): Promise<void> {
+  if (nudgeBusy.value) return;
+  nudgeError.value = null;
+  nudgeBusy.value = true;
+  try {
+    const result = await crypto.addPasskey();
+    if (!result.ok) {
+      // Map known reason codes to friendly i18n strings; fall through to
+      // a generic message for anything else.
+      if (result.reason === 'register-cancelled' || result.reason === 'auth-cancelled') {
+        nudgeError.value = 'passkey.errors.cancelled';
+      } else if (result.reason === 'prf-not-supported' || result.reason === 'prf-eval-failed') {
+        nudgeError.value = 'passkey.errors.prfNotSupported';
+      } else {
+        nudgeError.value = 'passkey.errors.failed';
+      }
+      return;
+    }
+    emit('close');
+  } finally {
+    nudgeBusy.value = false;
   }
 }
 </script>
@@ -215,6 +290,32 @@ async function onSubmit(): Promise<void> {
   margin-top: var(--space-2);
   font-size: var(--text-sm);
   color: var(--color-text);
+}
+
+.nudge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-3);
+}
+
+.nudge__icon {
+  font-size: 32px;
+}
+
+.nudge__body {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  max-width: 36ch;
+}
+
+.nudge__error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger, #c0392b);
 }
 
 .btn {

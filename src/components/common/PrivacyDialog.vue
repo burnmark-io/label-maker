@@ -116,6 +116,9 @@
           <form v-if="showDisable" class="privacy__form" @submit.prevent="onDisableEncryption">
             <h4 class="privacy__formTitle">{{ t('encryption.disable.title') }}</h4>
             <p class="privacy__formBody">{{ t('encryption.disable.body') }}</p>
+            <p v-if="crypto.hasPasskey" class="privacy__formBody">
+              {{ t('passkey.privacy.disableNote') }}
+            </p>
             <label class="privacy__label" for="di-pw">{{
               t('encryption.disable.passwordLabel')
             }}</label>
@@ -146,6 +149,49 @@
               </button>
             </div>
           </form>
+
+          <div class="privacy__devices">
+            <h4 class="privacy__formTitle">{{ t('passkey.privacy.heading') }}</h4>
+            <ul class="privacy__deviceList">
+              <li class="privacy__device">
+                <span class="privacy__deviceIcon" aria-hidden="true">🔑</span>
+                <span class="privacy__deviceLabel">{{ t('passkey.privacy.passwordRow') }}</span>
+              </li>
+              <li v-if="crypto.hasPasskey" class="privacy__device">
+                <span class="privacy__deviceIcon" aria-hidden="true">👆</span>
+                <span class="privacy__deviceLabel">
+                  {{ t('passkey.privacy.passkeyRow', { date: passkeyAddedDate ?? '' }) }}
+                </span>
+                <button
+                  type="button"
+                  class="btn btn--ghost privacy__deviceRemove"
+                  :disabled="passkeyBusy"
+                  @click="onRemovePasskey"
+                >
+                  {{ passkeyBusy ? t('common.loading') : t('passkey.privacy.remove') }}
+                </button>
+              </li>
+            </ul>
+
+            <button
+              v-if="canAddPasskey"
+              type="button"
+              class="btn btn--primary privacy__deviceAdd"
+              :disabled="passkeyBusy"
+              @click="onAddPasskey"
+            >
+              {{ passkeyBusy ? t('passkey.nudge.adding') : addPasskeyLabel }}
+            </button>
+            <p v-else-if="!webauthnSupported" class="privacy__deviceNote">
+              {{ t('passkey.privacy.unsupportedNote') }}
+            </p>
+            <p v-if="passkeyError" class="privacy__error" role="alert">
+              {{ t(passkeyError) }}
+            </p>
+            <p v-if="crypto.hasPasskey || canAddPasskey" class="privacy__deviceNote">
+              {{ t('passkey.privacy.synced') }}
+            </p>
+          </div>
         </template>
       </section>
 
@@ -173,6 +219,11 @@ import { useDataStore } from '@/stores/data';
 import { countAssets } from '@/services/storage';
 import { MAX_SLOTS } from '@/stores/library';
 import { DATASET_LIMIT } from '@/stores/data';
+import {
+  detectPasskeyPlatform,
+  isPrfLikelySupported,
+  isWebAuthnAvailable,
+} from '@/services/webauthn';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ (e: 'close'): void; (e: 'open-reset'): void }>();
@@ -206,6 +257,30 @@ const changeError = ref<string | null>(null);
 const disableError = ref<string | null>(null);
 const actionsBusy = ref(false);
 
+// Passkey UI state
+const webauthnSupported = ref(isWebAuthnAvailable());
+const prfSupported = ref(false);
+const passkeyBusy = ref(false);
+const passkeyError = ref<string | null>(null);
+
+const passkeyAddedDate = computed(() => {
+  if (!crypto.passkeyAddedAt) return null;
+  const d = new Date(crypto.passkeyAddedAt);
+  if (Number.isNaN(d.getTime())) return crypto.passkeyAddedAt;
+  return d.toLocaleDateString();
+});
+
+const canAddPasskey = computed(
+  () => webauthnSupported.value && prfSupported.value && !crypto.hasPasskey,
+);
+
+const addPasskeyLabel = computed(() => {
+  const platform = detectPasskeyPlatform();
+  if (platform === 'touchid') return t('passkey.add.touchid');
+  if (platform === 'windows-hello') return t('passkey.add.windowsHello');
+  return t('passkey.add.generic');
+});
+
 const canChange = computed(
   () => oldPw.value.length > 0 && newPw.value.length >= 8 && newPw.value === newPwConfirm.value,
 );
@@ -215,13 +290,27 @@ watch(
   isOpen => {
     if (isOpen) {
       void refreshCounters();
+      void refreshPrfCapability();
       // Reset transient form state every open.
       setupOpen.value = false;
       resetChangeForm();
       resetDisableForm();
+      passkeyError.value = null;
     }
   },
 );
+
+async function refreshPrfCapability(): Promise<void> {
+  if (!webauthnSupported.value) {
+    prfSupported.value = false;
+    return;
+  }
+  try {
+    prfSupported.value = await isPrfLikelySupported();
+  } catch {
+    prfSupported.value = false;
+  }
+}
 
 async function refreshCounters(): Promise<void> {
   // Asset count is async — the other counters are reactive refs.
@@ -319,6 +408,40 @@ async function onDisableEncryption(): Promise<void> {
     }
   } finally {
     actionsBusy.value = false;
+  }
+}
+
+async function onAddPasskey(): Promise<void> {
+  if (passkeyBusy.value) return;
+  passkeyError.value = null;
+  passkeyBusy.value = true;
+  try {
+    const result = await crypto.addPasskey();
+    if (!result.ok) {
+      if (result.reason === 'register-cancelled' || result.reason === 'auth-cancelled') {
+        passkeyError.value = 'passkey.errors.cancelled';
+      } else if (result.reason === 'prf-not-supported' || result.reason === 'prf-eval-failed') {
+        passkeyError.value = 'passkey.errors.prfNotSupported';
+      } else {
+        passkeyError.value = 'passkey.errors.failed';
+      }
+    }
+  } finally {
+    passkeyBusy.value = false;
+  }
+}
+
+async function onRemovePasskey(): Promise<void> {
+  if (passkeyBusy.value) return;
+  if (typeof window !== 'undefined') {
+    if (!window.confirm(t('passkey.privacy.confirmRemove'))) return;
+  }
+  passkeyError.value = null;
+  passkeyBusy.value = true;
+  try {
+    await crypto.removePasskey();
+  } finally {
+    passkeyBusy.value = false;
   }
 }
 </script>
@@ -478,5 +601,58 @@ async function onDisableEncryption(): Promise<void> {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.privacy__devices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.privacy__deviceList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.privacy__device {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-canvas);
+  border-radius: var(--radius-sm);
+}
+
+.privacy__deviceIcon {
+  font-size: var(--text-base);
+}
+
+.privacy__deviceLabel {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.privacy__deviceRemove {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+}
+
+.privacy__deviceAdd {
+  align-self: flex-start;
+  font-size: var(--text-sm);
+}
+
+.privacy__deviceNote {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 </style>

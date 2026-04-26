@@ -743,5 +743,43 @@
     "submit": "Alles verwijderen",
     "resetting": "Bezig met verwijderen…",
     "cancel": "Annuleren"
+  },
+  "passkey": {
+    "use": {
+      "touchid": "Touch ID gebruiken",
+      "windowsHello": "Windows Hello gebruiken",
+      "generic": "Geregistreerde passkey gebruiken"
+    },
+    "add": {
+      "touchid": "Touch ID toevoegen",
+      "windowsHello": "Windows Hello toevoegen",
+      "generic": "Passkey toevoegen"
+    },
+    "unlock": {
+      "busy": "Bezig met authenticeren…",
+      "error": "Ontgrendelen met deze passkey is mislukt. Probeer je wachtwoord.",
+      "orPassword": "of gebruik wachtwoord"
+    },
+    "nudge": {
+      "title": "Ontgrendel burnmark sneller",
+      "body": "Gebruik je vingerafdruk of hardware-key om te ontgrendelen in plaats van je wachtwoord telkens te typen. Je wachtwoord blijft als reserve werken.",
+      "maybeLater": "Misschien later",
+      "adding": "Toevoegen…"
+    },
+    "privacy": {
+      "heading": "Apparaten die burnmark kunnen ontgrendelen",
+      "passwordRow": "Wachtwoord (altijd)",
+      "passkeyRow": "Passkey · toegevoegd {date}",
+      "remove": "Verwijderen",
+      "unsupportedNote": "Deze browser ondersteunt geen passkeys voor ontgrendelen.",
+      "synced": "Passkeys die via iCloud of Google Password Manager synchroniseren werken op alle apparaten gekoppeld aan dat account. Gebruik een hardware-key als je het tot één apparaat wilt beperken.",
+      "confirmRemove": "Passkey verwijderen? Je hebt vanaf nu je wachtwoord nodig om te ontgrendelen. Je kunt burnmark ook verwijderen uit de opgeslagen passkeys van je apparaat.",
+      "disableNote": "Je passkey voor burnmark werkt straks niet meer. Je kunt burnmark ook verwijderen uit de opgeslagen passkeys van je apparaat."
+    },
+    "errors": {
+      "prfNotSupported": "De authenticator van dit apparaat is niet geschikt. Probeer een andere of gebruik je wachtwoord.",
+      "cancelled": "Passkey-registratie geannuleerd.",
+      "failed": "Passkey toevoegen is mislukt. Probeer het opnieuw."
+    }
   }
 }

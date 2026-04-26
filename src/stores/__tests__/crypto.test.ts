@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { createDocument } from '@burnmark-io/designer-core';
 
@@ -22,6 +22,7 @@ import {
 // milliseconds rather than seconds. The store reads DEFAULT_KDF from the
 // crypto module; we monkey-patch it via the module's mutable export.
 import * as cryptoMod from '@/services/crypto';
+import * as webauthnMod from '@/services/webauthn';
 
 const ORIGINAL_KDF = { ...cryptoMod.DEFAULT_KDF };
 
@@ -222,5 +223,190 @@ describe('crypto store', () => {
       }
       expect(remaining).toEqual([]);
     }
+  });
+
+  describe('passkey wraps', () => {
+    const FAKE_CRED_ID = new Uint8Array([10, 20, 30, 40]);
+    const FAKE_PRF_BYTES = new Uint8Array(32).fill(0x33);
+
+    function stubRegistration(): void {
+      vi.spyOn(webauthnMod, 'registerPasskeyAndDerivePrf').mockResolvedValue({
+        credentialId: FAKE_CRED_ID,
+        prfSalt: new Uint8Array(32).fill(0xab),
+        prfBytes: FAKE_PRF_BYTES,
+      });
+      vi.spyOn(webauthnMod, 'authenticateAndDerivePrf').mockResolvedValue(FAKE_PRF_BYTES);
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('addPasskey appends a passkey wrap and persists it', async () => {
+      stubRegistration();
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      expect(store.hasPasskey).toBe(false);
+
+      const result = await store.addPasskey();
+      expect(result).toEqual({ ok: true });
+      expect(store.hasPasskey).toBe(true);
+      expect(store.wraps).toHaveLength(2);
+      expect(store.passkeyAddedAt).toBeTruthy();
+    });
+
+    it('a second addPasskey rejects with already-exists (single-passkey policy)', async () => {
+      stubRegistration();
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      await store.addPasskey();
+
+      const result = await store.addPasskey();
+      expect(result).toEqual({ ok: false, reason: 'already-exists' });
+      expect(store.wraps).toHaveLength(2);
+    });
+
+    it('addPasskey rejects when the app is locked (no MK in memory)', async () => {
+      stubRegistration();
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      // Simulate locked state.
+      store.key = null;
+      const result = await store.addPasskey();
+      expect(result).toEqual({ ok: false, reason: 'not-unlocked' });
+    });
+
+    it('addPasskey surfaces register failures with the reason code', async () => {
+      vi.spyOn(webauthnMod, 'registerPasskeyAndDerivePrf').mockRejectedValue(
+        new Error('prf-not-supported'),
+      );
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      const result = await store.addPasskey();
+      expect(result).toEqual({ ok: false, reason: 'prf-not-supported' });
+      expect(store.hasPasskey).toBe(false);
+    });
+
+    it('removePasskey filters the passkey wrap and leaves the password wrap', async () => {
+      stubRegistration();
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      await store.addPasskey();
+      expect(store.hasPasskey).toBe(true);
+
+      const removed = await store.removePasskey();
+      expect(removed).toBe(true);
+      expect(store.hasPasskey).toBe(false);
+      expect(store.wraps).toHaveLength(1);
+      expect(store.wraps[0].kind).toBe('password');
+    });
+
+    it('removePasskey is a no-op when no passkey is registered', async () => {
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      const removed = await store.removePasskey();
+      expect(removed).toBe(false);
+    });
+
+    it('passkey unlock yields the same MK as password unlock', async () => {
+      stubRegistration();
+      // Save a record before encryption so the migration step encrypts it
+      // under MK; both unlock paths should make it readable again.
+      const doc = createDocument(
+        'design-pk',
+        { widthDots: 100, heightDots: 60, dpi: 300 },
+        'Both paths',
+      );
+      await saveDesign(doc);
+
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      await store.addPasskey();
+
+      // Simulate fresh boot.
+      store.key = null;
+      setStorageKey(null);
+      __resetMappingCacheForTests();
+
+      // Passkey path.
+      const okPk = await store.unlockWithPasskey();
+      expect(okPk).toBe(true);
+      expect((await loadDesign('design-pk'))?.name).toBe('Both paths');
+
+      // Lock again, unlock with password.
+      store.key = null;
+      setStorageKey(null);
+      __resetMappingCacheForTests();
+      const okPw = await store.unlock('hunter2');
+      expect(okPw).toBe(true);
+      expect((await loadDesign('design-pk'))?.name).toBe('Both paths');
+    });
+
+    it('unlockWithPasskey returns false when no passkey is registered', async () => {
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      store.key = null;
+      setStorageKey(null);
+      const ok = await store.unlockWithPasskey();
+      expect(ok).toBe(false);
+    });
+
+    it('unlockWithPasskey returns false when WebAuthn auth is cancelled', async () => {
+      stubRegistration();
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      await store.addPasskey();
+
+      store.key = null;
+      setStorageKey(null);
+
+      vi.spyOn(webauthnMod, 'authenticateAndDerivePrf').mockRejectedValue(
+        new Error('auth-cancelled'),
+      );
+      const ok = await store.unlockWithPasskey();
+      expect(ok).toBe(false);
+      expect(store.key).toBeNull();
+    });
+
+    it('changePassword leaves the passkey wrap intact', async () => {
+      stubRegistration();
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      await store.addPasskey();
+      expect(store.wraps).toHaveLength(2);
+
+      expect(await store.changePassword('hunter2', 'hunter3')).toBe(true);
+      expect(store.wraps).toHaveLength(2);
+      expect(store.hasPasskey).toBe(true);
+
+      // Old password no longer works; new password does.
+      store.key = null;
+      setStorageKey(null);
+      expect(await store.unlock('hunter2')).toBe(false);
+      expect(await store.unlock('hunter3')).toBe(true);
+    });
+
+    it('disableEncryption removes the passkey wrap along with everything else', async () => {
+      stubRegistration();
+      const store = useCryptoStore();
+      await store.init();
+      await store.setupEncryption('hunter2');
+      await store.addPasskey();
+
+      expect(await store.disableEncryption('hunter2')).toBe(true);
+      expect(store.enabled).toBe(false);
+      expect(store.wraps).toEqual([]);
+      expect(store.hasPasskey).toBe(false);
+    });
   });
 });

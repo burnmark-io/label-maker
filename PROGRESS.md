@@ -506,6 +506,82 @@ second factor.
 - [x] test (321 passing)
 - [x] build
 
+## Phase 16: Passkey & biometric unlock
+
+Implementing `amendments/implemented/amendment-passkey-unlock.md` —
+opt-in WebAuthn PRF unlock layered on top of the password-based
+encryption shipped in Phase 15. Master-key wrapping indirection: MK
+becomes random and is wrapped under one password KEK plus (optionally)
+one passkey KEK derived from the authenticator's PRF result. Single-
+passkey policy; password stays as the canonical recovery path.
+Pre-stable codebase, so we ship the v2 wrap layout fresh — anyone with
+a v1 store from Phase 15 will hit the unlock screen and use Reset all
+data to start over.
+
+- [x] 16.1 `services/crypto.ts` — `generateMasterKey` (random 32-byte
+      AES-GCM key, extractable so it can be wrapped); `wrapKey` /
+      `unwrapKey` (AES-GCM round-trip over the raw 32 bytes of MK);
+      `importPrfKey` (32-byte WebAuthn PRF result → AES-GCM CryptoKey).
+      Auth-tag failure on unwrap doubles as the wrong-KEK signal
+- [x] 16.2 `services/webauthn.ts` — capability detect
+      (`isWebAuthnAvailable`, `isPrfLikelySupported` — best-effort via
+      `getClientCapabilities` with optimistic fall-through),
+      `registerPasskeyAndDerivePrf` (create → verify `prf.enabled` →
+      immediate `get` to derive the PRF result; rolls back on any
+      failure so the OS keychain doesn't keep dead credentials),
+      `authenticateAndDerivePrf` (single-element `allowCredentials`,
+      `userVerification: 'required'`), platform detection for friendly
+      button labels ('touchid' / 'windows-hello' / 'android' /
+      'generic')
+- [x] 16.3 `stores/crypto.ts` rewritten around the wrap-indirection
+      model. New shape: `enc.format = 2`, `enc.wraps: WrapRecord[]`
+      (one `kind: 'password'` + zero-or-one `kind: 'passkey'`),
+      `enc.verifier` under MK, `enc.passkeyUserId` lazily-created and
+      reused so re-registration replaces the OS-keychain entry
+      instead of orphaning. New methods: `addPasskey()` (single-passkey
+      invariant enforced; reasoned failure result), `removePasskey()`,
+      `unlockWithPasskey()`. Existing `setupEncryption` / `unlock` /
+      `changePassword` / `disableEncryption` reworked to operate on
+      wraps — change-password is now three IDB writes, no record walk
+- [x] 16.4 `components/common/UnlockScreen.vue` — passkey button above
+      the password field, only rendered when a passkey is registered
+      AND the browser supports WebAuthn. Platform-aware label
+      ("Use Touch ID" / "Use Windows Hello" / "Use registered passkey")
+- [x] 16.5 `components/common/EncryptionSetup.vue` — after a successful
+      first-time setup, transitions to a second "step" inside the same
+      modal that nudges the user to add a passkey. Skipped when PRF
+      isn't supported on the current browser. Maps known reason codes
+      to friendly i18n strings (cancelled / prf-not-supported / failed)
+- [x] 16.6 `components/common/PrivacyDialog.vue` — new "Devices that
+      can unlock burnmark" sub-section with the always-present
+      password row plus the optional passkey row. Add/Remove buttons
+      are state-aware: Add hides when a passkey is registered or PRF
+      is unsupported (showing a small disabled note in that case).
+      Disable-encryption confirmation grows an extra line about the
+      OS-keychain orphan when a passkey is present. Honesty footnote
+      about iCloud / Google Password Manager sync
+- [x] 16.7 i18n — `passkey.*` namespace covering use/add labels per
+      platform, unlock copy, nudge copy, privacy list copy, and error
+      strings. en + nl
+- [x] 16.8 Tests — `services/__tests__/crypto.test.ts` adds wrap/unwrap
+      round-trip, `importPrfKey` size guard, `generateMasterKey`
+      randomness; `services/__tests__/webauthn.test.ts` (new) mocks
+      `navigator.credentials.create` / `get` and covers the registration
+      → PRF-eval → result path, the unlock path, capability gating,
+      and every reason code; `stores/__tests__/crypto.test.ts` adds
+      addPasskey appends a wrap, second add rejects with
+      `already-exists`, removePasskey filters, password and passkey
+      both unlock the same MK, changePassword leaves the passkey wrap
+      intact, disableEncryption removes the passkey wrap with
+      everything else. 352 tests pass overall (up from 321)
+
+**Gate check:**
+- [x] typecheck
+- [x] lint
+- [x] format
+- [x] test (352 passing)
+- [x] build
+
 ## Backlog
 
 Amendments captured in `amendments/backlog/` waiting on a sibling
@@ -529,9 +605,3 @@ slot. Listed shortest-summary-first so each is scannable.
   styling panel (logo, dot styles, colours). Depends on the shipped
   barcode-validation amendment (✅) and a designer-core qr-styling
   bump. Mobile QoL piggybacks (Contact Picker, Geolocation).
-- **`amendment-passkey-unlock.md`** — WebAuthn PRF unlock for the
-  encryption flow shipped in Phase 15. Master-key wrapping
-  indirection so password and any registered passkey can both unlock,
-  with the password staying as the canonical recovery path. Real
-  workload is browser/authenticator-quirk fixing; rough estimate
-  1–3 days when picked up.

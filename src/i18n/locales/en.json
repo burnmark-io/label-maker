@@ -743,5 +743,43 @@
     "submit": "Delete everything",
     "resetting": "Resetting…",
     "cancel": "Cancel"
+  },
+  "passkey": {
+    "use": {
+      "touchid": "Use Touch ID",
+      "windowsHello": "Use Windows Hello",
+      "generic": "Use registered passkey"
+    },
+    "add": {
+      "touchid": "Add Touch ID",
+      "windowsHello": "Add Windows Hello",
+      "generic": "Add a passkey"
+    },
+    "unlock": {
+      "busy": "Authenticating…",
+      "error": "Couldn't unlock with this passkey. Try your password.",
+      "orPassword": "or use password"
+    },
+    "nudge": {
+      "title": "Unlock burnmark faster",
+      "body": "Use your device's biometric or hardware key to unlock instead of typing your password every time. Your password still works as a backup.",
+      "maybeLater": "Maybe later",
+      "adding": "Adding…"
+    },
+    "privacy": {
+      "heading": "Devices that can unlock burnmark",
+      "passwordRow": "Password (always)",
+      "passkeyRow": "Passkey · added {date}",
+      "remove": "Remove",
+      "unsupportedNote": "This browser doesn't support adding passkeys for unlock.",
+      "synced": "Passkeys synced via iCloud or Google Password Manager carry across the devices linked to that account. Use a hardware key if you want one device only.",
+      "confirmRemove": "Remove the passkey? You'll need your password to unlock from now on. You may also want to remove burnmark from your device's saved passkeys.",
+      "disableNote": "Your passkey for burnmark will stop working. You may also want to remove burnmark from your device's saved passkeys."
+    },
+    "errors": {
+      "prfNotSupported": "This device's authenticator can't be used here. Try a different one or use your password.",
+      "cancelled": "Passkey registration was cancelled.",
+      "failed": "Couldn't add the passkey. Please try again."
+    }
   }
 }
