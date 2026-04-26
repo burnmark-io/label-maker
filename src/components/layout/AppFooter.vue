@@ -1,5 +1,6 @@
 <template>
   <footer class="footer" role="contentinfo">
+    <span class="footer__spacer" aria-hidden="true"></span>
     <a class="footer__sponsor" :href="kofiUrl" target="_blank" rel="noopener noreferrer">
       <span aria-hidden="true">🏷️</span>
       <span>{{ sponsorText }}</span>
@@ -52,9 +53,9 @@ const sponsorText = computed(() => {
 
 <style scoped>
 .footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   height: var(--footer-height);
   padding: 0 var(--space-4);
   background: var(--color-bg-panel);
@@ -69,6 +70,7 @@ const sponsorText = computed(() => {
   align-items: center;
   gap: var(--space-2);
   color: var(--color-text-secondary);
+  justify-self: center;
 }
 
 .footer__sponsor:hover {
@@ -79,6 +81,7 @@ const sponsorText = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  justify-self: end;
 }
 
 .footer__nav a,
