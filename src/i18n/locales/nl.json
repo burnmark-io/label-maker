@@ -346,6 +346,7 @@
   "footer": {
     "about": "Over",
     "help": "Help",
+    "privacy": "Privacy",
     "github": "GitHub",
     "sponsorTexts": [
       "Print labels, geen geld · Trakteer me op labels ☕",
@@ -655,5 +656,92 @@
     "step4Title": "Verbind en print",
     "step4Body": "Sluit je printer aan en druk op printen. Klaar!"
   },
-  "placeholderNote": "burnmark UI strings"
+  "placeholderNote": "burnmark UI strings",
+  "privacy": {
+    "title": "Privacy",
+    "howStored": {
+      "heading": "Hoe burnmark je gegevens bewaart",
+      "body1": "Alles wat je in burnmark maakt blijft op dit apparaat. Geen account, geen server, geen analytics — je ontwerpen en data verlaten je browser nooit.",
+      "body2": "Wil je burnmarks gegevens van dit apparaat verwijderen? De website-data-instellingen van je browser doen dat netjes.",
+      "clearLink": "Site-data wissen — uitleg →"
+    },
+    "yourData": {
+      "heading": "Wat staat er op dit apparaat",
+      "designs": "Opgeslagen labels: {n} van {max}",
+      "datasets": "Datasets: {n} van {max}",
+      "assets": "Afbeeldingen: {n}",
+      "storage": "Opslag in gebruik: ongeveer {mb} MB"
+    },
+    "encryption": {
+      "heading": "Versleuteling",
+      "offDescription": "Je gegevens staan op dit moment in leesbare vorm op dit apparaat. Iedereen met toegang tot deze browser kan ze inzien.",
+      "onDescription": "Versleuteling staat aan. Je gegevens zijn op schijf onleesbaar zonder je wachtwoord.",
+      "setupCta": "Stel een wachtwoord in",
+      "changeCta": "Wachtwoord wijzigen",
+      "disableCta": "Versleuteling uitzetten",
+      "whyHeading": "Waarom zou ik dit willen?",
+      "whyBody": "Als deze browser gedeeld wordt — een gezins- of kantoor-pc — houdt versleuteling je opgeslagen labels en datasets onleesbaar voor iedereen die je wachtwoord niet kent. Het beschermt niet tegen malware op dit apparaat en ook niet tegen iemand die de app gebruikt terwijl die ontgrendeld is."
+    },
+    "reset": {
+      "heading": "Resetten",
+      "body": "Verwijder elk opgeslagen label, dataset, afbeelding en voorkeur van dit apparaat. Dit kan niet ongedaan worden gemaakt.",
+      "cta": "Verwijder al mijn gegevens"
+    }
+  },
+  "encryption": {
+    "setup": {
+      "title": "Versleutel je lokale gegevens",
+      "warningRecoveryHeading": "Vergeet je dit wachtwoord, dan zijn je gegevens weg",
+      "warningRecovery": "Er is geen herstel, geen hint, geen reset-link. Wij hebben geen kopie van je wachtwoord — burnmark draait volledig op jouw apparaat.",
+      "warningScopeHeading": "Wat dit beschermt",
+      "warningScope": "Versleuteling houdt je gegevens onleesbaar als iemand anders deze browser gebruikt. Het beschermt niet tegen malware op dit apparaat en ook niet tegen iemand die de app gebruikt terwijl die ontgrendeld is.",
+      "noteUnsaved": "Je huidige ontwerp wordt daarna gewoon opgeslagen — je hoeft niet eerst op te slaan voor je versleutelt.",
+      "passwordLabel": "Wachtwoord",
+      "confirmLabel": "Wachtwoord bevestigen",
+      "lengthHint": "Langere wachtwoorden zijn sterker. Een korte zin die je onthoudt is beter dan een complex woord dat je vergeet.",
+      "acknowledge": "Ik begrijp dat mijn gegevens weg zijn als ik dit wachtwoord verlies.",
+      "submit": "Versleutel mijn gegevens",
+      "encrypting": "Bezig met versleutelen…",
+      "cancel": "Annuleren",
+      "errorTooShort": "Het wachtwoord moet minstens 8 tekens hebben.",
+      "errorMismatch": "De wachtwoorden komen niet overeen.",
+      "errorGeneric": "Er ging iets mis bij het versleutelen. Probeer het opnieuw."
+    },
+    "unlock": {
+      "title": "Ontgrendel burnmark",
+      "subtitle": "Voer je wachtwoord in om door te gaan.",
+      "passwordLabel": "Wachtwoord",
+      "submit": "Ontgrendelen",
+      "loading": "Bezig met ontgrendelen…",
+      "error": "Wachtwoord onjuist.",
+      "forgot": "Wachtwoord vergeten? Verwijder alle gegevens."
+    },
+    "change": {
+      "title": "Wachtwoord wijzigen",
+      "oldLabel": "Huidig wachtwoord",
+      "newLabel": "Nieuw wachtwoord",
+      "confirmLabel": "Bevestig nieuw wachtwoord",
+      "submit": "Wachtwoord wijzigen",
+      "busy": "Bezig met wijzigen…",
+      "errorWrongOld": "Het huidige wachtwoord klopt niet.",
+      "errorMismatch": "De nieuwe wachtwoorden komen niet overeen."
+    },
+    "disable": {
+      "title": "Versleuteling uitzetten",
+      "body": "Je gegevens komen weer in leesbare vorm op dit apparaat te staan. Voer je huidige wachtwoord in om dit te bevestigen.",
+      "passwordLabel": "Huidig wachtwoord",
+      "submit": "Versleuteling uitzetten",
+      "busy": "Bezig…",
+      "errorWrong": "Wachtwoord onjuist."
+    }
+  },
+  "reset": {
+    "title": "Alle gegevens verwijderen",
+    "body": "Elk opgeslagen label, dataset, afbeelding en voorkeur op dit apparaat wordt definitief verwijderd. De app herlaadt naar een lege staat.",
+    "warning": "Dit kan niet ongedaan worden gemaakt. Er is geen back-up.",
+    "confirmLabel": "Typ \"{word}\" om te bevestigen",
+    "submit": "Alles verwijderen",
+    "resetting": "Bezig met verwijderen…",
+    "cancel": "Annuleren"
+  }
 }

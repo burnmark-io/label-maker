@@ -9,9 +9,27 @@
  * The mapping is keyed `placeholder -> column`. Persisted per-template
  * via {@link saveMapping}/{@link loadMapping} so reusing the same data
  * file with the same template skips the manual UI.
+ *
+ * Persistence model: an in-memory cache mirrors the localStorage payload.
+ * Reads serve from cache (synchronous, used by Pinia computeds). Writes
+ * mutate the cache synchronously and trigger a debounced async push to
+ * localStorage. When encryption is on, the persisted payload is an
+ * AES-GCM envelope (base64) — `hydrateMappings()` decrypts on boot.
  */
 
+import {
+  base64ToBytes,
+  bytesToBase64,
+  decryptString,
+  deserializeEnvelope,
+  encryptString,
+  serializeEnvelope,
+  type SerializedEnvelope,
+} from './crypto';
+import { getStorageKey } from './storage';
+
 const STORAGE_KEY = 'burnmark.columnMapper';
+const PERSIST_DEBOUNCE_MS = 200;
 
 export interface MappingResult {
   /** placeholder name (lower-cased) → column header (original casing) */
@@ -159,42 +177,216 @@ interface PersistedMappings {
   [templateKey: string]: Record<string, string>;
 }
 
-function readStorage(): PersistedMappings {
-  if (typeof window === 'undefined') return {};
+// ---- In-memory cache + write-behind ---------------------------------------
+
+let cache: PersistedMappings = {};
+let hydrated = false;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let persistInFlight: Promise<void> | null = null;
+
+function readRawString(): string | null {
+  if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) as PersistedMappings;
+    return window.localStorage.getItem(STORAGE_KEY);
   } catch {
-    return {};
+    return null;
   }
 }
 
-function writeStorage(value: PersistedMappings): void {
+function writeRawString(value: string): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+    window.localStorage.setItem(STORAGE_KEY, value);
   } catch {
     // Quota / private mode — ignore.
   }
 }
 
+interface EncryptedPayload {
+  v: 1;
+  enc: SerializedEnvelope;
+}
+
+function isEncryptedPayload(parsed: unknown): parsed is EncryptedPayload {
+  return (
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    'enc' in parsed &&
+    typeof (parsed as { enc?: unknown }).enc === 'object'
+  );
+}
+
+/**
+ * Read the persisted mappings into the cache. Idempotent: subsequent
+ * calls return the same cache without re-reading. Called from the boot
+ * path after unlock (or before mount when encryption is off). Pass
+ * `force = true` to bypass the cache and re-read — used when the active
+ * encryption key changes (unlock, change-password, disable).
+ */
+export async function hydrateMappings(force = false): Promise<void> {
+  if (hydrated && !force) return;
+  const raw = readRawString();
+  if (!raw) {
+    cache = {};
+    hydrated = true;
+    return;
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (isEncryptedPayload(parsed)) {
+      const key = getStorageKey();
+      if (!key) {
+        // Encrypted payload but no key — leave cache empty. Mappings are
+        // a soft-state cache anyway; auto-map fallback takes over.
+        cache = {};
+      } else {
+        try {
+          const text = await decryptString(key, deserializeEnvelope(parsed.enc));
+          cache = JSON.parse(text) as PersistedMappings;
+        } catch {
+          cache = {};
+        }
+      }
+    } else {
+      cache = parsed as PersistedMappings;
+    }
+  } catch {
+    cache = {};
+  }
+  hydrated = true;
+}
+
+/** Test-only: reset the cache so a fresh hydration runs. */
+export function __resetMappingCacheForTests(): void {
+  cache = {};
+  hydrated = false;
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  persistInFlight = null;
+}
+
+async function performPersist(): Promise<void> {
+  const snapshot: PersistedMappings = JSON.parse(JSON.stringify(cache)) as PersistedMappings;
+  const key = getStorageKey();
+  if (key) {
+    const env = await encryptString(key, JSON.stringify(snapshot));
+    const payload: EncryptedPayload = { v: 1, enc: serializeEnvelope(env) };
+    writeRawString(JSON.stringify(payload));
+  } else {
+    writeRawString(JSON.stringify(snapshot));
+  }
+}
+
+function schedulePersist(): void {
+  // Plaintext path is fully synchronous — write immediately so callers
+  // (and tests) can read the persisted value back on the very next line.
+  if (!getStorageKey()) {
+    writeRawString(JSON.stringify(cache));
+    return;
+  }
+  // Encrypted path is async; coalesce rapid writes into one encrypt call.
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    persistInFlight = performPersist().catch(() => undefined);
+  }, PERSIST_DEBOUNCE_MS);
+}
+
+/**
+ * Force any pending debounced write to flush. Used by `migrateMappings`
+ * and tests.
+ */
+export async function flushMappings(): Promise<void> {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+    persistInFlight = performPersist().catch(() => undefined);
+  }
+  if (persistInFlight) await persistInFlight;
+}
+
+/**
+ * Re-encrypt (or decrypt) the persisted column-mapper payload to match
+ * a key transition. Mirrors `migrateEncryption` for the IDB stores.
+ *
+ * `oldKey` describes the *current* on-disk shape; `newKey` describes the
+ * desired one. When called, the in-memory cache is assumed to already
+ * reflect the plaintext mappings (it's hydrated on boot using the old
+ * key, so it does).
+ */
+export async function migrateMappings(
+  oldKey: CryptoKey | null,
+  newKey: CryptoKey | null,
+): Promise<void> {
+  void oldKey; // The cache already holds plaintext; we just rewrite under newKey.
+  // Cancel any pending debounced write, then push synchronously under the
+  // new key so the on-disk shape is consistent with the IDB migration.
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  // We can't read getStorageKey() here because the caller swaps it around
+  // migration; perform the encrypt directly with newKey.
+  const snapshot: PersistedMappings = JSON.parse(JSON.stringify(cache)) as PersistedMappings;
+  if (newKey) {
+    const env = await encryptString(newKey, JSON.stringify(snapshot));
+    const payload: EncryptedPayload = { v: 1, enc: serializeEnvelope(env) };
+    writeRawString(JSON.stringify(payload));
+  } else {
+    writeRawString(JSON.stringify(snapshot));
+  }
+}
+
+/** Wipe the cache and the persisted entry. Used by reset-all-data. */
+export function clearAllMappings(): void {
+  cache = {};
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function loadMapping(templateKey: string): Record<string, string> | null {
-  const all = readStorage();
-  return all[templateKey] ?? null;
+  return cache[templateKey] ?? null;
 }
 
 export function saveMapping(templateKey: string, mapping: Record<string, string>): void {
-  const all = readStorage();
-  all[templateKey] = { ...mapping };
-  writeStorage(all);
+  cache = { ...cache, [templateKey]: { ...mapping } };
+  schedulePersist();
 }
 
 export function clearMapping(templateKey: string): void {
-  const all = readStorage();
-  if (templateKey in all) {
-    delete all[templateKey];
-    writeStorage(all);
+  if (templateKey in cache) {
+    const next = { ...cache };
+    delete next[templateKey];
+    cache = next;
+    schedulePersist();
+  }
+}
+
+// On module load in a non-encrypted environment we synchronously hydrate
+// from localStorage so the very first `loadMapping` call sees the user's
+// remembered mappings even if no boot code has awaited `hydrateMappings`
+// yet. When encryption is on, this path leaves the cache empty (no key
+// available); the boot gate awaits `hydrateMappings()` after unlock.
+if (typeof window !== 'undefined' && !hydrated) {
+  const raw = readRawString();
+  if (raw) {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (!isEncryptedPayload(parsed)) {
+        cache = parsed as PersistedMappings;
+        hydrated = true;
+      }
+    } catch {
+      // ignore
+    }
+  } else {
+    hydrated = true;
   }
 }
 
@@ -215,3 +407,7 @@ export function applyMappingToRow(
   }
   return out;
 }
+
+// Defensive: keep a couple of the lower-level helpers exported for tests
+// even though they aren't part of the public API.
+export const __internal = { bytesToBase64, base64ToBytes };

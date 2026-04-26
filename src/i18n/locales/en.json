@@ -346,6 +346,7 @@
   "footer": {
     "about": "About",
     "help": "Help",
+    "privacy": "Privacy",
     "github": "GitHub",
     "sponsorTexts": [
       "Print labels, not money · Buy me some labels ☕",
@@ -655,5 +656,92 @@
     "step4Title": "Connect and print",
     "step4Body": "Connect your printer and hit print. That's it!"
   },
-  "placeholderNote": "burnmark UI strings"
+  "placeholderNote": "burnmark UI strings",
+  "privacy": {
+    "title": "Privacy",
+    "howStored": {
+      "heading": "How burnmark stores your data",
+      "body1": "Everything you make in burnmark stays on this device. No account, no server, no analytics — your designs and data never leave your browser.",
+      "body2": "If you want to remove burnmark's data from this device, your browser's site-data controls do it cleanly.",
+      "clearLink": "How to clear site data →"
+    },
+    "yourData": {
+      "heading": "What you have on this device",
+      "designs": "Saved labels: {n} of {max}",
+      "datasets": "Datasets: {n} of {max}",
+      "assets": "Image assets: {n}",
+      "storage": "Storage used: about {mb} MB"
+    },
+    "encryption": {
+      "heading": "Encryption",
+      "offDescription": "Your data is currently stored in plain form. Anyone with access to this browser profile can read your designs and datasets.",
+      "onDescription": "Encryption is on. Your data is unreadable on disk without your password.",
+      "setupCta": "Set up a password",
+      "changeCta": "Change password",
+      "disableCta": "Turn off encryption",
+      "whyHeading": "Why might I want this?",
+      "whyBody": "If this browser is shared — a family or office machine — encryption keeps your saved labels and datasets unreadable to anyone who doesn't know your password. It does not protect against malware on the same device, and it does not protect data while the app is unlocked."
+    },
+    "reset": {
+      "heading": "Reset",
+      "body": "Wipe every saved label, dataset, image, and preference from this device. This cannot be undone.",
+      "cta": "Reset all my data"
+    }
+  },
+  "encryption": {
+    "setup": {
+      "title": "Encrypt your local data",
+      "warningRecoveryHeading": "If you forget this password, your data is gone",
+      "warningRecovery": "There is no recovery, no hint, no reset link. We do not have a copy of your password — burnmark runs entirely on your device.",
+      "warningScopeHeading": "What this protects",
+      "warningScope": "Encryption keeps your data unreadable when someone else uses this browser. It does not protect against malware on this device or against anyone using the app while it is unlocked.",
+      "noteUnsaved": "Your current design will save normally afterwards — you do not need to save before encrypting.",
+      "passwordLabel": "Password",
+      "confirmLabel": "Confirm password",
+      "lengthHint": "Longer passwords are stronger. A short phrase you'll remember beats a complex word you might forget.",
+      "acknowledge": "I understand my data is gone if I lose this password.",
+      "submit": "Encrypt my data",
+      "encrypting": "Encrypting…",
+      "cancel": "Cancel",
+      "errorTooShort": "Password must be at least 8 characters.",
+      "errorMismatch": "Passwords don't match.",
+      "errorGeneric": "Something went wrong while encrypting. Please try again."
+    },
+    "unlock": {
+      "title": "Unlock burnmark",
+      "subtitle": "Enter your password to continue.",
+      "passwordLabel": "Password",
+      "submit": "Unlock",
+      "loading": "Unlocking…",
+      "error": "Wrong password.",
+      "forgot": "Forgot password? Reset all data."
+    },
+    "change": {
+      "title": "Change password",
+      "oldLabel": "Current password",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "submit": "Change password",
+      "busy": "Changing…",
+      "errorWrongOld": "Current password is wrong.",
+      "errorMismatch": "New passwords don't match."
+    },
+    "disable": {
+      "title": "Turn off encryption",
+      "body": "Your data will be returned to plaintext on this device. You'll need to enter your current password to confirm.",
+      "passwordLabel": "Current password",
+      "submit": "Turn off encryption",
+      "busy": "Working…",
+      "errorWrong": "Wrong password."
+    }
+  },
+  "reset": {
+    "title": "Reset all data",
+    "body": "Every saved label, dataset, image, and preference on this device will be permanently removed. The app will reload to a clean state.",
+    "warning": "This cannot be undone. There is no backup.",
+    "confirmLabel": "Type \"{word}\" to confirm",
+    "submit": "Delete everything",
+    "resetting": "Resetting…",
+    "cancel": "Cancel"
+  }
 }

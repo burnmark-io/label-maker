@@ -1,36 +1,49 @@
 <template>
   <div class="app-shell">
-    <TopBar @open-library="libraryOpen = true" @open-share="shareOpen = true" />
-    <main class="app-shell__main">
-      <section
-        class="app-shell__canvas-area"
-        :aria-label="t('canvas.ariaLabel')"
-        data-tour="canvas"
-      >
-        <DesignCanvas />
-        <span class="visually-hidden" aria-live="polite">{{ canvasSummary }}</span>
-        <MainToolbar data-tour="toolbar" />
-        <CanvasActions
+    <template v-if="!cryptoStore.locked">
+      <TopBar @open-library="libraryOpen = true" @open-share="shareOpen = true" />
+      <main class="app-shell__main">
+        <section
+          class="app-shell__canvas-area"
+          :aria-label="t('canvas.ariaLabel')"
+          data-tour="canvas"
+        >
+          <DesignCanvas />
+          <span class="visually-hidden" aria-live="polite">{{ canvasSummary }}</span>
+          <MainToolbar data-tour="toolbar" />
+          <CanvasActions
+            @open-batch="batchOpen = true"
+            @open-sheet="sheetOpen = true"
+            @open-share="shareOpen = true"
+            @open-library="libraryOpen = true"
+          />
+        </section>
+        <SidePanel
+          v-if="prefs.sidePanelOpen"
+          data-tour="side-panel"
           @open-batch="batchOpen = true"
-          @open-sheet="sheetOpen = true"
-          @open-share="shareOpen = true"
-          @open-library="libraryOpen = true"
         />
-      </section>
-      <SidePanel v-if="prefs.sidePanelOpen" data-tour="side-panel" @open-batch="batchOpen = true" />
-    </main>
+      </main>
+      <InstallPrompt />
+      <ImportDropOverlay />
+      <BatchPanel :open="batchOpen" @close="batchOpen = false" />
+      <SheetDialog :open="sheetOpen" @close="sheetOpen = false" />
+      <DesignLibrary :open="libraryOpen" @close="libraryOpen = false" />
+      <ShareDialog :open="shareOpen" @close="shareOpen = false" />
+      <OnboardingTour :active="tourActive" @close="closeTour" />
+    </template>
+    <UnlockScreen v-else @open-reset="resetOpen = true" />
+
     <AppFooter />
     <ToastStack />
-    <InstallPrompt />
-    <ImportDropOverlay />
-
-    <BatchPanel :open="batchOpen" @close="batchOpen = false" />
-    <SheetDialog :open="sheetOpen" @close="sheetOpen = false" />
-    <DesignLibrary :open="libraryOpen" @close="libraryOpen = false" />
-    <ShareDialog :open="shareOpen" @close="shareOpen = false" />
     <AboutDialog :open="aboutOpen" @close="aboutOpen = false" />
     <HelpDialog :open="helpOpen" @close="helpOpen = false" @restart-tour="onRestartTour" />
-    <OnboardingTour :active="tourActive" @close="closeTour" />
+    <PrivacyDialog
+      :open="privacyOpen"
+      @close="privacyOpen = false"
+      @open-reset="resetOpen = true"
+    />
+    <ResetDataDialog :open="resetOpen" @close="resetOpen = false" />
   </div>
 </template>
 
@@ -54,11 +67,17 @@ import ShareDialog from '@/components/share/ShareDialog.vue';
 import AboutDialog from '@/components/common/AboutDialog.vue';
 import HelpDialog from '@/components/common/HelpDialog.vue';
 import OnboardingTour from '@/components/common/OnboardingTour.vue';
+import PrivacyDialog from '@/components/common/PrivacyDialog.vue';
+import ResetDataDialog from '@/components/common/ResetDataDialog.vue';
+import UnlockScreen from '@/components/common/UnlockScreen.vue';
 
 import { useDesignerStore } from '@/stores/designer';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useLibraryStore } from '@/stores/library';
 import { useMediaStore } from '@/stores/media';
+import { useCryptoStore } from '@/stores/crypto';
+import { useDataStore } from '@/stores/data';
+import { hydrateMappings } from '@/services/column-mapper';
 import { loadFirstVisitDocument } from '@/services/sample-label';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import { useBorderResize } from '@/composables/useBorderResize';
@@ -74,6 +93,7 @@ const designer = useDesignerStore();
 const prefs = usePreferencesStore();
 const library = useLibraryStore();
 const media = useMediaStore();
+const cryptoStore = useCryptoStore();
 const { show } = useToast();
 
 // Out-of-bounds toast on canvas resize. Watch only canvas dimensions
@@ -108,12 +128,16 @@ watch(
   },
 );
 const labelImport = useLabelImport();
-const { aboutOpen, helpOpen, tourActive, openHelp, startTour, closeTour } = useUiDialogs();
+const { aboutOpen, helpOpen, privacyOpen, tourActive, openHelp, startTour, closeTour } =
+  useUiDialogs();
 
 const batchOpen = ref(false);
 const sheetOpen = ref(false);
 const libraryOpen = ref(false);
 const shareOpen = ref(false);
+const resetOpen = ref(false);
+
+let bootstrapped = false;
 
 const canvasSummary = computed(() => {
   const count = designer.document.objects.length;
@@ -144,31 +168,15 @@ useKeyboardShortcuts();
 useBorderResize();
 useAutoReconnect();
 
-onMounted(async () => {
-  prefs.sessionCount += 1;
-  window.addEventListener('keydown', onGlobalKeyDown);
+async function bootstrapAfterUnlock(): Promise<void> {
+  if (bootstrapped) return;
+  bootstrapped = true;
 
-  // Reflect the active locale on <html lang="..."> for screen readers.
-  if (typeof document !== 'undefined') {
-    document.documentElement.lang = prefs.locale;
-  }
-
-  // Missing-locale toast — once total, only when the browser asked for a
-  // language we don't ship yet and we fell back to English.
-  if (typeof navigator !== 'undefined') {
-    const navLang = navigator.language?.slice(0, 2).toLowerCase();
-    const navFull = navigator.language ?? '';
-    const navDisplay = navFull
-      ? (new Intl.DisplayNames([navFull], { type: 'language' }).of(navFull) ?? navFull)
-      : '';
-    const fellBack = navLang && !SUPPORTED_LOCALES.includes(navLang as 'en' | 'nl');
-    const seen = localStorage.getItem('burnmark.localeToastShown');
-    if (fellBack && !seen) {
-      show(t('locale.missingToast', { language: navDisplay || navFull }), 'info', { ttlMs: 7000 });
-      localStorage.setItem('burnmark.localeToastShown', '1');
-    }
-  }
-
+  // Hydrate stores that were skipped at boot when the app was locked.
+  // Idempotent: data store guards with bootHydrated; column-mapper does
+  // the same.
+  await hydrateMappings(true);
+  await useDataStore().hydrate();
   await library.load();
 
   // 0. PWA file_handlers — if the OS routed a file open at us via launchQueue
@@ -227,7 +235,46 @@ onMounted(async () => {
   }
 
   maybeStartTour();
+}
+
+onMounted(() => {
+  prefs.sessionCount += 1;
+  window.addEventListener('keydown', onGlobalKeyDown);
+
+  // Reflect the active locale on <html lang="..."> for screen readers.
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = prefs.locale;
+  }
+
+  // Missing-locale toast — once total, only when the browser asked for a
+  // language we don't ship yet and we fell back to English.
+  if (typeof navigator !== 'undefined') {
+    const navLang = navigator.language?.slice(0, 2).toLowerCase();
+    const navFull = navigator.language ?? '';
+    const navDisplay = navFull
+      ? (new Intl.DisplayNames([navFull], { type: 'language' }).of(navFull) ?? navFull)
+      : '';
+    const fellBack = navLang && !SUPPORTED_LOCALES.includes(navLang as 'en' | 'nl');
+    const seen = localStorage.getItem('burnmark.localeToastShown');
+    if (fellBack && !seen) {
+      show(t('locale.missingToast', { language: navDisplay || navFull }), 'info', { ttlMs: 7000 });
+      localStorage.setItem('burnmark.localeToastShown', '1');
+    }
+  }
+
+  if (!cryptoStore.locked) {
+    void bootstrapAfterUnlock();
+  }
 });
+
+// Run the post-unlock bootstrap when the user enters their password and
+// the app transitions out of the locked state.
+watch(
+  () => cryptoStore.locked,
+  isLocked => {
+    if (!isLocked) void bootstrapAfterUnlock();
+  },
+);
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onGlobalKeyDown);

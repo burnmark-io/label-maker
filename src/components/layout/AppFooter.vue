@@ -1,6 +1,6 @@
 <template>
   <footer class="footer" role="contentinfo">
-    <span class="footer__spacer" aria-hidden="true"></span>
+    <span class="footer__spacer" aria-hidden="true" />
     <a class="footer__sponsor" :href="kofiUrl" target="_blank" rel="noopener noreferrer">
       <span aria-hidden="true">🏷️</span>
       <span>{{ sponsorText }}</span>
@@ -9,6 +9,10 @@
       <button type="button" class="footer__link" @click="openAbout">{{ t('footer.about') }}</button>
       <span aria-hidden="true">·</span>
       <button type="button" class="footer__link" @click="openHelp">{{ t('footer.help') }}</button>
+      <span aria-hidden="true">·</span>
+      <button type="button" class="footer__link" @click="openPrivacy">
+        {{ t('footer.privacy') }}
+      </button>
       <span aria-hidden="true">·</span>
       <a :href="githubUrl" target="_blank" rel="noopener noreferrer">
         {{ t('footer.github') }}
@@ -23,7 +27,7 @@ import { useI18n } from 'vue-i18n';
 import { useUiDialogs } from '@/composables/useUiDialogs';
 
 const { t, tm, rt, locale } = useI18n();
-const { openAbout, openHelp } = useUiDialogs();
+const { openAbout, openHelp, openPrivacy } = useUiDialogs();
 
 const kofiUrl = 'https://ko-fi.com/mannes';
 const githubUrl = 'https://github.com/burnmark-io/label-maker';
