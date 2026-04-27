@@ -152,7 +152,11 @@ export async function registerPasskeyAndDerivePrf(
       // Android tends to surface the cross-device QR flow first, which
       // hides the local biometric option users actually want.
       authenticatorAttachment: 'platform',
-      residentKey: 'discouraged',
+      // Prefer discoverable credentials so the passkey shows up in the
+      // OS passkey manager (Google Password Manager, Apple Passkeys,
+      // Windows passkeys). Unlock still passes allowCredentials, so the
+      // current flow is unchanged either way.
+      residentKey: 'preferred',
       userVerification: 'required',
     },
     extensions: { prf: {} } as AuthenticationExtensionsClientInputs,
