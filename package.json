@@ -66,5 +66,11 @@
     "vue-tsc": "^2.0.0",
     "workbox-window": "^7.4.0"
   },
-  "prettier": "@mbtech-nl/prettier-config"
+  "prettier": "@mbtech-nl/prettier-config",
+  "pnpm": {
+    "overrides": {
+      "@burnmark-io/designer-core": "link:../designer-core/packages/core",
+      "@burnmark-io/designer-vue": "link:../designer-core/packages/vue"
+    }
+  }
 }

@@ -16,7 +16,9 @@
     "types": ["vite/client", "node", "w3c-web-usb", "w3c-web-serial"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@burnmark-io/designer-core": ["../designer-core/packages/core/dist/index.d.ts"],
+      "@burnmark-io/designer-vue": ["../designer-core/packages/vue/dist/index.d.ts"]
     }
   },
   "include": [
