@@ -29,11 +29,14 @@ const DEFAULT_HEIGHT_MM: number | null = null; // continuous
 
 export type CanvasSource = 'detected' | 'manual' | 'sheet' | 'custom';
 
+export type Orientation = 'vertical' | 'horizontal';
+
 interface PersistedSize {
   widthMm: number;
   heightMm: number | null;
   source: CanvasSource;
   sheetCode?: string;
+  orientation?: Orientation;
 }
 
 function readLastSize(): PersistedSize | null {
@@ -75,6 +78,37 @@ export function defaultContinuousLength(mediaWidthMm: number): number {
   return Math.round((mediaWidthMm * 4) / 3);
 }
 
+/**
+ * Smart default for a media's display orientation, two-tier:
+ *
+ * 1. Driver-provided `MediaDescriptor.defaultOrientation` (contracts ≥0.2.0)
+ *    wins — drivers know what reads naturally for narrow tapes vs.
+ *    rectangular die-cut labels.
+ * 2. Fallback heuristic for hand-curated sizes (`pickCommonSize` /
+ *    `pickCustom` / `pickSheet`) where there's no descriptor:
+ *    - Continuous (no heightMm): treat <=19 mm as a tape and default to
+ *      horizontal so text reads along the tape; wider rolls stay vertical.
+ *    - Die-cut: default vertical when as-tall-or-taller than wide; the
+ *      shorter side aligning with the feed feels natural for address-style
+ *      labels. Otherwise horizontal.
+ */
+export function defaultOrientationFor(
+  media: MediaDescriptor | { widthMm: number; heightMm?: number | null },
+): Orientation {
+  if (
+    'defaultOrientation' in media &&
+    (media.defaultOrientation === 'horizontal' || media.defaultOrientation === 'vertical')
+  ) {
+    return media.defaultOrientation;
+  }
+  const widthMm = media.widthMm;
+  const heightMm = (media as { heightMm?: number | null }).heightMm ?? null;
+  if (heightMm === null) {
+    return widthMm <= 19 ? 'horizontal' : 'vertical';
+  }
+  return heightMm >= widthMm ? 'vertical' : 'horizontal';
+}
+
 export const useMediaStore = defineStore('media', () => {
   const designer = useDesignerStore();
   const printer = usePrinterStore();
@@ -83,6 +117,14 @@ export const useMediaStore = defineStore('media', () => {
   const dpi = computed(() => designer.document.canvas.dpi || DEFAULT_DPI);
   const widthDots = computed(() => designer.document.canvas.widthDots);
   const heightDots = computed(() => designer.document.canvas.heightDots);
+  /**
+   * Display orientation. Mirrors `document.canvas.orientation`; the
+   * `?? 'vertical'` defends against legacy `.label` files written before
+   * the field was introduced.
+   */
+  const orientation = computed<Orientation>(
+    () => designer.document.canvas.orientation ?? 'vertical',
+  );
 
   /** Across-feed dimension in mm. Always a number. */
   const widthMm = computed(() => mmFromDots(widthDots.value, dpi.value));
@@ -128,11 +170,20 @@ export const useMediaStore = defineStore('media', () => {
     sheetCode?: string;
     /** Reset the continuous drag length to the default (used on fresh picks). */
     resetContinuousLength?: boolean;
+    /**
+     * Display orientation. When omitted, the smart-default helper
+     * (`defaultOrientationFor`) picks based on widthMm/heightMm and any
+     * driver descriptor passed by the caller.
+     */
+    orientation?: Orientation;
   }): void {
     const widthDotsNext = dotsFromMm(opts.widthMm, dpi.value);
     const heightDotsNext = opts.heightMm === null ? 0 : dotsFromMm(opts.heightMm, dpi.value);
 
     designer.setCanvas({ widthDots: widthDotsNext, heightDots: heightDotsNext });
+    if (opts.orientation) {
+      designer.setOrientation(opts.orientation);
+    }
     const metaPatch: Record<string, unknown> = {
       canvasSource: opts.source,
       canvasSheetCode: opts.sheetCode,
@@ -147,6 +198,23 @@ export const useMediaStore = defineStore('media', () => {
       heightMm: opts.heightMm,
       source: opts.source,
       sheetCode: opts.sheetCode,
+      orientation: opts.orientation ?? orientation.value,
+    });
+  }
+
+  /**
+   * Toggle the canvas orientation without changing media size. Mirrors
+   * the new orientation into the persisted last-used record so it
+   * survives a reload.
+   */
+  function setOrientation(o: Orientation): void {
+    designer.setOrientation(o);
+    writeLastSize({
+      widthMm: widthMm.value,
+      heightMm: heightMm.value,
+      source: source.value,
+      sheetCode: sheetCode.value,
+      orientation: o,
     });
   }
 
@@ -157,6 +225,7 @@ export const useMediaStore = defineStore('media', () => {
       heightMm: heightMmIn,
       source: 'manual',
       resetContinuousLength: true,
+      orientation: defaultOrientationFor({ widthMm: widthMmIn, heightMm: heightMmIn }),
     });
   }
 
@@ -168,6 +237,10 @@ export const useMediaStore = defineStore('media', () => {
       source: 'sheet',
       sheetCode: sheet.code,
       resetContinuousLength: true,
+      orientation: defaultOrientationFor({
+        widthMm: sheet.labelWidthMm,
+        heightMm: sheet.labelHeightMm,
+      }),
     });
   }
 
@@ -184,6 +257,7 @@ export const useMediaStore = defineStore('media', () => {
       heightMm: h,
       source: 'custom',
       resetContinuousLength: true,
+      orientation: defaultOrientationFor({ widthMm: widthMmIn, heightMm: h }),
     });
   }
 
@@ -194,6 +268,7 @@ export const useMediaStore = defineStore('media', () => {
       heightMm: media.heightMm ?? null,
       source: 'detected',
       resetContinuousLength: true,
+      orientation: defaultOrientationFor(media),
     });
   }
 
@@ -216,6 +291,7 @@ export const useMediaStore = defineStore('media', () => {
       heightMm: media.heightMm ?? null,
       source: 'manual',
       resetContinuousLength: true,
+      orientation: defaultOrientationFor(media),
     });
     printer.setSelectedMedia(media);
   }
@@ -233,6 +309,7 @@ export const useMediaStore = defineStore('media', () => {
       heightMm: null,
       source: source.value,
       sheetCode: sheetCode.value,
+      orientation: orientation.value,
     });
   }
 
@@ -250,6 +327,9 @@ export const useMediaStore = defineStore('media', () => {
         source: 'detected', // not the user's deliberate pick — auto-resize-on-connect should fire
         sheetCode: last.sheetCode,
         resetContinuousLength: true,
+        orientation:
+          last.orientation ??
+          defaultOrientationFor({ widthMm: last.widthMm, heightMm: last.heightMm }),
       });
       return;
     }
@@ -258,6 +338,10 @@ export const useMediaStore = defineStore('media', () => {
       heightMm: DEFAULT_HEIGHT_MM,
       source: 'detected',
       resetContinuousLength: true,
+      orientation: defaultOrientationFor({
+        widthMm: DEFAULT_WIDTH_MM,
+        heightMm: DEFAULT_HEIGHT_MM,
+      }),
     });
   }
 
@@ -295,6 +379,7 @@ export const useMediaStore = defineStore('media', () => {
     source,
     sheetCode,
     continuousLengthMm,
+    orientation,
     // Actions
     pickCommonSize,
     pickSheet,
@@ -302,6 +387,7 @@ export const useMediaStore = defineStore('media', () => {
     pickDetected,
     pickPrinterMedia,
     setContinuousLength,
+    setOrientation,
     applyLastUsedOrDefault,
   };
 });

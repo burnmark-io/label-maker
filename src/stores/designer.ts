@@ -87,6 +87,15 @@ export const useDesignerStore = defineStore('designer', () => {
   }
 
   /**
+   * Display-only orientation flip. The renderer stays orientation-
+   * agnostic; downstream viewport / printer-pipeline code reads
+   * `document.canvas.orientation` to decide whether to swap axes.
+   */
+  function setOrientation(orientation: 'vertical' | 'horizontal'): void {
+    composable.designer.setOrientation(orientation);
+  }
+
+  /**
    * Patch `document.metadata`. Designer-core's `metadata: Record<string, unknown>`
    * survives `toJSON`/`fromJSON`, so anything written here round-trips
    * through the share-encoder, IndexedDB and `.label` exports.
@@ -132,6 +141,7 @@ export const useDesignerStore = defineStore('designer', () => {
     loadDocument,
     newDocument: composable.newDocument,
     setCanvas,
+    setOrientation,
     setDocumentMetadata,
     undo: composable.undo,
     redo: composable.redo,
