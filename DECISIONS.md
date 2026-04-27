@@ -614,15 +614,29 @@ driver and recorded as a sub-note under this entry once we audit.
 
 ### D47 sub-note (canvas-orientation)
 
-`label-maker` pre-swaps the bitmap axes when
-`canvas.orientation === 'horizontal'` and passes `rotate: 'auto'` in
-the per-call print options. We trust the contracts-0.2.0 heuristic:
-`pickRotation('auto', media, familyDirection)` consults
-`media.defaultOrientation` to land on the right angle for each
-printer family. Net result: a horizontal-orientation document is
-delivered as landscape RGBA, and the driver passes through (printers
-whose media is natively landscape — narrow tapes) or rotates back to
-portrait (rectangular die-cut media).
+The first attempt (pre-swap the bitmap inside `printer.print` and pass
+`rotate: 'auto'`) shipped a bug — the rendered bitmap was at canonical
+canvas dims, the on-screen Konva stage was at swapped (display) dims,
+and the print-time `rotate90` rotated the content 90° relative to the
+user's design. Print and preview both came out rotated.
+
+Current model: **render at display dimensions for horizontal die-cut**.
+The designer store's `getRenderDoc()` returns a doc clone with
+`widthDots`/`heightDots` swapped (and `orientation` reset to `'vertical'`
+on the clone) when the live doc is horizontal die-cut. `renderToRGBA`,
+`exportPng`, `exportPdf`, and `exportSheet` all consume the clone, so
+the produced bitmap matches the on-screen Konva stage exactly. The
+print step is then a pure forward — no `rotate90` — but still passes
+`rotate: 'auto'` so each driver's `pickRotation` can rotate landscape
+input to portrait when its `media.defaultOrientation === 'horizontal'`.
+
+Continuous tape (`heightDots === 0`) is intentionally parked on the
+canonical render: the auto-grow logic keys off `heightDots`, and a
+clean swap to "growth along x" needs more work. Until that lands,
+horizontal continuous prints what the canonical bitmap captures —
+which is fine for narrow-tape labels designed in the canonical
+portrait view, awkward for users who toggle horizontal on a tape and
+expect display-orientation print.
 
 Alternative considered: import each driver's `ROTATE_DIRECTION` and
 pass an explicit angle. Rejected because it forces a label-maker

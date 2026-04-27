@@ -1,12 +1,19 @@
 import { defineStore } from 'pinia';
 import { computed, triggerRef } from 'vue';
 import { useLabelDesigner } from '@burnmark-io/designer-vue';
-import type {
-  CanvasConfig,
-  LabelObject,
-  LabelObjectInput,
-  LabelDocument,
-  RawImageData,
+import {
+  exportBundled as exportBundledCore,
+  exportPdf as exportPdfCore,
+  exportPng as exportPngCore,
+  exportSheet as exportSheetCore,
+  renderFull,
+  type CanvasConfig,
+  type LabelObject,
+  type LabelObjectInput,
+  type LabelDocument,
+  type RawImageData,
+  type RenderOptions,
+  type SheetTemplate,
 } from '@burnmark-io/designer-core';
 import { BurnmarkAssetLoader } from '@/services/asset-loader';
 
@@ -87,9 +94,9 @@ export const useDesignerStore = defineStore('designer', () => {
   }
 
   /**
-   * Display-only orientation flip. The renderer stays orientation-
-   * agnostic; downstream viewport / printer-pipeline code reads
-   * `document.canvas.orientation` to decide whether to swap axes.
+   * Persist the orientation flag on the canvas. The viewport composable
+   * reads this to swap the on-screen frame; `getRenderDoc` reads it to
+   * decide whether to swap canvas dims for the actual render.
    */
   function setOrientation(orientation: 'vertical' | 'horizontal'): void {
     composable.designer.setOrientation(orientation);
@@ -111,14 +118,90 @@ export const useDesignerStore = defineStore('designer', () => {
   }
 
   /**
-   * Render the document to full-colour RGBA. The composable's `render()`
-   * is fire-and-forget (updates `bitmap.value` and returns void); this
-   * goes straight to the underlying `LabelDesigner.render()` for the
-   * raw image, which is what the printer's `print()` and
-   * `createPreview()` expect.
+   * Doc snapshot used for rendering, exports, and the print pipeline.
+   *
+   * For a horizontal die-cut canvas we swap `widthDots`/`heightDots`
+   * so the rendered bitmap matches the on-screen design view. Konva's
+   * stage is also laid out at the swapped (display) dims via
+   * `useCanvasViewport`, and object positions are stored in that same
+   * stage coord space — rendering at the canonical dims would put the
+   * bitmap and the user's drawing in different coordinate systems and
+   * is what shipped the "label rotated 90°" bug.
+   *
+   * `orientation` on the clone is reset to `'vertical'` so any
+   * orientation-aware downstream code (e.g. the exporter's
+   * `respectOrientation` default) doesn't add a second rotation on top.
+   *
+   * Continuous tape (`heightDots === 0`) is intentionally left alone:
+   * the renderer's growth-axis logic keys off `heightDots` and a clean
+   * swap to "growth along x" needs more work. Horizontal continuous
+   * is parked.
+   */
+  function getRenderDoc(): LabelDocument {
+    const raw = composable.designer.document;
+    const { canvas } = raw;
+    if (canvas.orientation !== 'horizontal' || canvas.heightDots === 0) return raw;
+    return {
+      ...raw,
+      canvas: {
+        ...canvas,
+        widthDots: canvas.heightDots,
+        heightDots: canvas.widthDots,
+        orientation: 'vertical',
+      },
+    };
+  }
+
+  /**
+   * Render the document to full-colour RGBA at display dimensions
+   * (orientation-corrected for horizontal die-cut). The bitmap is the
+   * same shape the user sees on the canvas — the printer pipeline,
+   * preview, and image exporters all consume this so what they get
+   * matches what they designed.
    */
   function renderToRGBA(variables?: Record<string, string>): Promise<RawImageData> {
-    return composable.designer.render(variables);
+    const opts: RenderOptions = { assetLoader };
+    if (variables) opts.variables = variables;
+    return renderFull(getRenderDoc(), opts);
+  }
+
+  function exportPng(variables?: Record<string, string>, scale?: number): Promise<Blob> {
+    return exportPngCore(getRenderDoc(), {
+      assetLoader,
+      ...(variables && { variables }),
+      ...(scale !== undefined && { scale }),
+    });
+  }
+
+  function exportPdf(
+    rows?: Record<string, string>[],
+    variables?: Record<string, string>,
+  ): Promise<Blob> {
+    return exportPdfCore(getRenderDoc(), rows, {
+      assetLoader,
+      ...(variables && { variables }),
+    });
+  }
+
+  function exportSheet(
+    sheet: SheetTemplate,
+    rows?: Record<string, string>[],
+    variables?: Record<string, string>,
+  ): Promise<Blob> {
+    return exportSheetCore(getRenderDoc(), sheet, rows, {
+      assetLoader,
+      ...(variables && { variables }),
+    });
+  }
+
+  /**
+   * Bundle the document JSON + referenced assets into a zip. Uses the
+   * live document, not the render clone — the saved `.label` should
+   * preserve the user's orientation choice and canonical dims so a
+   * reload is a faithful round-trip.
+   */
+  function exportBundled(): Promise<{ blob: Blob; missing: string[] }> {
+    return exportBundledCore(composable.designer.document, assetLoader);
   }
 
   return {
@@ -157,10 +240,11 @@ export const useDesignerStore = defineStore('designer', () => {
     designer: composable.designer,
     assetLoader,
 
-    // Export helpers from the composable.
-    exportPng: composable.exportPng,
-    exportPdf: composable.exportPdf,
-    exportSheet: composable.exportSheet,
-    exportBundled: composable.exportBundled,
+    // Export helpers — orientation-aware via getRenderDoc so the produced
+    // PNG/PDF/sheet output matches the on-screen design view.
+    exportPng,
+    exportPdf,
+    exportSheet,
+    exportBundled,
   };
 });

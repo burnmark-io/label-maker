@@ -157,7 +157,10 @@ describe('printer store', () => {
     expect(store.isPrinting).toBe(false);
   });
 
-  it('print() pre-rotates the bitmap when canvas.orientation === "horizontal"', async () => {
+  it('print() forwards the bitmap unchanged regardless of canvas.orientation', async () => {
+    // Orientation-aware rendering happens upstream in the designer store
+    // (renderToRGBA already produces a display-shaped bitmap). The print
+    // step is now a pure forward — same image reference reaches the adapter.
     const designer = useDesignerStore();
     designer.setCanvas({ widthDots: 4, heightDots: 2, dpi: 300, orientation: 'horizontal' });
 
@@ -165,7 +168,6 @@ describe('printer store', () => {
     const adapter = makeAdapter();
     store.setAdapter(adapter);
 
-    // 4×2 RGBA image → after 90° CW rotation, 2×4.
     const image: RawImageData = {
       width: 4,
       height: 2,
@@ -175,8 +177,7 @@ describe('printer store', () => {
 
     expect(adapter.print).toHaveBeenCalledTimes(1);
     const [imgArg, , optsArg] = adapter.print.mock.calls[0]!;
-    expect((imgArg as RawImageData).width).toBe(2);
-    expect((imgArg as RawImageData).height).toBe(4);
+    expect(imgArg).toBe(image);
     expect(optsArg).toEqual({ rotate: 'auto' });
   });
 
@@ -200,9 +201,6 @@ describe('printer store', () => {
   });
 
   it('print() preserves an explicit rotate override from the caller', async () => {
-    const designer = useDesignerStore();
-    designer.setCanvas({ widthDots: 4, heightDots: 2, dpi: 300, orientation: 'horizontal' });
-
     const store = usePrinterStore();
     const adapter = makeAdapter();
     store.setAdapter(adapter);
@@ -212,7 +210,7 @@ describe('printer store', () => {
       height: 2,
       data: new Uint8Array(4 * 2 * 4),
     };
-    // Caller forces rotate: 0 — bridging must not silently overwrite it.
+    // Caller forces rotate: 0 — the rotate:'auto' default must not overwrite it.
     await store.print(image, { rotate: 0 } as Parameters<typeof store.print>[1]);
 
     const [, , optsArg] = adapter.print.mock.calls[0]!;
