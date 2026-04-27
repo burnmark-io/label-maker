@@ -1,5 +1,19 @@
 <template>
-  <aside class="side-panel" :aria-label="t('panel.properties')">
+  <aside
+    class="side-panel"
+    :class="{ 'side-panel--collapsed': !prefs.sidePanelOpen }"
+    :aria-label="t('panel.properties')"
+  >
+    <button
+      class="side-panel__handle"
+      type="button"
+      :aria-expanded="prefs.sidePanelOpen"
+      :aria-label="prefs.sidePanelOpen ? t('panel.collapse') : t('panel.expand')"
+      :title="prefs.sidePanelOpen ? t('panel.collapse') : t('panel.expand')"
+      @click="prefs.sidePanelOpen = !prefs.sidePanelOpen"
+    >
+      <span class="side-panel__handle-grip" aria-hidden="true" />
+    </button>
     <div role="tablist" class="side-panel__tabs">
       <button
         v-for="tab in tabs"
@@ -106,5 +120,42 @@ function cycle(delta: number): void {
   flex: 1;
   overflow: auto;
   padding: var(--space-4);
+}
+
+.side-panel__handle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-2);
+  background: var(--color-bg-panel);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing);
+}
+
+.side-panel__handle:hover {
+  background: var(--color-bg-canvas);
+}
+
+.side-panel__handle-grip {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+@media (max-width: 900px) {
+  .side-panel__handle {
+    display: inline-flex;
+  }
+  .side-panel--collapsed .side-panel__tabs,
+  .side-panel--collapsed .side-panel__body {
+    display: none;
+  }
+  .side-panel--collapsed .side-panel__handle {
+    border-bottom: none;
+  }
 }
 </style>

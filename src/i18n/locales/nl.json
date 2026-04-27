@@ -121,7 +121,9 @@
     "objectUnlocked": "Ontgrendeld",
     "bringForward": "Naar voren brengen",
     "sendBackward": "Naar achter brengen",
-    "untitled": "Naamloos"
+    "untitled": "Naamloos",
+    "collapse": "Paneel inklappen",
+    "expand": "Paneel uitklappen"
   },
   "properties": {
     "name": "Naam",
@@ -298,6 +300,10 @@
     "feedDirection": "papierrichting",
     "cutLine": "hier afsnijden",
     "zoom": "{percent}%",
+    "zoomIn": "Inzoomen",
+    "zoomOut": "Uitzoomen",
+    "fitZoom": "Passend maken",
+    "zoomControls": "Zoombediening",
     "summaryEmpty": "Leeg canvas. Gebruik de toolbar om tekst, afbeelding, barcode of vorm toe te voegen.",
     "summary": "Canvas met {count} object | Canvas met {count} objecten",
     "continuousLength": "{mm}mm",

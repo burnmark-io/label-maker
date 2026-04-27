@@ -121,7 +121,9 @@
     "objectUnlocked": "Unlocked",
     "bringForward": "Bring forward",
     "sendBackward": "Send backward",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "collapse": "Collapse panel",
+    "expand": "Expand panel"
   },
   "properties": {
     "name": "Name",
@@ -298,6 +300,10 @@
     "feedDirection": "feed direction",
     "cutLine": "cut here",
     "zoom": "{percent}%",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fitZoom": "Fit to view",
+    "zoomControls": "Zoom controls",
     "summaryEmpty": "Empty canvas. Use the toolbar to add a text, image, barcode or shape.",
     "summary": "Canvas with {count} object | Canvas with {count} objects",
     "continuousLength": "{mm}mm",

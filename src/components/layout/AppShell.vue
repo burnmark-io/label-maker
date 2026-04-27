@@ -18,11 +18,7 @@
             @open-library="libraryOpen = true"
           />
         </section>
-        <SidePanel
-          v-if="prefs.sidePanelOpen"
-          data-tour="side-panel"
-          @open-batch="batchOpen = true"
-        />
+        <SidePanel data-tour="side-panel" @open-batch="batchOpen = true" />
       </main>
       <InstallPrompt />
       <ImportDropOverlay />

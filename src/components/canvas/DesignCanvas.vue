@@ -91,8 +91,34 @@
       @cancel="cancelEditing"
     />
 
-    <div class="canvas-zoom" aria-hidden="true">
-      {{ t('canvas.zoom', { percent: zoomPercent }) }}
+    <div class="canvas-zoom" role="group" :aria-label="t('canvas.zoomControls')">
+      <button
+        type="button"
+        class="canvas-zoom__btn"
+        :aria-label="t('canvas.zoomOut')"
+        :title="t('canvas.zoomOut')"
+        @click="viewport.zoomOut()"
+      >
+        −
+      </button>
+      <button
+        type="button"
+        class="canvas-zoom__btn canvas-zoom__btn--label"
+        :aria-label="t('canvas.fitZoom')"
+        :title="t('canvas.fitZoom')"
+        @click="viewport.resetZoom()"
+      >
+        {{ t('canvas.zoom', { percent: zoomPercent }) }}
+      </button>
+      <button
+        type="button"
+        class="canvas-zoom__btn"
+        :aria-label="t('canvas.zoomIn')"
+        :title="t('canvas.zoomIn')"
+        @click="viewport.zoomIn()"
+      >
+        +
+      </button>
     </div>
   </div>
 </template>
@@ -328,12 +354,39 @@ watch(
   position: absolute;
   bottom: var(--space-3);
   right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.canvas-zoom__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--space-2);
+  background: transparent;
+  border: none;
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing);
+}
+
+.canvas-zoom__btn:hover {
+  background: var(--color-bg-canvas);
+}
+
+.canvas-zoom__btn--label {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
   color: var(--color-text-muted);
-  background: rgba(255, 255, 255, 0.8);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  pointer-events: none;
+  min-width: 56px;
 }
 </style>
