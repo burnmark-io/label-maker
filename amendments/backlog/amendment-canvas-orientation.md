@@ -161,25 +161,15 @@ documentation value. Don't rely on the backfill.
 
 ## 7. Driver / Print Pipeline Audit
 
-Per D47, drivers own rotation to feed direction. For each driver in
-`src/lib/printer/registry.ts`:
-
-```
-Audit per driver:
-□ Does it accept arbitrary-dimension bitmaps?
-□ Does it rotate when canvas.orientation === 'horizontal'?
-□ Direction (CW vs CCW) matches the printer's head-scan direction?
-```
-
-For drivers that don't rotate today, the fix is either:
-- **Patch the driver** — preferred when the driver is ours and
-  rotation is genuinely a driver concern.
-- **Insert a rotation step in label-maker's print pipeline** before
-  send — fallback for third-party drivers or until upstream patches
-  land.
-
-Decision is per driver and recorded as a sub-note under D47 once
-audited.
+**Resolved — trust the 0.3.0 drivers.** All three families
+(`brother-ql`, `labelmanager`, `labelwriter`) ship `pickRotation` +
+`ROTATE_DIRECTION` in 0.3.0 (per `UPDATE_DEPENDENCIES.md` §3.2 / §6.4).
+label-maker pre-swaps the bitmap axes when
+`canvas.orientation === 'horizontal'` and passes `rotate: 'auto'`;
+the driver's `pickRotation` consults `media.defaultOrientation`
+(contracts ≥0.2.0) to land on the correct angle for each family.
+Implemented in `src/stores/printer.ts` and recorded under D47 in
+`DECISIONS.md`. No per-driver patch needed.
 
 ---
 
