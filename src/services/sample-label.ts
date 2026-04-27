@@ -14,6 +14,7 @@ export function loadFirstVisitDocument(designer: DesignerStore): void {
     widthDots: 696,
     heightDots: 472,
     dpi: 300,
+    orientation: 'vertical',
   });
 
   // Outer frame

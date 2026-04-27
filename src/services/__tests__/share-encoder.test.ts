@@ -102,4 +102,11 @@ describe('share encoder', () => {
     // The fresh timestamp should be at-or-after the test start.
     expect(decoded!.createdAt! >= before).toBe(true);
   });
+
+  it('round-trips canvas.orientation = "horizontal"', () => {
+    const original = tinyDoc();
+    original.canvas.orientation = 'horizontal';
+    const decoded = decodeDocument(encodeDocument(original));
+    expect(decoded.canvas.orientation).toBe('horizontal');
+  });
 });
