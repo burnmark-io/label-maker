@@ -1,0 +1,17 @@
+name: Trigger pages deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.PAGES_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/burnmark-io/burnmark-io.github.io/dispatches \
+            -f event_type=label-maker-updated \
+            -f client_payload[ref]=${{ github.sha }}
