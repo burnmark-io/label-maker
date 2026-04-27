@@ -147,6 +147,11 @@ export async function registerPasskeyAndDerivePrf(
       { type: 'public-key', alg: -257 }, // RS256
     ],
     authenticatorSelection: {
+      // Prefer the device's built-in authenticator (Touch ID, Windows
+      // Hello, Android fingerprint/PIN). Without this hint Chrome on
+      // Android tends to surface the cross-device QR flow first, which
+      // hides the local biometric option users actually want.
+      authenticatorAttachment: 'platform',
       residentKey: 'discouraged',
       userVerification: 'required',
     },
