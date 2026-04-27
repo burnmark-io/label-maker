@@ -16,8 +16,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@burnmark-io/designer-core": "^0.1.0",
-    "@burnmark-io/designer-vue": "^0.1.0",
+    "@burnmark-io/designer-core": "^0.2.0",
+    "@burnmark-io/designer-vue": "^0.2.0",
     "@burnmark-io/sheet-templates": "^0.1.0",
     "@mbtech-nl/bitmap": "^1.2.2",
     "@thermal-label/brother-ql-core": "^0.3.0",
@@ -66,11 +66,5 @@
     "vue-tsc": "^2.0.0",
     "workbox-window": "^7.4.0"
   },
-  "prettier": "@mbtech-nl/prettier-config",
-  "pnpm": {
-    "overrides": {
-      "@burnmark-io/designer-core": "link:../designer-core/packages/core",
-      "@burnmark-io/designer-vue": "link:../designer-core/packages/vue"
-    }
-  }
+  "prettier": "@mbtech-nl/prettier-config"
 }
