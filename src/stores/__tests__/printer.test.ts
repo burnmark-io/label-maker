@@ -16,7 +16,6 @@ function makeMedia(overrides: Partial<MediaDescriptor> = {}): MediaDescriptor {
     name: 'Test media',
     widthMm: 62,
     type: 'continuous',
-    colorCapable: false,
     ...overrides,
   };
 }

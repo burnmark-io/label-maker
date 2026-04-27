@@ -45,7 +45,7 @@ function makeAdapter(): PrinterAdapter {
     print: vi.fn(async () => undefined),
     createPreview: vi.fn(async () => ({
       planes: [],
-      media: { id: 'm', name: 'm', widthMm: 62, type: 'continuous', colorCapable: false },
+      media: { id: 'm', name: 'm', widthMm: 62, type: 'continuous' },
       assumed: true,
     })),
     close: vi.fn(async () => undefined),

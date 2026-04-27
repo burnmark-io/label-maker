@@ -13,7 +13,6 @@ function makeMedia(overrides: Partial<MediaDescriptor> = {}): MediaDescriptor {
     name: 'Test media',
     widthMm: 62,
     type: 'continuous',
-    colorCapable: false,
     ...overrides,
   };
 }
@@ -130,14 +129,17 @@ describe('media store — picking sizes', () => {
     const detected = makeMedia({
       id: 'DK-22205',
       name: '62mm continuous (DK-22205)',
-      colorCapable: false,
+      // single-colour: omit `palette`
     });
     printer.setDetectedMedia(detected);
     // User asserts the actual roll: DK-22251 (62mm continuous, two-colour).
     const asserted = makeMedia({
       id: 'DK-22251',
       name: '62mm continuous two-color (DK-22251)',
-      colorCapable: true,
+      palette: [
+        { name: 'black', rgb: [0, 0, 0] },
+        { name: 'red', rgb: [255, 0, 0] },
+      ],
     });
     media.pickPrinterMedia(asserted);
 
@@ -145,7 +147,7 @@ describe('media store — picking sizes', () => {
     // Print pipeline now uses the user's override.
     expect(printer.selectedMedia?.id).toBe('DK-22251');
     expect(printer.effectiveMedia?.id).toBe('DK-22251');
-    expect(printer.effectiveMedia?.colorCapable).toBe(true);
+    expect(printer.effectiveMedia?.palette?.length).toBeGreaterThan(0);
     // Detected media is unchanged — UI can still flag the originally-detected entry.
     expect(printer.detectedMedia?.id).toBe('DK-22205');
   });
