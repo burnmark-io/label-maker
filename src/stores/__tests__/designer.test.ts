@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import type { LabelDocument } from '@burnmark-io/designer-core';
+import type * as DesignerCore from '@burnmark-io/designer-core';
 
 /**
  * The renderer needs an actual canvas backend (`@napi-rs/canvas` in Node,
@@ -22,10 +23,7 @@ const { renderFullSpy } = vi.hoisted(() => ({
 }));
 
 vi.mock('@burnmark-io/designer-core', async () => {
-  const actual =
-    await vi.importActual<typeof import('@burnmark-io/designer-core')>(
-      '@burnmark-io/designer-core',
-    );
+  const actual = await vi.importActual<typeof DesignerCore>('@burnmark-io/designer-core');
   return { ...actual, renderFull: renderFullSpy };
 });
 
