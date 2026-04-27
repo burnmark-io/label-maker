@@ -20,6 +20,42 @@
         role="dialog"
         :aria-label="t('media.selector.label')"
       >
+        <section class="size-selector__section">
+          <h3 class="size-selector__heading">{{ t('media.orientation.label') }}</h3>
+          <div
+            class="size-selector__orientation"
+            role="radiogroup"
+            :aria-label="t('media.orientation.toggle')"
+          >
+            <button
+              type="button"
+              class="size-selector__orientation-btn"
+              :class="{
+                'size-selector__orientation-btn--active': media.orientation === 'vertical',
+              }"
+              role="radio"
+              :aria-checked="media.orientation === 'vertical'"
+              @click="onOrientation('vertical')"
+            >
+              <span class="size-selector__orientation-icon" aria-hidden="true">▯</span>
+              {{ t('media.orientation.vertical') }}
+            </button>
+            <button
+              type="button"
+              class="size-selector__orientation-btn"
+              :class="{
+                'size-selector__orientation-btn--active': media.orientation === 'horizontal',
+              }"
+              role="radio"
+              :aria-checked="media.orientation === 'horizontal'"
+              @click="onOrientation('horizontal')"
+            >
+              <span class="size-selector__orientation-icon" aria-hidden="true">▭</span>
+              {{ t('media.orientation.horizontal') }}
+            </button>
+          </div>
+        </section>
+
         <section
           v-if="printer.isConnected && printerMedia.length > 0"
           class="size-selector__section"
@@ -205,6 +241,11 @@ function onCustom(widthMm: number, heightMm: number | null): void {
   close();
 }
 
+function onOrientation(o: 'vertical' | 'horizontal'): void {
+  if (media.orientation === o) return;
+  media.setOrientation(o);
+}
+
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -335,6 +376,42 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
   color: var(--color-success);
   border: 1px solid rgba(22, 163, 74, 0.4);
   font-weight: var(--weight-medium);
+}
+
+.size-selector__orientation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+}
+
+.size-selector__orientation-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing);
+}
+
+.size-selector__orientation-btn:hover {
+  background: var(--color-bg-canvas);
+}
+
+.size-selector__orientation-btn--active {
+  background: var(--color-bg-canvas);
+  border-color: var(--color-border-strong, var(--color-border));
+  font-weight: var(--weight-medium);
+}
+
+.size-selector__orientation-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .size-selector-fade-enter-active,

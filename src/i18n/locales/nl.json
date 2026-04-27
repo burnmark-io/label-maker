@@ -341,6 +341,12 @@
       "appliedDetected": "Canvas aangepast aan je printer — {name}.",
       "snapToClosest": "Aangepast aan {name} voor je printer — sommige objecten moeten wellicht verplaatst worden.",
       "overrodeDetected": "Bij printen wordt {name} gebruikt — jouw keuze gaat boven automatische detectie."
+    },
+    "orientation": {
+      "label": "Oriëntatie",
+      "vertical": "Verticaal",
+      "horizontal": "Horizontaal",
+      "toggle": "Oriëntatie omschakelen"
     }
   },
   "footer": {

@@ -341,6 +341,12 @@
       "appliedDetected": "Canvas resized to match your printer — {name}.",
       "snapToClosest": "Resized to {name} to match your printer — some objects may need repositioning.",
       "overrodeDetected": "Using {name} for printing — your pick overrides the printer's auto-detect."
+    },
+    "orientation": {
+      "label": "Orientation",
+      "vertical": "Vertical",
+      "horizontal": "Horizontal",
+      "toggle": "Toggle orientation"
     }
   },
   "footer": {
