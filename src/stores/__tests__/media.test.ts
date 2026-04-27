@@ -3,7 +3,13 @@ import { setActivePinia, createPinia } from 'pinia';
 import type { MediaDescriptor } from '@thermal-label/contracts';
 import type { SheetTemplate } from '@burnmark-io/sheet-templates';
 
-import { useMediaStore, dotsFromMm, mmFromDots, defaultContinuousLength } from '../media';
+import {
+  useMediaStore,
+  dotsFromMm,
+  mmFromDots,
+  defaultContinuousLength,
+  defaultOrientationFor,
+} from '../media';
 import { useDesignerStore } from '../designer';
 import { usePrinterStore } from '../printer';
 
@@ -262,5 +268,96 @@ describe('media store — localStorage persistence', () => {
     expect(media.widthMm).toBeCloseTo(62, 0);
     expect(media.heightMm).toBe(null);
     expect(media.source).toBe('detected');
+  });
+});
+
+describe('defaultOrientationFor', () => {
+  it('Tier 1: trusts MediaDescriptor.defaultOrientation when present', () => {
+    expect(
+      defaultOrientationFor(makeMedia({ widthMm: 62, defaultOrientation: 'horizontal' })),
+    ).toBe('horizontal');
+    expect(
+      defaultOrientationFor(makeMedia({ widthMm: 12, defaultOrientation: 'vertical' })),
+    ).toBe('vertical');
+  });
+
+  it('Tier 2 — continuous: ≤19mm reads as a tape (horizontal)', () => {
+    expect(defaultOrientationFor({ widthMm: 12, heightMm: null })).toBe('horizontal');
+    expect(defaultOrientationFor({ widthMm: 19, heightMm: null })).toBe('horizontal');
+    expect(defaultOrientationFor({ widthMm: 20, heightMm: null })).toBe('vertical');
+    expect(defaultOrientationFor({ widthMm: 62, heightMm: null })).toBe('vertical');
+  });
+
+  it('Tier 2 — die-cut: tall stays vertical, wide goes horizontal', () => {
+    expect(defaultOrientationFor({ widthMm: 30, heightMm: 60 })).toBe('vertical');
+    expect(defaultOrientationFor({ widthMm: 60, heightMm: 30 })).toBe('horizontal');
+    // Square: tall-or-equal rule → vertical.
+    expect(defaultOrientationFor({ widthMm: 50, heightMm: 50 })).toBe('vertical');
+  });
+});
+
+describe('media store — orientation', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    window.localStorage.clear();
+  });
+
+  it('pickCommonSize on a narrow continuous tape defaults to horizontal', () => {
+    const media = useMediaStore();
+    media.pickCommonSize(12, null);
+    expect(media.orientation).toBe('horizontal');
+  });
+
+  it('pickCommonSize on a wide continuous roll defaults to vertical', () => {
+    const media = useMediaStore();
+    media.pickCommonSize(62, null);
+    expect(media.orientation).toBe('vertical');
+  });
+
+  it('pickPrinterMedia honours MediaDescriptor.defaultOrientation = "horizontal"', () => {
+    const media = useMediaStore();
+    media.pickPrinterMedia(makeMedia({ widthMm: 12, defaultOrientation: 'horizontal' }));
+    expect(media.orientation).toBe('horizontal');
+  });
+
+  it('setOrientation updates the canvas and persists to localStorage', () => {
+    const media = useMediaStore();
+    const designer = useDesignerStore();
+    media.pickCommonSize(62, 100); // taller-than-wide die-cut → defaults vertical
+    expect(media.orientation).toBe('vertical');
+
+    media.setOrientation('horizontal');
+    expect(designer.document.canvas.orientation).toBe('horizontal');
+
+    const raw = window.localStorage.getItem('burnmark.lastLabelSize');
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw as string) as { orientation?: string };
+    expect(parsed.orientation).toBe('horizontal');
+  });
+
+  it('applyLastUsedOrDefault restores the persisted orientation', () => {
+    window.localStorage.setItem(
+      'burnmark.lastLabelSize',
+      JSON.stringify({
+        widthMm: 62,
+        heightMm: 29,
+        source: 'manual',
+        orientation: 'horizontal',
+      }),
+    );
+    const media = useMediaStore();
+    media.applyLastUsedOrDefault();
+    expect(media.orientation).toBe('horizontal');
+  });
+
+  it('applyLastUsedOrDefault falls back to the heuristic when orientation is absent (legacy record)', () => {
+    // Legacy persisted record predating the orientation field.
+    window.localStorage.setItem(
+      'burnmark.lastLabelSize',
+      JSON.stringify({ widthMm: 12, heightMm: null, source: 'manual' }),
+    );
+    const media = useMediaStore();
+    media.applyLastUsedOrDefault();
+    expect(media.orientation).toBe('horizontal');
   });
 });
