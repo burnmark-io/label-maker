@@ -225,11 +225,27 @@ const { openHelp } = useUiDialogs();
 }
 
 @media (max-width: 720px) {
+  .topbar {
+    padding: 0 var(--space-2);
+    gap: var(--space-2);
+  }
+  .topbar__left {
+    gap: var(--space-2);
+  }
   .topbar__btn-label {
     display: none;
   }
+  .topbar__btn {
+    padding: var(--space-2);
+  }
   .topbar__brand {
     min-width: auto;
+  }
+  .topbar__name {
+    display: none;
+  }
+  .topbar__actions {
+    min-width: 0;
   }
 }
 </style>

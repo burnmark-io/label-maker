@@ -426,4 +426,18 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
   opacity: 0;
   transform: translateY(-4px);
 }
+
+@media (max-width: 720px) {
+  .size-selector__trigger {
+    padding: var(--space-2);
+    gap: var(--space-1);
+    max-width: 140px;
+  }
+  .size-selector__icon {
+    display: none;
+  }
+  .size-selector__current {
+    font-size: var(--text-xs);
+  }
+}
 </style>

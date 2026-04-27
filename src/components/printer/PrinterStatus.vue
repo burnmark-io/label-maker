@@ -102,4 +102,14 @@ const label = computed(() => {
   text-overflow: ellipsis;
   max-width: 280px;
 }
+
+@media (max-width: 720px) {
+  .status {
+    padding: var(--space-2);
+    gap: 0;
+  }
+  .status__label {
+    display: none;
+  }
+}
 </style>
