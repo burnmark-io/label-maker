@@ -276,9 +276,9 @@ describe('defaultOrientationFor', () => {
     expect(
       defaultOrientationFor(makeMedia({ widthMm: 62, defaultOrientation: 'horizontal' })),
     ).toBe('horizontal');
-    expect(
-      defaultOrientationFor(makeMedia({ widthMm: 12, defaultOrientation: 'vertical' })),
-    ).toBe('vertical');
+    expect(defaultOrientationFor(makeMedia({ widthMm: 12, defaultOrientation: 'vertical' }))).toBe(
+      'vertical',
+    );
   });
 
   it('Tier 2 — continuous: ≤19mm reads as a tape (horizontal)', () => {

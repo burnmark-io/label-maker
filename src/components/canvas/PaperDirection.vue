@@ -104,7 +104,5 @@ const ARROW_GUTTER = 26;
 
 const isHorizontal = computed(() => media.orientation === 'horizontal');
 const widthMm = computed(() => Math.round((props.width / props.dpi) * 25.4));
-const feedLabel = computed(
-  () => `${isHorizontal.value ? '→' : '↓'} ${t('canvas.feedDirection')}`,
-);
+const feedLabel = computed(() => `${isHorizontal.value ? '→' : '↓'} ${t('canvas.feedDirection')}`);
 </script>
