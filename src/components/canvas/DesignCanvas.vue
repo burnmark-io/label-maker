@@ -198,13 +198,60 @@ const dragGuides = ref<{ vertical: number[]; horizontal: number[] }>({
   horizontal: [],
 });
 
+/**
+ * Pinch-to-zoom — captured on the container while two fingers are
+ * down. Konva's own touch handling drives single-finger drags; we
+ * only intercept multi-touch. Distance ratio drives `zoomTo`, which
+ * keeps the label centred via the viewport's offset math.
+ */
+let pinchStartDistance = 0;
+let pinchStartZoom = 1;
+
+function pinchDistance(touches: TouchList): number {
+  const a = touches[0];
+  const b = touches[1];
+  return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+}
+
+function onTouchStart(e: TouchEvent): void {
+  if (e.touches.length === 2) {
+    pinchStartDistance = pinchDistance(e.touches);
+    pinchStartZoom = viewport.zoom.value;
+    e.preventDefault();
+  }
+}
+
+function onTouchMove(e: TouchEvent): void {
+  if (e.touches.length === 2 && pinchStartDistance > 0) {
+    const dist = pinchDistance(e.touches);
+    if (dist > 0) viewport.zoomTo((pinchStartZoom * dist) / pinchStartDistance);
+    e.preventDefault();
+  }
+}
+
+function onTouchEnd(e: TouchEvent): void {
+  if (e.touches.length < 2) pinchStartDistance = 0;
+}
+
 onMounted(async () => {
-  if (containerRef.value) viewport.bindContainer(containerRef.value);
+  if (containerRef.value) {
+    viewport.bindContainer(containerRef.value);
+    containerRef.value.addEventListener('touchstart', onTouchStart, { passive: false });
+    containerRef.value.addEventListener('touchmove', onTouchMove, { passive: false });
+    containerRef.value.addEventListener('touchend', onTouchEnd);
+    containerRef.value.addEventListener('touchcancel', onTouchEnd);
+  }
   await nextTick();
   if (stageRef.value) konvaStage.value = stageRef.value.getNode();
 });
 
 onBeforeUnmount(() => {
+  if (containerRef.value) {
+    containerRef.value.removeEventListener('touchstart', onTouchStart);
+    containerRef.value.removeEventListener('touchmove', onTouchMove);
+    containerRef.value.removeEventListener('touchend', onTouchEnd);
+    containerRef.value.removeEventListener('touchcancel', onTouchEnd);
+  }
   konvaStage.value = null;
 });
 
