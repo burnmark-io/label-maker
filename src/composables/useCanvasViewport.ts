@@ -40,22 +40,33 @@ export function useCanvasViewport(): ViewportState {
   const width = ref(800);
   const height = ref(600);
 
-  const labelWidthDots = computed(() => designer.document.canvas.widthDots);
-
   const isContinuous = computed(() => designer.document.canvas.heightDots === 0);
 
   /**
-   * Continuous canvases display at the user's manual length per
-   * `amendment-canvas-sizing.md` §3 — no auto-grow. The length lives
-   * in `media.continuousLengthMm` (computed: defaults to 4:3 starting
-   * ratio when nothing has been set yet, see store §3.2). The renderer
-   * still receives `heightDots: 0` and crops at the bitmap level — that
-   * is a separate concern.
+   * Canonical canvas dimensions in dots. `widthDots` is the
+   * across-feed dimension (always set), `heightDots` is the
+   * along-feed dimension — for continuous canvases (`heightDots === 0`
+   * in the document) the user's manual `media.continuousLengthMm`
+   * stands in for the on-screen extent.
    */
-  const labelHeightDots = computed(() => {
+  const canonWidthDots = computed(() => designer.document.canvas.widthDots);
+  const canonHeightDots = computed(() => {
     if (!isContinuous.value) return designer.document.canvas.heightDots;
     return dotsFromMm(media.continuousLengthMm, designer.document.canvas.dpi);
   });
+
+  /**
+   * On-screen frame dimensions. Display-only; render targets and
+   * object coordinates remain in canonical document space. When
+   * `media.orientation === 'horizontal'`, axes swap so the frame is
+   * laid out landscape.
+   */
+  const labelWidthDots = computed(() =>
+    media.orientation === 'horizontal' ? canonHeightDots.value : canonWidthDots.value,
+  );
+  const labelHeightDots = computed(() =>
+    media.orientation === 'horizontal' ? canonWidthDots.value : canonHeightDots.value,
+  );
 
   const fitZoom = computed(() => {
     const availW = Math.max(0, width.value - VIEWPORT_PADDING * 2);
