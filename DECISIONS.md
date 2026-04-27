@@ -611,3 +611,20 @@ either (a) patch the driver — preferred when the driver is ours and
 the rotation is genuinely a driver concern — or (b) insert a rotation
 step in label-maker's print pipeline before send. Decision is per
 driver and recorded as a sub-note under this entry once we audit.
+
+### D47 sub-note (canvas-orientation)
+
+`label-maker` pre-swaps the bitmap axes when
+`canvas.orientation === 'horizontal'` and passes `rotate: 'auto'` in
+the per-call print options. We trust the contracts-0.2.0 heuristic:
+`pickRotation('auto', media, familyDirection)` consults
+`media.defaultOrientation` to land on the right angle for each
+printer family. Net result: a horizontal-orientation document is
+delivered as landscape RGBA, and the driver passes through (printers
+whose media is natively landscape — narrow tapes) or rotates back to
+portrait (rectangular die-cut media).
+
+Alternative considered: import each driver's `ROTATE_DIRECTION` and
+pass an explicit angle. Rejected because it forces a label-maker
+change every time a new family is added with a different head-scan
+direction — keeping the decision in contracts is more durable.

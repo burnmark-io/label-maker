@@ -9,6 +9,7 @@ import type {
 } from '@thermal-label/contracts';
 
 import { usePrinterStore } from '../printer';
+import { useDesignerStore } from '../designer';
 
 function makeMedia(overrides: Partial<MediaDescriptor> = {}): MediaDescriptor {
   return {
@@ -134,7 +135,7 @@ describe('printer store', () => {
     expect(store.lastPreview).toEqual(preview);
   });
 
-  it('print() forwards effective media and options to the adapter', async () => {
+  it('print() forwards effective media and adds rotate:"auto" by default', async () => {
     const store = usePrinterStore();
     const adapter = makeAdapter();
     store.setAdapter(adapter);
@@ -144,15 +145,78 @@ describe('printer store', () => {
     const image: RawImageData = {
       width: 1,
       height: 1,
-      data: new Uint8Array([0]),
+      data: new Uint8Array([0, 0, 0, 255]),
     };
     await store.print(image, { copies: 3, density: 'dark' });
 
     expect(adapter.print).toHaveBeenCalledWith(image, media, {
       copies: 3,
       density: 'dark',
+      rotate: 'auto',
     });
     expect(store.isPrinting).toBe(false);
+  });
+
+  it('print() pre-rotates the bitmap when canvas.orientation === "horizontal"', async () => {
+    const designer = useDesignerStore();
+    designer.setCanvas({ widthDots: 4, heightDots: 2, dpi: 300, orientation: 'horizontal' });
+
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+
+    // 4×2 RGBA image → after 90° CW rotation, 2×4.
+    const image: RawImageData = {
+      width: 4,
+      height: 2,
+      data: new Uint8Array(4 * 2 * 4).fill(255),
+    };
+    await store.print(image);
+
+    expect(adapter.print).toHaveBeenCalledTimes(1);
+    const [imgArg, , optsArg] = adapter.print.mock.calls[0]!;
+    expect((imgArg as RawImageData).width).toBe(2);
+    expect((imgArg as RawImageData).height).toBe(4);
+    expect(optsArg).toEqual({ rotate: 'auto' });
+  });
+
+  it('print() leaves the bitmap untouched when orientation is vertical', async () => {
+    const designer = useDesignerStore();
+    designer.setCanvas({ widthDots: 4, heightDots: 2, dpi: 300, orientation: 'vertical' });
+
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+
+    const image: RawImageData = {
+      width: 4,
+      height: 2,
+      data: new Uint8Array(4 * 2 * 4),
+    };
+    await store.print(image);
+
+    const [imgArg] = adapter.print.mock.calls[0]!;
+    expect(imgArg).toBe(image);
+  });
+
+  it('print() preserves an explicit rotate override from the caller', async () => {
+    const designer = useDesignerStore();
+    designer.setCanvas({ widthDots: 4, heightDots: 2, dpi: 300, orientation: 'horizontal' });
+
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+
+    const image: RawImageData = {
+      width: 4,
+      height: 2,
+      data: new Uint8Array(4 * 2 * 4),
+    };
+    // Caller forces rotate: 0 — bridging must not silently overwrite it.
+    await store.print(image, { rotate: 0 } as Parameters<typeof store.print>[1]);
+
+    const [, , optsArg] = adapter.print.mock.calls[0]!;
+    expect(optsArg).toEqual({ rotate: 0 });
   });
 
   it('disconnect closes the adapter and clears state', async () => {

@@ -7,8 +7,41 @@ import type {
   PrintOptions,
   RawImageData,
 } from '@thermal-label/contracts';
+import { rotate90 } from '@burnmark-io/designer-core';
 
 import { identifyByVidPid, type PrinterFamily } from '@/lib/printer/registry';
+import { useDesignerStore } from '@/stores/designer';
+
+/**
+ * PrintOptions shape augmented with the cross-driver `rotate` override
+ * shared by `@thermal-label/{brother-ql,labelmanager,labelwriter}-core@^0.3.0`.
+ * Each family extends `PrintOptions` with this same field, so passing it
+ * via the structural `PrinterAdapter.print` signature is safe — TS just
+ * needs the broader type to express the call.
+ */
+type BridgedPrintOptions = PrintOptions & { rotate?: 'auto' | 0 | 90 | 180 | 270 };
+
+/**
+ * `rotate90` from designer-core returns a `Uint8ClampedArray`, which
+ * widens its declared `data` type to `Uint8Array | Uint8ClampedArray`.
+ * The strict `@thermal-label/contracts` `RawImageData` only allows
+ * `Uint8Array`. Re-wrap into a plain `Uint8Array` view (no copy) so the
+ * adapter contract is satisfied without changing pixel data.
+ */
+function toContractImage(image: {
+  width: number;
+  height: number;
+  data: Uint8Array | Uint8ClampedArray;
+}): RawImageData {
+  if (image.data instanceof Uint8Array) {
+    return { width: image.width, height: image.height, data: image.data };
+  }
+  return {
+    width: image.width,
+    height: image.height,
+    data: new Uint8Array(image.data.buffer, image.data.byteOffset, image.data.byteLength),
+  };
+}
 
 /**
  * Printer store — owns the live `PrinterAdapter` (when one is connected),
@@ -164,7 +197,21 @@ export const usePrinterStore = defineStore('printer', () => {
     if (!adapter.value) throw new Error('No printer connected');
     isPrinting.value = true;
     try {
-      await adapter.value.print(image, effectiveMedia.value ?? undefined, options);
+      // Canvas-orientation bridging (D47 sub-note): when the document is
+      // displayed horizontally, hand the driver a landscape bitmap and let
+      // its `pickRotation` heuristic decide whether to pass through (for
+      // printers whose media is natively landscape, e.g. narrow tapes
+      // tagged `defaultOrientation: 'horizontal'`) or rotate back to
+      // portrait. `rotate: 'auto'` is the explicit signal for that path.
+      const designer = useDesignerStore();
+      const orientation = designer.document.canvas.orientation ?? 'vertical';
+      const bridgedImage =
+        orientation === 'horizontal' ? toContractImage(rotate90(image)) : image;
+      const bridgedOptions: BridgedPrintOptions = {
+        ...(options ?? {}),
+        rotate: (options as BridgedPrintOptions | undefined)?.rotate ?? 'auto',
+      };
+      await adapter.value.print(bridgedImage, effectiveMedia.value ?? undefined, bridgedOptions);
     } finally {
       isPrinting.value = false;
     }
