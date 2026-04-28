@@ -165,6 +165,36 @@
       </ul>
     </div>
 
+    <div class="actions__zoom" role="group" :aria-label="t('canvas.zoomControls')">
+      <button
+        type="button"
+        class="actions__btn actions__zoom-btn"
+        :aria-label="t('canvas.zoomOut')"
+        :title="t('canvas.zoomOut')"
+        @click="viewport.zoomOut()"
+      >
+        −
+      </button>
+      <button
+        type="button"
+        class="actions__btn actions__zoom-btn actions__zoom-btn--label"
+        :aria-label="t('canvas.fitZoom')"
+        :title="t('canvas.fitZoom')"
+        @click="viewport.resetZoom()"
+      >
+        {{ t('canvas.zoom', { percent: zoomPercent }) }}
+      </button>
+      <button
+        type="button"
+        class="actions__btn actions__zoom-btn"
+        :aria-label="t('canvas.zoomIn')"
+        :title="t('canvas.zoomIn')"
+        @click="viewport.zoomIn()"
+      >
+        +
+      </button>
+    </div>
+
     <input
       ref="fileInputRef"
       type="file"
@@ -178,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, inject } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
 import { useDesignerStore } from '@/stores/designer';
@@ -187,6 +217,7 @@ import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import { useLabelImport } from '@/composables/useLabelImport';
+import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { downloadBlob, safeFileName } from '@/services/file-download';
 import { applyMappingToRow } from '@/services/column-mapper';
 
@@ -205,6 +236,9 @@ const library = useLibraryStore();
 const { show, update, dismiss } = useToast();
 const lifecycle = useDocumentLifecycle();
 const labelImport = useLabelImport();
+
+const viewport = inject<ViewportState>(CANVAS_VIEWPORT_KEY)!;
+const zoomPercent = computed(() => Math.round(viewport.zoom.value * 100));
 
 const dropdownOpen = ref(false);
 const optionsOpen = ref(false);
@@ -556,5 +590,36 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
   white-space: nowrap;
   border: 0;
   opacity: 0;
+}
+
+/* Inline zoom controls — only visible on narrow viewports where the
+   floating canvas-zoom widget is hidden to avoid overlap with this
+   toolbar. The desktop zoom widget stays in DesignCanvas. */
+.actions__zoom {
+  display: none;
+  align-items: stretch;
+  border-left: 1px solid var(--color-border);
+  margin-left: var(--space-1);
+  padding-left: var(--space-1);
+}
+
+.actions__zoom-btn {
+  padding: var(--space-1) var(--space-2);
+  min-width: 32px;
+  justify-content: center;
+}
+
+.actions__zoom-btn--label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
+  min-width: 48px;
+}
+
+@media (max-width: 640px) {
+  .actions__zoom {
+    display: inline-flex;
+  }
 }
 </style>

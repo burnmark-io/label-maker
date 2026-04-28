@@ -1,5 +1,9 @@
 # label-maker — Amendment: Canvas UX Papercuts
 
+> **Status:** §1 (inline editor parity) and §2 (mobile zoom controls)
+> implemented. §3 (Save dropdown) superseded by
+> `amendment-output-tab.md` — see the note in that section.
+
 > Three small, unrelated UX papercuts. Each is noticeable in normal
 > use but none are load-bearing. Bundled here because they're each a
 > one-or-two-file change and don't deserve their own amendment
@@ -183,6 +187,15 @@ No store / schema changes.
 ---
 
 ## 3. "Save" Dropdown Is a Junk Drawer
+
+> **Superseded by `amendment-output-tab.md`.** That amendment
+> renames the Preview tab to Output and folds the four Export
+> formats, Print Sheet, and Share into it. The Save dropdown
+> collapses further than this section anticipated: to a
+> one-click Save button + a small File menu (New / Library /
+> Import / Save as new). Implement the changes per the Output
+> tab amendment; this section stays for context but should
+> NOT be implemented standalone.
 
 ### Today
 

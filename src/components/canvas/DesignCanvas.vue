@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { isTextObject, type LabelObject, type TextObject } from '@burnmark-io/designer-core';
@@ -145,7 +145,7 @@ import { findSheet } from '@burnmark-io/sheet-templates';
 import { useDesignerStore } from '@/stores/designer';
 import { useMediaStore, dotsFromMm } from '@/stores/media';
 import { usePreferencesStore } from '@/stores/preferences';
-import { useCanvasViewport } from '@/composables/useCanvasViewport';
+import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { computeSnap } from '@/composables/useSnapping';
 import type { KonvaStage } from './konva-types';
 
@@ -168,7 +168,7 @@ const cornerRadiusDots = computed<number | undefined>(() => {
 
 const { document } = storeToRefs(designer);
 
-const viewport = useCanvasViewport();
+const viewport = inject<ViewportState>(CANVAS_VIEWPORT_KEY)!;
 const containerRef = ref<HTMLElement | null>(null);
 
 const stageRef = ref<{ getNode(): KonvaStage } | null>(null);
@@ -443,5 +443,14 @@ watch(
   font-weight: var(--weight-regular);
   color: var(--color-text-muted);
   min-width: 56px;
+}
+
+/* On narrow screens the floating zoom widget collides with the
+   bottom-centre CanvasActions toolbar. CanvasActions renders its
+   own inline zoom controls below this breakpoint. */
+@media (max-width: 640px) {
+  .canvas-zoom {
+    display: none;
+  }
 }
 </style>

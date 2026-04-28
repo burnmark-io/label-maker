@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import TopBar from './TopBar.vue';
@@ -90,6 +90,7 @@ import { loadFirstVisitDocument } from '@/services/sample-label';
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import { useBorderResize } from '@/composables/useBorderResize';
 import { useAutoReconnect } from '@/composables/useAutoReconnect';
+import { useCanvasViewport, CANVAS_VIEWPORT_KEY } from '@/composables/useCanvasViewport';
 import { readDocumentFromHash } from '@/services/share-encoder';
 import { useLabelImport } from '@/composables/useLabelImport';
 import { useToast } from '@/composables/useToast';
@@ -213,6 +214,11 @@ function onGlobalKeyDown(event: KeyboardEvent): void {
 useKeyboardShortcuts();
 useBorderResize();
 useAutoReconnect();
+
+// Single viewport instance shared by DesignCanvas (binds the
+// container, owns the zoom ref) and CanvasActions (renders mobile
+// zoom buttons that need the same zoom state).
+provide(CANVAS_VIEWPORT_KEY, useCanvasViewport());
 
 async function bootstrapAfterUnlock(): Promise<void> {
   if (bootstrapped) return;

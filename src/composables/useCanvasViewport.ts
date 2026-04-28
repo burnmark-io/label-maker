@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, ref, watch, type InjectionKey, type Ref } from 'vue';
 import { useResizeObserver } from '@vueuse/core';
 import { useDesignerStore } from '@/stores/designer';
 import { useMediaStore, dotsFromMm } from '@/stores/media';
@@ -8,6 +8,15 @@ const MAX_ZOOM = 8;
 const ZOOM_STEP = 1.15;
 /** Padding around the label in viewport pixels at any zoom. */
 const VIEWPORT_PADDING = 48;
+
+/**
+ * Provided once at the app shell so `DesignCanvas` and sibling
+ * surfaces (e.g. `CanvasActions`'s mobile zoom buttons) share the
+ * same `zoom` ref. Calling `useCanvasViewport()` directly still
+ * yields a fresh state — keep that path for consumers that only
+ * read store-derived refs (like `useOutOfBounds`).
+ */
+export const CANVAS_VIEWPORT_KEY: InjectionKey<ViewportState> = Symbol('canvasViewport');
 
 export interface ViewportState {
   /** Container size in CSS px (the available canvas area). */
