@@ -103,9 +103,10 @@ export const usePrinterStore = defineStore('printer', () => {
       // Brother descriptor to a LabelWriter on the next connect.
       selectedMedia.value = null;
       lastPreview.value = null;
-      if (connection.value.kind === 'connected') {
-        connection.value = { kind: 'disconnected' };
-      }
+      // Always reset to 'disconnected'. The previous `connected`-only
+      // guard stranded the cancel path (setConnecting → setAdapter(null)
+      // on NotFoundError) in 'connecting' forever.
+      connection.value = { kind: 'disconnected' };
     }
   }
 

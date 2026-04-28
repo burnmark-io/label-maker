@@ -217,6 +217,25 @@ describe('printer store', () => {
     expect(optsArg).toEqual({ rotate: 0 });
   });
 
+  it('setAdapter(null) from connecting resets to disconnected', () => {
+    // Cancel path: user clicks Connect → setConnecting() → WebUSB picker
+    // dismissed → catch calls setAdapter(null). Before the fix this stayed
+    // stuck in 'connecting'.
+    const store = usePrinterStore();
+    store.setConnecting();
+    expect(store.connection.kind).toBe('connecting');
+    store.setAdapter(null);
+    expect(store.connection.kind).toBe('disconnected');
+  });
+
+  it('setAdapter(null) from error resets to disconnected', () => {
+    const store = usePrinterStore();
+    store.setError('boom');
+    expect(store.connection.kind).toBe('error');
+    store.setAdapter(null);
+    expect(store.connection.kind).toBe('disconnected');
+  });
+
   it('disconnect closes the adapter and clears state', async () => {
     const store = usePrinterStore();
     const adapter = makeAdapter();
