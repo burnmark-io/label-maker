@@ -40,6 +40,17 @@
       @open-reset="resetOpen = true"
     />
     <ResetDataDialog :open="resetOpen" @close="resetOpen = false" />
+
+    <ConfirmDialog
+      :open="confirmer.open.value"
+      :title="confirmer.options.value?.title ?? ''"
+      :message="confirmer.options.value?.message ?? ''"
+      :confirm-label="confirmer.options.value?.confirmLabel ?? ''"
+      :cancel-label="confirmer.options.value?.cancelLabel ?? ''"
+      :tone="confirmer.options.value?.tone ?? 'primary'"
+      @confirm="confirmer.resolve"
+      @cancel="confirmer.cancel"
+    />
   </div>
 </template>
 
@@ -54,6 +65,7 @@ import DesignCanvas from '@/components/canvas/DesignCanvas.vue';
 import MainToolbar from '@/components/toolbar/MainToolbar.vue';
 import CanvasActions from '@/components/toolbar/CanvasActions.vue';
 import ToastStack from '@/components/common/ToastStack.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import InstallPrompt from '@/components/common/InstallPrompt.vue';
 import ImportDropOverlay from './ImportDropOverlay.vue';
 import BatchPanel from '@/components/batch/BatchPanel.vue';
@@ -81,6 +93,8 @@ import { useAutoReconnect } from '@/composables/useAutoReconnect';
 import { readDocumentFromHash } from '@/services/share-encoder';
 import { useLabelImport } from '@/composables/useLabelImport';
 import { useToast } from '@/composables/useToast';
+import { useConfirm } from '@/composables/useConfirm';
+import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import { useUiDialogs } from '@/composables/useUiDialogs';
 import { SUPPORTED_LOCALES } from '@/i18n';
 
@@ -124,6 +138,8 @@ watch(
   },
 );
 const labelImport = useLabelImport();
+const lifecycle = useDocumentLifecycle();
+const confirmer = useConfirm();
 const { aboutOpen, helpOpen, privacyOpen, tourActive, openHelp, startTour, closeTour } =
   useUiDialogs();
 
@@ -144,6 +160,40 @@ const canvasSummary = computed(() => {
 function onRestartTour(): void {
   prefs.tourCompleted = false;
   startTour();
+}
+
+function clearHashFromUrl(): void {
+  if (typeof window === 'undefined') return;
+  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
+// Mid-session share-link load. The boot path (`bootstrapAfterUnlock`)
+// reads the hash on first unlock; this listener picks up every
+// subsequent hash change — pasting a link into the address bar of an
+// already-open tab, or clicking a same-origin share URL. Skips while
+// locked or before bootstrap completes; the boot path will pick up the
+// hash at unlock time in those cases.
+async function onHashChange(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  if (cryptoStore.locked || !bootstrapped) return;
+  if (window.location.hash.length <= 1) return;
+
+  const shared = readDocumentFromHash(window.location.hash);
+  if (!shared) {
+    clearHashFromUrl();
+    return;
+  }
+
+  const ok = await lifecycle.confirmDestructiveSwap({ incomingName: shared.name });
+  if (!ok) {
+    clearHashFromUrl();
+    return;
+  }
+
+  designer.loadDocument(shared);
+  designer.clearHistory();
+  clearHashFromUrl();
+  show(t('share.imported'), 'success');
 }
 
 function onGlobalKeyDown(event: KeyboardEvent): void {
@@ -236,6 +286,7 @@ async function bootstrapAfterUnlock(): Promise<void> {
 onMounted(() => {
   prefs.sessionCount += 1;
   window.addEventListener('keydown', onGlobalKeyDown);
+  window.addEventListener('hashchange', onHashChange);
 
   // Reflect the active locale on <html lang="..."> for screen readers.
   if (typeof document !== 'undefined') {
@@ -274,6 +325,7 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onGlobalKeyDown);
+  window.removeEventListener('hashchange', onHashChange);
 });
 
 function maybeStartTour(): void {

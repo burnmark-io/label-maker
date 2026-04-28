@@ -8,7 +8,12 @@ import { mount } from '@vue/test-utils';
 import en from '@/i18n/locales/en.json';
 import { __resetForTests } from '@/services/storage';
 import { useLibraryStore } from '@/stores/library';
-import { useDocumentLifecycle, type DocumentLifecycle } from '../useDocumentLifecycle';
+import {
+  useDocumentLifecycle,
+  __resetLifecycleForTests,
+  type DocumentLifecycle,
+} from '../useDocumentLifecycle';
+import { __resetConfirmForTests } from '../useConfirm';
 
 interface DesignerStub {
   canUndo: boolean;
@@ -60,6 +65,8 @@ beforeEach(async () => {
   designerState.loadDocument.mockReset();
   designerState.newDocument.mockReset();
   designerState.clearHistory.mockReset();
+  __resetConfirmForTests();
+  __resetLifecycleForTests();
   await resetIdb();
 });
 
@@ -108,6 +115,38 @@ describe('useDocumentLifecycle.confirmDestructiveSwap', () => {
     expect(message).toContain('colleague.label');
     lifecycle.confirmer.resolve();
     await promise;
+  });
+});
+
+describe('useDocumentLifecycle.confirmDestructiveSwap race guard', () => {
+  it('returns false immediately when a swap is already in flight', async () => {
+    const lifecycle = withSetup();
+    designerState.canUndo = true;
+    const first = lifecycle.confirmDestructiveSwap();
+    expect(lifecycle.confirmer.open.value).toBe(true);
+
+    // Second call while the first is awaiting user input — must no-op,
+    // not yank the prompt out from under the first.
+    const second = await lifecycle.confirmDestructiveSwap();
+    expect(second).toBe(false);
+    expect(lifecycle.confirmer.open.value).toBe(true);
+
+    lifecycle.confirmer.resolve();
+    expect(await first).toBe(true);
+  });
+
+  it('releases the guard after a resolved swap so subsequent calls work', async () => {
+    const lifecycle = withSetup();
+    designerState.canUndo = true;
+
+    const first = lifecycle.confirmDestructiveSwap();
+    lifecycle.confirmer.resolve();
+    expect(await first).toBe(true);
+
+    const second = lifecycle.confirmDestructiveSwap();
+    expect(lifecycle.confirmer.open.value).toBe(true);
+    lifecycle.confirmer.cancel();
+    expect(await second).toBe(false);
   });
 });
 

@@ -99,17 +99,6 @@
       </button>
     </template>
   </Modal>
-
-  <ConfirmDialog
-    :open="lifecycle.confirmer.open.value"
-    :title="lifecycle.confirmer.options.value?.title ?? ''"
-    :message="lifecycle.confirmer.options.value?.message ?? ''"
-    :confirm-label="lifecycle.confirmer.options.value?.confirmLabel ?? ''"
-    :cancel-label="lifecycle.confirmer.options.value?.cancelLabel ?? ''"
-    :tone="lifecycle.confirmer.options.value?.tone ?? 'primary'"
-    @confirm="lifecycle.confirmer.resolve"
-    @cancel="lifecycle.confirmer.cancel"
-  />
 </template>
 
 <script setup lang="ts">
@@ -121,7 +110,6 @@ import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import LimitBanner from '@/components/common/LimitBanner.vue';
 import Modal from '@/components/common/Modal.vue';
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ (e: 'close'): void }>();

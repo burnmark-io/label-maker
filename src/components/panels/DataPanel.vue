@@ -153,16 +153,6 @@
       @close="editorOpen = false"
       @import-file="onImportFromEditor"
     />
-    <ConfirmDialog
-      :open="confirmer.open.value"
-      :title="confirmer.options.value?.title ?? ''"
-      :message="confirmer.options.value?.message ?? ''"
-      :confirm-label="confirmer.options.value?.confirmLabel ?? ''"
-      :cancel-label="confirmer.options.value?.cancelLabel ?? ''"
-      :tone="confirmer.options.value?.tone ?? 'primary'"
-      @confirm="confirmer.resolve"
-      @cancel="confirmer.cancel"
-    />
   </div>
 </template>
 
@@ -184,7 +174,6 @@ import DatasetSwitcher from './DatasetSwitcher.vue';
 import ImportChoiceDialog from './ImportChoiceDialog.vue';
 import DataEditorDialog from './DataEditorDialog.vue';
 import LimitBanner from '@/components/common/LimitBanner.vue';
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import { useConfirm } from '@/composables/useConfirm';
 
 const emit = defineEmits<{

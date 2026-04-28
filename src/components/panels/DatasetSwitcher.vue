@@ -92,17 +92,6 @@
         </button>
       </footer>
     </div>
-
-    <ConfirmDialog
-      :open="confirmer.open.value"
-      :title="confirmer.options.value?.title ?? ''"
-      :message="confirmer.options.value?.message ?? ''"
-      :confirm-label="confirmer.options.value?.confirmLabel ?? ''"
-      :cancel-label="confirmer.options.value?.cancelLabel ?? ''"
-      :tone="confirmer.options.value?.tone ?? 'primary'"
-      @confirm="confirmer.resolve"
-      @cancel="confirmer.cancel"
-    />
   </div>
 </template>
 
@@ -111,7 +100,6 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDataStore } from '@/stores/data';
 import EditableText from '@/components/common/EditableText.vue';
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import { useConfirm } from '@/composables/useConfirm';
 
 const emit = defineEmits<{

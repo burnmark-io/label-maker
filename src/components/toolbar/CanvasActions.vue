@@ -174,17 +174,6 @@
       tabindex="-1"
       @change="onFilePicked"
     />
-
-    <ConfirmDialog
-      :open="lifecycle.confirmer.open.value"
-      :title="lifecycle.confirmer.options.value?.title ?? ''"
-      :message="lifecycle.confirmer.options.value?.message ?? ''"
-      :confirm-label="lifecycle.confirmer.options.value?.confirmLabel ?? ''"
-      :cancel-label="lifecycle.confirmer.options.value?.cancelLabel ?? ''"
-      :tone="lifecycle.confirmer.options.value?.tone ?? 'primary'"
-      @confirm="lifecycle.confirmer.resolve"
-      @cancel="lifecycle.confirmer.cancel"
-    />
   </div>
 </template>
 
@@ -200,7 +189,6 @@ import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import { useLabelImport } from '@/composables/useLabelImport';
 import { downloadBlob, safeFileName } from '@/services/file-download';
 import { applyMappingToRow } from '@/services/column-mapper';
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;

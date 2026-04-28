@@ -1,3 +1,4 @@
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
 import { useConfirm, type ConfirmController } from './useConfirm';
@@ -8,6 +9,14 @@ export interface DocumentLifecycle {
   newBlankDocument(): void;
   assignNewId(): string;
 }
+
+// Module-scoped race guard. The confirmer is now a singleton (see
+// useConfirm), which means two overlapping `confirm` calls cancel each
+// other out — first call resolves to `false`. The boot-time hash read
+// and the hashchange listener can plausibly collide; this guard makes
+// the late entrant a silent no-op so the first one through wins instead
+// of yanking the prompt out from under it.
+const isSwapping = ref(false);
 
 /**
  * Document lifecycle helpers shared by the toolbar's Save dropdown
@@ -32,20 +41,26 @@ export function useDocumentLifecycle(): DocumentLifecycle {
    * "nothing the user could be surprised to lose."
    */
   async function confirmDestructiveSwap(opts: { incomingName?: string } = {}): Promise<boolean> {
-    if (!designer.canUndo) return true;
-    const messageKey = opts.incomingName
-      ? 'library.replaceConfirmWithIncoming'
-      : 'library.replaceConfirm';
-    return confirmer.confirm({
-      title: t('library.replaceConfirmTitle'),
-      message: t(messageKey, {
-        current: designer.document.name,
-        incoming: opts.incomingName ?? '',
-      }),
-      confirmLabel: t('library.replaceConfirmAction'),
-      cancelLabel: t('common.cancel'),
-      tone: 'danger',
-    });
+    if (isSwapping.value) return false;
+    isSwapping.value = true;
+    try {
+      if (!designer.canUndo) return true;
+      const messageKey = opts.incomingName
+        ? 'library.replaceConfirmWithIncoming'
+        : 'library.replaceConfirm';
+      return await confirmer.confirm({
+        title: t('library.replaceConfirmTitle'),
+        message: t(messageKey, {
+          current: designer.document.name,
+          incoming: opts.incomingName ?? '',
+        }),
+        confirmLabel: t('library.replaceConfirmAction'),
+        cancelLabel: t('common.cancel'),
+        tone: 'danger',
+      });
+    } finally {
+      isSwapping.value = false;
+    }
   }
 
   function newBlankDocument(): void {
@@ -74,4 +89,9 @@ export function useDocumentLifecycle(): DocumentLifecycle {
   }
 
   return { confirmer, confirmDestructiveSwap, newBlankDocument, assignNewId };
+}
+
+/** Test-only helper: clear the swap guard between unit tests. */
+export function __resetLifecycleForTests(): void {
+  isSwapping.value = false;
 }
