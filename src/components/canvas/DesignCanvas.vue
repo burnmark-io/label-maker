@@ -74,6 +74,7 @@
         />
         <SelectionTransformer
           :selected-ids="visibleSelection"
+          :selected-objects="visibleSelectionObjects"
           :stage="konvaStage"
           :inv-scale="1 / viewport.zoom.value"
         />
@@ -134,7 +135,7 @@ import GridOverlay from './GridOverlay.vue';
 import PaperDirection from './PaperDirection.vue';
 import CutLine from './CutLine.vue';
 import ContinuousResizeHandle from './ContinuousResizeHandle.vue';
-import CanvasObject from './CanvasObject.vue';
+import CanvasObject, { type TransformEndPatch } from './CanvasObject.vue';
 import AlignmentGuides from './AlignmentGuides.vue';
 import SelectionTransformer from './SelectionTransformer.vue';
 import InlineTextEditor from './InlineTextEditor.vue';
@@ -184,6 +185,10 @@ const stageConfig = computed(() => ({
 
 const visibleSelection = computed(() =>
   designer.selection.filter(id => !editingTextId.value || id !== editingTextId.value),
+);
+
+const visibleSelectionObjects = computed<LabelObject[]>(() =>
+  document.value.objects.filter(o => visibleSelection.value.includes(o.id)),
 );
 
 const editingTextId = ref<string | null>(null);
@@ -365,17 +370,20 @@ function onObjectDragEnd(id: string, x: number, y: number): void {
   designer.updateObject(id, { x: snap.x, y: snap.y });
 }
 
-function onObjectTransformEnd(
-  id: string,
-  patch: { x: number; y: number; width: number; height: number; rotation: number },
-): void {
+function onObjectTransformEnd(id: string, patch: TransformEndPatch): void {
   const updates: Partial<LabelObject> = {
     x: patch.x,
     y: patch.y,
     width: patch.width,
-    height: patch.height,
     rotation: patch.rotation,
   };
+  if (patch.height !== undefined) updates.height = patch.height;
+  if (patch.fontSize !== undefined) {
+    (updates as Partial<TextObject>).fontSize = patch.fontSize;
+  }
+  if (patch.letterSpacing !== undefined) {
+    (updates as Partial<TextObject>).letterSpacing = patch.letterSpacing;
+  }
   designer.updateObject(id, updates);
 }
 

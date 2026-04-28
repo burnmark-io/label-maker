@@ -59,16 +59,23 @@ defineProps<{
   draggable: boolean;
 }>();
 
+export interface TransformEndPatch {
+  x: number;
+  y: number;
+  width: number;
+  height?: number;
+  rotation: number;
+  fontSize?: number;
+  letterSpacing?: number;
+}
+
 const emit = defineEmits<{
   (e: 'select', event: unknown): void;
   (e: 'edit'): void;
   (e: 'dragstart'): void;
   (e: 'dragmove', x: number, y: number): void;
   (e: 'dragend', x: number, y: number): void;
-  (
-    e: 'transformend',
-    patch: { x: number; y: number; width: number; height: number; rotation: number },
-  ): void;
+  (e: 'transformend', patch: TransformEndPatch): void;
 }>();
 
 function onDragMove(x: number, y: number): void {
@@ -79,13 +86,7 @@ function onDragEnd(x: number, y: number): void {
   emit('dragend', x, y);
 }
 
-function onTransformEnd(patch: {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-}): void {
+function onTransformEnd(patch: TransformEndPatch): void {
   emit('transformend', patch);
 }
 </script>
