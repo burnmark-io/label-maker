@@ -616,3 +616,107 @@ useShiftKey:
 useTransformContext:
 - activeAnchor written by transformstart is observable from
   consuming node components
+
+---
+
+## 9. Implementation Postmortem
+
+Spec was correct on the *what*; the *how* hit several Konva quirks
+that aren't covered in §3. Captured here so the next person to touch
+resize behaviour doesn't have to rediscover them.
+
+### 9.1 keepRatio default — we'd flipped it the wrong way
+
+`SelectionTransformer.vue` had `keepRatio: false` from before this
+amendment. Konva's default is **true**. With it true, corners scale
+uniformly natively, *and* Konva auto-toggles to free-aspect when
+Shift is held — exactly our amendment's convention. Setting
+`keepRatio: true` removed an entire branch of "compute uniform
+scale ourselves" code and made the proportional pivot stay pinned
+without any explicit math.
+
+**Lesson:** check Konva attribute defaults before writing
+compensating logic. We had the right behaviour available natively.
+
+### 9.2 `node.scaleX()` after a reset is incremental, not absolute
+
+Spec §3.3 wrote `dragStartWidth * sx` for live width. That's wrong
+because after `node.scaleX(1)` each tick, Konva computes the next
+tick's `scaleX` relative to the *current* node state — the scale
+needed to go from current width to target width, not from drag-start
+to target. Using `dragStart * sx` made the box oscillate near
+`dragStart` and explode on release.
+
+Two equivalent fixes:
+- `node.width() * sx` (canonical Konva pattern shown in their
+  docs).
+- Track `cumulativeScaleX` by multiplying each tick's reported
+  scale, derive width from `dragStart * cumulative`.
+
+We used the cumulative approach because it composes cleanly with
+the four-branch mode-toggle logic and the floor-clamping rules.
+
+### 9.3 `flipEnabled: false` doesn't stop anchor re-targeting
+
+`flipEnabled: false` prevents the visual flip (no negative scale
+rendered), but Konva *still* re-targets the active anchor when the
+pointer crosses the pivot. Once that happens it starts reporting
+"growth" relative to the new anchor, our cumulative grew the wrong
+way, and the box "danced" upward past the pivot.
+
+Fix: read `transformer.getActiveAnchor()` every tick. If it differs
+from `dragStartAnchor`, the user has crossed the pivot — peg
+cumulative at the floor and skip Konva's scale signal for the rest
+of the drag in that direction.
+
+### 9.4 Per-axis floors desync the cumulatives
+
+`MIN_DIM / dragStartWidth` and `MIN_DIM / dragStartHeight` differ
+when the box isn't square. Clamping each axis at its own floor lets
+one axis hit floor while the other keeps shrinking; the cumulatives
+diverge, recovery on the way back uses the wider axis's "wasted"
+cumulative and ends up smaller than the user's pre-floor scale.
+
+Fix: in proportional mode, share a single floor —
+`max(minScaleX, minScaleY)` — for both axes. They clamp together,
+stay locked at the limiting axis's floor, recover together. In
+free-aspect mode (Shift+corner), keep independent floors.
+
+### 9.5 Anchor-swap peg must be active-axis-only on edges
+
+First implementation pegged both `cumulativeScaleX` and
+`cumulativeScaleY` to their floors on swap. For corner drags
+that's correct (both axes are active). For edge drags only one
+axis is active — the other stays at 1 throughout. Pegging the
+inactive axis's cumulative to its floor collapsed the inactive
+dimension to MIN_DIM (the "10×10 square" bug when dragging
+bottom-center past the top).
+
+Fix: branch on whether the active anchor is a corner or an edge.
+Edge swap pegs only the relevant axis.
+
+### 9.6 Konva can spike a single huge per-tick scale post un-swap
+
+Right after the anchor un-swaps (user drags back across the
+pivot), Konva's internal anchor reference is stale relative to our
+floor-state mutations and it can report a one-tick `scaleX` signal
+in the dozens. Cumulative *= that → font went to 1000+ pt on
+recovery.
+
+Fix: clamp per-tick scale to `[0.1, 10]` defensively. 10× per-tick
+is plenty for any real drag. Plus a sanity ceiling on cumulative
+(50×) so even compounded weirdness can't run away.
+
+### 9.7 autoHeight + corner drag needs explicit pivot math
+
+For autoHeight text Konva positions `node.y` based on its
+*anticipated* height (`dragStart * scale`), but the actual rendered
+height is auto-derived from font/width and differs. Pivot drifts
+on Y if we use Konva's positioning.
+
+Fix: capture `pivotWorldX/Y` at transformstart (rotation-aware,
+using `localPivotOffset` for the anchor-opposite point), and
+override `node.x/node.y` every tick from `pivot - rotate(off)`.
+The override is unconditional in the final code — same math is
+correct for the cases Konva would have handled too, so simpler to
+always override than to branch.
