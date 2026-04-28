@@ -86,8 +86,10 @@ watch(
 const config = computed(() => ({
   id: props.object.id,
   name: 'object',
-  x: props.object.x,
-  y: props.object.y,
+  x: props.object.x + props.object.width / 2,
+  y: props.object.y + props.object.height / 2,
+  offsetX: props.object.width / 2,
+  offsetY: props.object.height / 2,
   width: props.object.width,
   height: props.object.height,
   rotation: props.object.rotation,
@@ -101,8 +103,10 @@ const config = computed(() => ({
 const placeholderConfig = computed(() => ({
   id: props.object.id,
   name: 'object',
-  x: props.object.x,
-  y: props.object.y,
+  x: props.object.x + props.object.width / 2,
+  y: props.object.y + props.object.height / 2,
+  offsetX: props.object.width / 2,
+  offsetY: props.object.height / 2,
   width: props.object.width,
   height: props.object.height,
   fill: '#fafaf9',
@@ -119,13 +123,13 @@ const placeholderConfig = computed(() => ({
 function onDragMove(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragmove', t.x(), t.y());
+  emit('dragmove', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
 }
 
 function onDragEnd(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragend', t.x(), t.y());
+  emit('dragend', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
 }
 
 function onTransformEnd(): void {
@@ -138,8 +142,8 @@ function onTransformEnd(): void {
   node.scaleX(1);
   node.scaleY(1);
   emit('transformend', {
-    x: node.x(),
-    y: node.y(),
+    x: node.x() - newWidth / 2,
+    y: node.y() - newHeight / 2,
     width: newWidth,
     height: newHeight,
     rotation: node.rotation(),

@@ -87,8 +87,10 @@ const baseConfig = computed(() => ({
 
 const rectConfig = computed(() => ({
   ...baseConfig.value,
-  x: props.object.x,
-  y: props.object.y,
+  x: props.object.x + props.object.width / 2,
+  y: props.object.y + props.object.height / 2,
+  offsetX: props.object.width / 2,
+  offsetY: props.object.height / 2,
   width: props.object.width,
   height: props.object.height,
   cornerRadius: props.object.cornerRadius ?? 0,
@@ -116,8 +118,10 @@ const lineConfig = computed(() => {
   }
   return {
     ...baseConfig.value,
-    x: props.object.x,
-    y: props.object.y,
+    x: props.object.x + props.object.width / 2,
+    y: props.object.y + props.object.height / 2,
+    offsetX: props.object.width / 2,
+    offsetY: props.object.height / 2,
     points,
     fill: undefined,
     stroke: props.object.color,
@@ -126,29 +130,17 @@ const lineConfig = computed(() => {
   };
 });
 
+// All shapes render with centre offset — translate back to top-left for storage.
 function onDragMove(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  let x = t.x();
-  let y = t.y();
-  // For ellipses, the node origin is the center — translate back to top-left.
-  if (props.object.shape === 'ellipse') {
-    x -= props.object.width / 2;
-    y -= props.object.height / 2;
-  }
-  emit('dragmove', x, y);
+  emit('dragmove', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
 }
 
 function onDragEnd(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  let x = t.x();
-  let y = t.y();
-  if (props.object.shape === 'ellipse') {
-    x -= props.object.width / 2;
-    y -= props.object.height / 2;
-  }
-  emit('dragend', x, y);
+  emit('dragend', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
 }
 
 function onTransformEnd(): void {
@@ -156,22 +148,13 @@ function onTransformEnd(): void {
   if (!node) return;
   const sx = node.scaleX();
   const sy = node.scaleY();
-  let nodeWidth = node.width();
-  let nodeHeight = node.height();
-  // Ellipse stores radii — but Konva's `width()` returns the full size in v9.
-  const newWidth = Math.max(8, nodeWidth * sx);
-  const newHeight = Math.max(8, nodeHeight * sy);
+  const newWidth = Math.max(8, node.width() * sx);
+  const newHeight = Math.max(8, node.height() * sy);
   node.scaleX(1);
   node.scaleY(1);
-  let x = node.x();
-  let y = node.y();
-  if (props.object.shape === 'ellipse') {
-    x -= newWidth / 2;
-    y -= newHeight / 2;
-  }
   emit('transformend', {
-    x,
-    y,
+    x: node.x() - newWidth / 2,
+    y: node.y() - newHeight / 2,
     width: newWidth,
     height: newHeight,
     rotation: node.rotation(),

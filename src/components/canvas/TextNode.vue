@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watchPostEffect } from 'vue';
 import { applyTemplate, type TextObject } from '@burnmark-io/designer-core';
 import { useDataStore } from '@/stores/data';
 
@@ -54,11 +54,22 @@ interface KonvaNodeRef {
 
 const nodeRef = ref<KonvaNodeRef | null>(null);
 
+// For autoHeight text the stored object.height is stale until Konva measures
+// the rendered text. We read the natural height post-render so the rotation
+// pivot stays at the visual centre even as content/font/wrap changes.
+const measuredHeight = ref(props.object.height ?? 0);
+
+const renderHeight = computed(() =>
+  props.object.autoHeight ? measuredHeight.value : props.object.height,
+);
+
 const config = computed(() => ({
   id: props.object.id,
   name: 'object',
-  x: props.object.x,
-  y: props.object.y,
+  x: props.object.x + props.object.width / 2,
+  y: props.object.y + renderHeight.value / 2,
+  offsetX: props.object.width / 2,
+  offsetY: renderHeight.value / 2,
   width: props.object.width,
   height: props.object.autoHeight ? undefined : props.object.height,
   text: applyTemplate(props.object.content, data.currentVariables),
@@ -78,6 +89,19 @@ const config = computed(() => ({
   wrap: props.object.wrap ? 'word' : 'none',
 }));
 
+watchPostEffect(() => {
+  // Touch reactive deps so this re-runs after every Konva config change.
+  void config.value;
+  const node = nodeRef.value?.getNode();
+  if (!node) return;
+  if (props.object.autoHeight) {
+    const h = node.height();
+    if (h && h !== measuredHeight.value) measuredHeight.value = h;
+  } else if (measuredHeight.value !== props.object.height) {
+    measuredHeight.value = props.object.height;
+  }
+});
+
 function textFontStyle(o: TextObject): string {
   const parts: string[] = [];
   if (o.fontStyle === 'italic') parts.push('italic');
@@ -88,13 +112,13 @@ function textFontStyle(o: TextObject): string {
 function onDragMove(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragmove', t.x(), t.y());
+  emit('dragmove', t.x() - props.object.width / 2, t.y() - renderHeight.value / 2);
 }
 
 function onDragEnd(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragend', t.x(), t.y());
+  emit('dragend', t.x() - props.object.width / 2, t.y() - renderHeight.value / 2);
 }
 
 function onTransformEnd(): void {
@@ -107,8 +131,8 @@ function onTransformEnd(): void {
   node.scaleX(1);
   node.scaleY(1);
   emit('transformend', {
-    x: node.x(),
-    y: node.y(),
+    x: node.x() - newWidth / 2,
+    y: node.y() - newHeight / 2,
     width: newWidth,
     height: newHeight,
     rotation: node.rotation(),
