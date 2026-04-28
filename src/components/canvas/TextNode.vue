@@ -148,12 +148,7 @@ function onDragEnd(event: { target?: { x?: () => number; y?: () => number } }): 
 const MIN_DIM = 10;
 const MIN_FONT = 4;
 
-const CORNER_ANCHORS = new Set([
-  'top-left',
-  'top-right',
-  'bottom-left',
-  'bottom-right',
-]);
+const CORNER_ANCHORS = new Set(['top-left', 'top-right', 'bottom-left', 'bottom-right']);
 
 function isCornerHandle(anchorName: string): boolean {
   return CORNER_ANCHORS.has(anchorName);
@@ -184,11 +179,7 @@ function isProportional(): boolean {
  * Vector from the bbox centre to the anchor opposite the dragged one,
  * in the node's local (un-rotated) frame.
  */
-function localPivotOffset(
-  anchor: string,
-  w: number,
-  h: number,
-): { x: number; y: number } {
+function localPivotOffset(anchor: string, w: number, h: number): { x: number; y: number } {
   switch (anchor) {
     case 'top-left':
       return { x: w / 2, y: h / 2 };
@@ -269,8 +260,7 @@ function onTransform(): void {
       cumulativeScaleX = xFloor;
       cumulativeScaleY = yFloor;
     } else {
-      const horizEdge =
-        dragStartAnchor === 'middle-left' || dragStartAnchor === 'middle-right';
+      const horizEdge = dragStartAnchor === 'middle-left' || dragStartAnchor === 'middle-right';
       if (horizEdge) cumulativeScaleX = xFloor;
       else cumulativeScaleY = yFloor;
     }
