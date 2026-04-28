@@ -1,18 +1,21 @@
 # label-maker — Amendment: Printer Connection UX
 
-> **Implementation status (2026-04-29):**
-> - §5 (cancel reset bug fix) — **shipped**. `setAdapter(null)` now
->   unconditionally transitions to `'disconnected'`; covers the
->   precondition called out for `amendment-printer-status-polling.md`.
->   Regression tests added: `setConnecting → setAdapter(null)` and
->   `setError → setAdapter(null)` both land on `'disconnected'`.
-> - §3 (browser-capability composable), §4 (connect-affordance UI /
->   browser-not-supported panel), §6 (connection-error help link),
->   §7 edge cases that depend on those — **still pending**. Next
->   agent: pick up from §3.1; nothing in this amendment is now
->   blocked by the bug fix.
-> - §9 implementation checklist: cancel-bug-fix block (3 boxes) is
->   ticked; everything else still open.
+> **Status: implemented (2026-04-29).** Two-PR landing:
+> - PR 1 — §5 cancel reset bug fix: `setAdapter(null)` unconditionally
+>   transitions to `'disconnected'`. Regression tests for the
+>   `connecting → null` and `error → null` paths.
+> - PR 2 — §3 `useBrowserCapabilities` composable, §4 three-branch
+>   connect-affordance UI (both / one / neither transport) with
+>   browser-not-supported panel + per-browser copy + "Why this is?"
+>   expander, §6 `PRINTER_HELP_URL` and inline help link in error
+>   states. `useAutoReconnect` migrated to the composable; the
+>   `isWebUsbAvailable` / `isWebSerialAvailable` helpers in
+>   `connect.ts` remain for non-UI consumers.
+>
+> Out-of-scope items called out in §2 are still out: no WebBluetooth
+> transport, no per-error-code help drill-down, no dynamic capability
+> re-detection, no support-site content (the `PRINTER_HELP_URL`
+> placeholder will 404 until the page lands).
 
 > Three rough edges in the printer connection flow:
 >
@@ -541,24 +544,24 @@ No designer-core changes. No driver changes.
 
 ```
 Capability detection:
-□ src/composables/useBrowserCapabilities.ts — reactive webUsb,
+☑ src/composables/useBrowserCapabilities.ts — reactive webUsb,
   webSerial, webBluetooth, hasAnyTransport, browser
-□ Browser detection via UA (chrome / edge / firefox / safari /
+☑ Browser detection via UA (chrome / edge / firefox / safari /
   opera / other)
-□ PrinterPopover migrates from direct helper calls to the
+☑ PrinterPopover migrates from direct helper calls to the
   composable
-□ Other consumers (useAutoReconnect, etc.) migrate where they
+☑ Other consumers (useAutoReconnect, etc.) migrate where they
   read capability state for UI purposes; internals can keep
   helper calls
 
 Connect-affordance branches:
-□ When hasAnyTransport === false, hide buttons and render the
+☑ When hasAnyTransport === false, hide buttons and render the
   browser-not-supported panel
-□ Per-browser copy variant (firefox / safari / other) in the
+☑ Per-browser copy variant (firefox / safari / other) in the
   panel
-□ "Why this is?" expander revealing the longer explanation
-□ When only one transport is available, show only that button
-□ Drop the unconditional WebUSB button + redundant
+☑ "Why this is?" expander revealing the longer explanation
+☑ When only one transport is available, show only that button
+☑ Drop the unconditional WebUSB button + redundant
   "WebUSB unavailable" note
 
 Cancel bug fix:
@@ -571,17 +574,17 @@ Cancel bug fix:
   not !disconnected)
 
 Help link:
-□ src/lib/printer/help.ts exports PRINTER_HELP_URL
-□ PrinterPopover error display includes a "Need help
+☑ src/lib/printer/help.ts exports PRINTER_HELP_URL
+☑ PrinterPopover error display includes a "Need help
   connecting?" link opening PRINTER_HELP_URL in a new tab
-□ Link rel="noopener noreferrer"
+☑ Link rel="noopener noreferrer"
 
 i18n:
-□ printer.unsupportedBrowser.* (title, body, perBrowser.firefox/
+☑ printer.unsupportedBrowser.* (title, body, perBrowser.firefox/
   safari/other, whyExpander, whyExplanation)
-□ printer.helpLink ("Need help connecting?")
-□ Existing printer.noWebUsb removed — replaced by the panel
-□ Apply to en + every other locale
+☑ printer.helpLink ("Need help connecting?")
+☑ Existing printer.noWebUsb removed — replaced by the panel
+☑ Apply to en + every other locale
 ```
 
 ---

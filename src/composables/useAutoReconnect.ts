@@ -1,6 +1,7 @@
 import { onMounted } from 'vue';
 import { usePrinterStore } from '@/stores/printer';
-import { isWebUsbAvailable, tryReconnectUsb } from '@/lib/printer/connect';
+import { tryReconnectUsb } from '@/lib/printer/connect';
+import { useBrowserCapabilities } from './useBrowserCapabilities';
 
 /**
  * On app load, try to reopen the most recently paired USB printer
@@ -12,9 +13,10 @@ import { isWebUsbAvailable, tryReconnectUsb } from '@/lib/printer/connect';
  */
 export function useAutoReconnect(): void {
   const printer = usePrinterStore();
+  const { webUsb } = useBrowserCapabilities();
 
   onMounted(async () => {
-    if (!isWebUsbAvailable()) return;
+    if (!webUsb.value) return;
     // Skip if we already have an adapter (e.g. HMR, double-mount).
     if (printer.adapter) return;
 

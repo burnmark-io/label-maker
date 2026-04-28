@@ -4,21 +4,55 @@
     <transition name="popover-fade">
       <div v-if="open" class="popover__panel" role="dialog" :aria-label="t('printer.popoverTitle')">
         <div v-if="!printer.isConnected" class="popover__section">
-          <p class="popover__heading">{{ t('printer.connectHeading') }}</p>
-          <button class="popover__btn popover__btn--primary" type="button" @click="connectUsb">
-            {{ t('printer.connectUsb') }}
-          </button>
-          <button
-            v-if="serialAvailable"
-            class="popover__btn"
-            type="button"
-            :title="t('printer.connectSerialHint')"
-            @click="connectSerial"
-          >
-            {{ t('printer.connectSerial') }}
-          </button>
-          <p v-if="!usbAvailable" class="popover__note">{{ t('printer.noWebUsb') }}</p>
-          <p v-if="connectError" class="popover__error">{{ connectError }}</p>
+          <template v-if="hasAnyTransport">
+            <p class="popover__heading">{{ t('printer.connectHeading') }}</p>
+            <button
+              v-if="webUsb"
+              class="popover__btn popover__btn--primary"
+              type="button"
+              @click="connectUsb"
+            >
+              {{ t('printer.connectUsb') }}
+            </button>
+            <button
+              v-if="webSerial"
+              class="popover__btn"
+              :class="{ 'popover__btn--primary': !webUsb }"
+              type="button"
+              :title="t('printer.connectSerialHint')"
+              @click="connectSerial"
+            >
+              {{ t('printer.connectSerial') }}
+            </button>
+            <p v-if="connectError" class="popover__error">
+              {{ connectError }}
+              <a
+                class="popover__help-link"
+                :href="PRINTER_HELP_URL"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ t('printer.helpLink') }} ↗
+              </a>
+            </p>
+          </template>
+          <template v-else>
+            <p class="popover__heading">{{ t('printer.unsupportedBrowser.title') }}</p>
+            <p class="popover__note">{{ unsupportedCopy }}</p>
+            <p class="popover__note">{{ t('printer.unsupportedBrowser.body') }}</p>
+            <button
+              class="popover__why"
+              type="button"
+              :aria-expanded="whyOpen"
+              @click="whyOpen = !whyOpen"
+            >
+              {{ t('printer.unsupportedBrowser.whyExpander') }}
+              <span aria-hidden="true">{{ whyOpen ? '▴' : '▾' }}</span>
+            </button>
+            <p v-if="whyOpen" class="popover__why-body">
+              {{ t('printer.unsupportedBrowser.whyExplanation') }}
+            </p>
+          </template>
         </div>
 
         <div v-else class="popover__section">
@@ -42,28 +76,43 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PrinterStatus from './PrinterStatus.vue';
 import { usePrinterStore } from '@/stores/printer';
-import { isWebSerialAvailable, isWebUsbAvailable, requestUsbPrinter } from '@/lib/printer/connect';
+import { requestUsbPrinter } from '@/lib/printer/connect';
 import { openBrotherQLViaSerial } from '@/lib/printer/drivers';
+import { useBrowserCapabilities } from '@/composables/useBrowserCapabilities';
+import { PRINTER_HELP_URL } from '@/lib/printer/help';
 
 const { t } = useI18n();
 const printer = usePrinterStore();
+const { webUsb, webSerial, hasAnyTransport, browser } = useBrowserCapabilities();
 
 const open = ref(false);
+const whyOpen = ref(false);
 const rootRef = ref<HTMLElement | null>(null);
 const connectError = ref<string | null>(null);
 
-const usbAvailable = computed(() => isWebUsbAvailable());
-const serialAvailable = computed(() => isWebSerialAvailable());
 const detectedName = computed(() => printer.detectedMedia?.name ?? null);
+
+const unsupportedCopy = computed(() => {
+  switch (browser.value) {
+    case 'firefox':
+      return t('printer.unsupportedBrowser.perBrowser.firefox');
+    case 'safari':
+      return t('printer.unsupportedBrowser.perBrowser.safari');
+    default:
+      return t('printer.unsupportedBrowser.perBrowser.other');
+  }
+});
 
 function toggle(): void {
   open.value = !open.value;
   connectError.value = null;
+  whyOpen.value = false;
 }
 
 function close(): void {
   open.value = false;
   connectError.value = null;
+  whyOpen.value = false;
 }
 
 async function connectUsb(): Promise<void> {
@@ -215,6 +264,46 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: var(--text-xs);
   color: var(--color-error);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.popover__help-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  font-weight: var(--weight-medium);
+}
+
+.popover__help-link:hover {
+  color: var(--color-primary-hover);
+}
+
+.popover__why {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.popover__why:hover {
+  color: var(--color-primary-hover);
+}
+
+.popover__why-body {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 
 .popover-fade-enter-active,

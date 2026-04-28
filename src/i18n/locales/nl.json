@@ -52,7 +52,18 @@
     "connectUsb": "Verbinden via USB",
     "connectSerial": "Verbinden via Bluetooth",
     "connectSerialHint": "Voor OS-gekoppelde Bluetooth SPP printers (bijv. QL-820NWB)",
-    "noWebUsb": "Je browser ondersteunt geen WebUSB. Probeer Chrome of Edge.",
+    "unsupportedBrowser": {
+      "title": "Een printer verbinden werkt in Chrome, Edge of Opera.",
+      "body": "Ontwerpen kan hier prima — printen heeft een andere browser nodig.",
+      "perBrowser": {
+        "firefox": "WebSerial komt in Firefox Nightly. Met de stabiele Firefox kun je ontwerpen, maar nog niet printen naar USB- of serial-printers — gebruik daarvoor Chrome, Edge of Opera.",
+        "safari": "Safari en browsers op iOS ondersteunen geen webverbinding met printers. Gebruik Chrome, Edge of Opera op desktop of Android.",
+        "other": "Gebruik Chrome, Edge of Opera om een printer te verbinden."
+      },
+      "whyExpander": "Waarom is dat zo?",
+      "whyExplanation": "Een printer verbinden vanaf een website gebruikt twee web-API's — WebUSB en WebSerial — die alleen in browsers op Chromium-basis zitten. Firefox begint WebSerial te ondersteunen. Safari heeft ervoor gekozen ze niet te leveren. De editor zelf werkt in elke browser; alleen het verbinden met een printer vraagt om Chromium."
+    },
+    "helpLink": "Hulp nodig met verbinden?",
     "disconnect": "Verbinding verbreken",
     "popoverTitle": "Printerverbinding",
     "media": "Media",

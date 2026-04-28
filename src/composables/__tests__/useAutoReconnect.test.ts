@@ -8,8 +8,17 @@ import { usePrinterStore } from '@/stores/printer';
 import { useAutoReconnect } from '../useAutoReconnect';
 
 vi.mock('@/lib/printer/connect', () => ({
-  isWebUsbAvailable: () => true,
   tryReconnectUsb: vi.fn(),
+}));
+
+vi.mock('../useBrowserCapabilities', () => ({
+  useBrowserCapabilities: () => ({
+    webUsb: { value: true },
+    webSerial: { value: false },
+    webBluetooth: { value: false },
+    hasAnyTransport: { value: true },
+    browser: { value: 'chrome' },
+  }),
 }));
 
 import { tryReconnectUsb } from '@/lib/printer/connect';
