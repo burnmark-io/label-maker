@@ -194,32 +194,147 @@ describe('PropertiesPanel', () => {
     expect(positionTrigger?.attributes('aria-expanded')).toBe('false');
   });
 
-  it('selection header is renameable for single-object selection', async () => {
-    documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
-    selectionRef.value = ['obj-1'];
-    const wrapper = mountPanel();
-    const headerEditable = wrapper.find('.properties-panel__header .editable__display');
-    expect(headerEditable.exists()).toBe(true);
-    await headerEditable.trigger('click');
-    const input = wrapper.find('.properties-panel__header .editable__input');
-    (input.element as HTMLInputElement).value = 'Renamed';
-    await input.trigger('input');
-    await input.trigger('keydown.enter');
-    expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'Renamed' });
-  });
+  describe('Selection header rename', () => {
+    it('shows a persistent [✎] button for single-object selection', () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      const renameBtn = wrapper.find('.properties-panel__rename-btn');
+      expect(renameBtn.exists()).toBe(true);
+      expect(renameBtn.attributes('aria-label')).toBe('Rename');
+      // No EditableText in the header anymore.
+      expect(wrapper.find('.properties-panel__header .editable__display').exists()).toBe(false);
+    });
 
-  it('selection header is NOT renameable for multi-select', () => {
-    documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
-    selectionRef.value = ['obj-1', 'obj-2'];
-    const wrapper = mountPanel();
-    expect(wrapper.find('.properties-panel__header .editable__display').exists()).toBe(false);
-    expect(wrapper.find('.properties-panel__header').text()).toContain('2 items selected');
-  });
+    it('clicking the name itself does not enter rename mode', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      const nameSpan = wrapper.find('.properties-panel__header-context');
+      await nameSpan.trigger('click');
+      expect(wrapper.find('.properties-panel__rename-input').exists()).toBe(false);
+    });
 
-  it('selection header is NOT renameable for the document branch', () => {
-    selectionRef.value = [DOCUMENT_SELECTION_ID];
-    const wrapper = mountPanel();
-    expect(wrapper.find('.properties-panel__header .editable__display').exists()).toBe(false);
+    it('clicking [✎] reveals the input pre-filled with the current name', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      const input = wrapper.find<HTMLInputElement>('.properties-panel__rename-input');
+      expect(input.exists()).toBe(true);
+      expect(input.element.value).toBe('Hello');
+    });
+
+    it('Enter commits the edited name and returns to display state', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      const input = wrapper.find('.properties-panel__rename-input');
+      (input.element as HTMLInputElement).value = 'Renamed';
+      await input.trigger('input');
+      await input.trigger('keydown.enter');
+      expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'Renamed' });
+      expect(wrapper.find('.properties-panel__rename-input').exists()).toBe(false);
+    });
+
+    it('clicking [✓] commits the edited name', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      const input = wrapper.find('.properties-panel__rename-input');
+      (input.element as HTMLInputElement).value = 'From check';
+      await input.trigger('input');
+      await wrapper.find('.properties-panel__rename-confirm').trigger('click');
+      expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'From check' });
+    });
+
+    it('Escape cancels — name unchanged, returns to display state', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      const input = wrapper.find('.properties-panel__rename-input');
+      (input.element as HTMLInputElement).value = 'Discarded';
+      await input.trigger('input');
+      await input.trigger('keydown.escape');
+      // Subsequent blur fires after Escape (real DOM does this); commit
+      // must early-return because renaming is already false.
+      await input.trigger('blur');
+      expect(updateObjectSpy).not.toHaveBeenCalled();
+      expect(wrapper.find('.properties-panel__rename-input').exists()).toBe(false);
+    });
+
+    it('blur commits (same as Enter)', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      const input = wrapper.find('.properties-panel__rename-input');
+      (input.element as HTMLInputElement).value = 'Via blur';
+      await input.trigger('input');
+      await input.trigger('blur');
+      expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'Via blur' });
+    });
+
+    it('empty submit reverts (no update)', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      const input = wrapper.find('.properties-panel__rename-input');
+      (input.element as HTMLInputElement).value = '   ';
+      await input.trigger('input');
+      await input.trigger('keydown.enter');
+      expect(updateObjectSpy).not.toHaveBeenCalled();
+    });
+
+    it('Deselect button is hidden during rename and visible in display state', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      expect(wrapper.find('.properties-panel__deselect').exists()).toBe(true);
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      expect(wrapper.find('.properties-panel__deselect').exists()).toBe(false);
+      await wrapper.find('.properties-panel__rename-input').trigger('keydown.escape');
+      expect(wrapper.find('.properties-panel__deselect').exists()).toBe(true);
+    });
+
+    it('multi-select header has no [✎] button', () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
+      selectionRef.value = ['obj-1', 'obj-2'];
+      const wrapper = mountPanel();
+      expect(wrapper.find('.properties-panel__rename-btn').exists()).toBe(false);
+      expect(wrapper.find('.properties-panel__header').text()).toContain('2 items selected');
+    });
+
+    it('document selection header has no [✎] button', () => {
+      selectionRef.value = [DOCUMENT_SELECTION_ID];
+      const wrapper = mountPanel();
+      expect(wrapper.find('.properties-panel__rename-btn').exists()).toBe(false);
+    });
+
+    it('selecting a different object while in rename mode resets to display state', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__rename-btn').trigger('click');
+      expect(wrapper.find('.properties-panel__rename-input').exists()).toBe(true);
+      selectionRef.value = ['obj-2'];
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find('.properties-panel__rename-input').exists()).toBe(false);
+      expect(wrapper.find('.properties-panel__rename-btn').exists()).toBe(true);
+    });
+
+    it('renders auto-name placeholder in muted style when object has no custom name', () => {
+      documentRef.value = makeDoc([makeText('obj-1')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      const ctx = wrapper.find('.properties-panel__header-context');
+      expect(ctx.classes()).toContain('properties-panel__header-context--auto');
+      expect(ctx.text()).toBe('text');
+    });
   });
 
   describe('Delete affordance', () => {

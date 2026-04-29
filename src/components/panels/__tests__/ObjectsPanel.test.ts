@@ -150,53 +150,37 @@ function makeText(id: string, name?: string): LabelObject {
   } as unknown as LabelObject;
 }
 
-describe('ObjectsPanel — inline rename', () => {
+describe('ObjectsPanel — no inline rename', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     selectionRef.value = [];
     documentRef.value = makeDoc([makeText('obj-1', 'Text 1')]);
+    selectSpy.mockClear();
     updateObjectSpy.mockClear();
   });
 
-  it('clicking the row name opens the rename input', async () => {
+  it('renders the object name as plain text — no EditableText, no rename input', () => {
     const wrapper = mountPanel();
-    const editable = wrapper.findAll('.editable__display').at(-1);
-    expect(editable).toBeDefined();
-    await editable!.trigger('click');
-    expect(wrapper.find('.editable__input').exists()).toBe(true);
+    expect(wrapper.find('.editable__display').exists()).toBe(false);
+    expect(wrapper.find('.editable__input').exists()).toBe(false);
+    const label = wrapper.findAll('.objects-list__label').at(-1);
+    expect(label?.text()).toBe('Text 1');
+    expect(label?.element.tagName).toBe('SPAN');
   });
 
-  it('committing a non-empty name calls updateObject with the trimmed value', async () => {
+  it('falls back to the type label when the object has no custom name', () => {
+    documentRef.value = makeDoc([makeText('obj-1')]);
     const wrapper = mountPanel();
-    const editable = wrapper.findAll('.editable__display').at(-1);
-    await editable!.trigger('click');
-    const input = wrapper.find('.editable__input');
-    (input.element as HTMLInputElement).value = '  Greeting  ';
-    await input.trigger('input');
-    await input.trigger('keydown.enter');
-    expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'Greeting' });
+    const label = wrapper.findAll('.objects-list__label').at(-1);
+    expect(label?.text()).toBe('text');
   });
 
-  it('clamps very long names to 80 characters', async () => {
+  it('clicking anywhere on the row (including the name) selects the object', async () => {
     const wrapper = mountPanel();
-    const editable = wrapper.findAll('.editable__display').at(-1);
-    await editable!.trigger('click');
-    const input = wrapper.find('.editable__input');
-    const longName = 'a'.repeat(120);
-    (input.element as HTMLInputElement).value = longName;
-    await input.trigger('input');
-    await input.trigger('keydown.enter');
-    expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'a'.repeat(80) });
-  });
-
-  it('discards an empty/whitespace-only commit (no updateObject call)', async () => {
-    const wrapper = mountPanel();
-    const editable = wrapper.findAll('.editable__display').at(-1);
-    await editable!.trigger('click');
-    const input = wrapper.find('.editable__input');
-    (input.element as HTMLInputElement).value = '   ';
-    await input.trigger('input');
-    await input.trigger('keydown.enter');
+    const rows = wrapper.findAll('.objects-list__row');
+    const objectRow = rows[rows.length - 1]!;
+    await objectRow.trigger('click');
+    expect(selectSpy).toHaveBeenCalledWith(['obj-1']);
     expect(updateObjectSpy).not.toHaveBeenCalled();
   });
 });

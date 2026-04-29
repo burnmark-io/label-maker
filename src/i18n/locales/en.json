@@ -236,7 +236,8 @@
     "headerSingle": "{name}",
     "headerMulti": "{count} items selected",
     "headerDocument": "Document",
-    "rename": "Rename"
+    "rename": "Rename",
+    "confirmRename": "Save"
   },
   "objectTypes": {
     "text": "Text",

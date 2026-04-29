@@ -236,7 +236,8 @@
     "headerSingle": "{name}",
     "headerMulti": "{count} items geselecteerd",
     "headerDocument": "Document",
-    "rename": "Hernoemen"
+    "rename": "Hernoemen",
+    "confirmRename": "Opslaan"
   },
   "objectTypes": {
     "text": "Tekst",

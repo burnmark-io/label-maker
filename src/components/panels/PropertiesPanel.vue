@@ -6,16 +6,49 @@
     <!-- Document or object — both get the sticky header -->
     <template v-else>
       <header class="properties-panel__header">
-        <EditableText
-          v-if="renameTarget"
-          class="properties-panel__header-context"
-          :value="renameTarget.name ?? ''"
-          :edit-label="t('selection.rename')"
-          :placeholder="renameTarget.placeholder"
-          @update="renameSelected"
-        />
+        <template v-if="renameTarget && !renaming">
+          <span
+            class="properties-panel__header-context"
+            :class="{ 'properties-panel__header-context--auto': !renameTarget.name }"
+          >
+            {{ renameTarget.name || renameTarget.placeholder }}
+          </span>
+          <button
+            type="button"
+            class="properties-panel__rename-btn"
+            :aria-label="t('selection.rename')"
+            :title="t('selection.rename')"
+            @click="startRename"
+          >
+            <span aria-hidden="true">✎</span>
+          </button>
+        </template>
+        <template v-else-if="renameTarget && renaming">
+          <input
+            ref="renameInputRef"
+            v-model="renameDraft"
+            type="text"
+            class="properties-panel__rename-input"
+            :aria-label="t('selection.rename')"
+            :placeholder="renameTarget.placeholder"
+            @keydown.enter.prevent="commitRename"
+            @keydown.escape.prevent="cancelRename"
+            @blur="commitRename"
+          />
+          <button
+            type="button"
+            class="properties-panel__rename-confirm"
+            :aria-label="t('selection.confirmRename')"
+            :title="t('selection.confirmRename')"
+            @mousedown.prevent
+            @click="commitRename"
+          >
+            <span aria-hidden="true">✓</span>
+          </button>
+        </template>
         <span v-else class="properties-panel__header-context">{{ headerText }}</span>
         <button
+          v-if="!renaming"
           type="button"
           class="properties-panel__deselect"
           :aria-label="t('selection.deselect')"
@@ -66,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore, isDocumentSelected } from '@/stores/designer';
 import type { LabelObject } from '@burnmark-io/designer-core';
@@ -78,7 +111,6 @@ import ShapeProperties from './ShapeProperties.vue';
 import DocumentProperties from './DocumentProperties.vue';
 import AppearanceProperties from './AppearanceProperties.vue';
 import CollapsibleSection from '@/components/common/CollapsibleSection.vue';
-import EditableText from '@/components/common/EditableText.vue';
 import { useObjectActions } from '@/composables/useObjectActions';
 
 const MAX_NAME_LENGTH = 80;
@@ -135,6 +167,41 @@ function renameSelected(next: string): void {
   if (!trimmed) return;
   designer.updateObject(obj.id, { name: trimmed.slice(0, MAX_NAME_LENGTH) });
 }
+
+// Rename mode for the Properties header. The [✎] button enters
+// rename mode; Enter / blur / [✓] commit; Escape cancels. Escape
+// flips `renaming` to false before the resulting blur fires, so the
+// blur's commit early-returns via the `renaming` guard.
+const renaming = ref(false);
+const renameDraft = ref('');
+const renameInputRef = ref<HTMLInputElement | null>(null);
+
+function startRename(): void {
+  if (!renameTarget.value) return;
+  renameDraft.value = renameTarget.value.name ?? '';
+  renaming.value = true;
+  void nextTick(() => {
+    renameInputRef.value?.focus();
+    renameInputRef.value?.select();
+  });
+}
+
+function commitRename(): void {
+  if (!renaming.value) return;
+  renaming.value = false;
+  renameSelected(renameDraft.value);
+}
+
+function cancelRename(): void {
+  renaming.value = false;
+}
+
+// Selecting a different object (or losing the single-object target
+// entirely) drops out of rename mode. The unmounted input/button
+// pair handles its own cleanup.
+watch(renameTarget, () => {
+  renaming.value = false;
+});
 
 // Single-object label truncates the name at ~30 chars so the button
 // doesn't balloon for objects with long auto-names; the full name lands
@@ -203,6 +270,67 @@ function onDeleteClick(): void {
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
+}
+
+.properties-panel__header-context--auto {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.properties-panel__rename-btn,
+.properties-panel__rename-confirm {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--duration-fast) var(--easing),
+    color var(--duration-fast) var(--easing);
+}
+
+.properties-panel__rename-btn:hover,
+.properties-panel__rename-confirm:hover {
+  background: var(--color-bg-canvas);
+  color: var(--color-text);
+}
+
+.properties-panel__rename-btn:focus-visible,
+.properties-panel__rename-confirm:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.properties-panel__rename-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.properties-panel__rename-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+@media (pointer: coarse) {
+  .properties-panel__rename-btn,
+  .properties-panel__rename-confirm {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .properties-panel__deselect {
