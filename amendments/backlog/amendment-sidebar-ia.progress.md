@@ -97,14 +97,11 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
   - Composes existing `useShiftKey` for the Shift bit; adds its own
     Meta/Control listeners.
 
-- [ ] **Step 4 — useTabAutoSwitch composable**
-  - New `src/composables/useTabAutoSwitch.ts`
-  - Watches `designer.selection` + `prefs.sidePanelTab`
-  - Fires §4.1 rules: 0→1+ on Object → Properties; 1+→0 on Properties → Object
-  - Modifier-defer: while building modifier held, suppress; on release,
-    re-evaluate using current tab
-  - Manual choice (Data/Preview) suppresses auto-switch
-  - Tests
+- [x] **Step 4 — useTabAutoSwitch composable** ✓
+  - Watches selection length + buildingHeld; applies the §4 rules
+  - Modifier-held suppresses; release re-evaluates against current tab
+  - 8/8 tests pass (incl. Cmd/Meta as building modifier, Data-tab
+    no-hijack, document-selection treated as non-empty).
 
 - [ ] **Step 5 — SidePanel: 4 tabs + Properties badge**
   - Add 'properties' tab to the tabs computed
