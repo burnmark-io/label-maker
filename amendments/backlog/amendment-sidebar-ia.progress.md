@@ -91,11 +91,11 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
   - Removed the `'properties' → 'objects'` migration
   - Existing migration test rewritten to assert acceptance instead.
 
-- [ ] **Step 3 — useBuildingModifier composable**
-  - New `src/composables/useBuildingModifier.ts` mirroring `useShiftKey`'s
-    singleton pattern
-  - Tracks Shift OR Meta (Mac) OR Ctrl (others)
-  - Exposes a single boolean ref
+- [x] **Step 3 — useBuildingModifier composable** ✓
+  - Singleton-pattern composable returning a `ComputedRef<boolean>`
+  - True while Shift OR Cmd (macOS) OR Ctrl is held
+  - Composes existing `useShiftKey` for the Shift bit; adds its own
+    Meta/Control listeners.
 
 - [ ] **Step 4 — useTabAutoSwitch composable**
   - New `src/composables/useTabAutoSwitch.ts`
