@@ -239,15 +239,23 @@ function onTabClick(id: SidePanelTab): void {
   }
 }
 
-/* Full-viewport drawer on touch + narrow viewports — flush bottom edges
-   so it reads as the primary surface, not a floating sheet (amendment
-   §7.1). Tablet portrait (768–900px) keeps the inset look. */
-@media (pointer: coarse) and (max-width: 768px) {
+/* Full-viewport drawer at narrow viewports — flush edges so it reads as
+   the primary surface, not a floating sheet (amendment §7.1). Driven by
+   viewport width alone, not `(pointer: coarse)`: Firefox's responsive
+   mode doesn't report `pointer: coarse` while Chrome's does, so a
+   combined query left the drawer floating in Firefox even at
+   phone-sized widths. Tablet portrait (768–900px) keeps the inset. */
+@media (max-width: 768px) {
   .side-panel {
     width: 100vw;
     border-left: none;
     border-radius: 0;
   }
+}
+
+/* Touch-target sizing for the tabs is correctly gated to actual touch
+   devices — desktop users with a narrow window don't need the bulk. */
+@media (pointer: coarse) {
   .side-panel__tab {
     /* 44px hit target + padding; amendment §7.4. */
     min-height: 56px;
