@@ -169,6 +169,10 @@
   "properties": {
     "empty": "Pick an object to edit it.",
     "name": "Name",
+    "appearance": "Appearance",
+    "positionAndSize": "Position & size",
+    "visible": "Visible",
+    "locked": "Locked",
     "position": "Position",
     "size": "Size",
     "x": "X",

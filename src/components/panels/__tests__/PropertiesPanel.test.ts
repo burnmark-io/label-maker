@@ -144,13 +144,45 @@ describe('PropertiesPanel', () => {
     expect(deselectSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('hides type-specific component when multi-selecting (only common props)', () => {
+  it('hides type-specific component when multi-selecting (Appearance + Position remain)', () => {
     documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
     selectionRef.value = ['obj-1', 'obj-2'];
     const wrapper = mountPanel();
-    // CommonProperties renders a Name field; TextProperties renders a Content textarea.
-    // For multi-select we should see Name but not Content.
-    expect(wrapper.text()).toContain('Name');
+    // Appearance section is always shown; type-specific Content is hidden.
+    expect(wrapper.text()).toContain('Appearance');
+    expect(wrapper.text()).toContain('Position & size');
     expect(wrapper.text()).not.toContain('Content');
+  });
+
+  it('does not render the name input in Properties (selection header owns the name)', () => {
+    documentRef.value = makeDoc([makeText('obj-1', 'Hello world')]);
+    selectionRef.value = ['obj-1'];
+    const wrapper = mountPanel();
+    // The header still shows the name. CommonProperties no longer has a Name input.
+    const inputs = wrapper.findAll('input[type="text"]');
+    expect(inputs.length).toBe(0);
+  });
+
+  it('renders type-specific section before Appearance and Position', () => {
+    documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+    selectionRef.value = ['obj-1'];
+    const wrapper = mountPanel();
+    const text = wrapper.text();
+    const contentIndex = text.indexOf('Content');
+    const appearanceIndex = text.indexOf('Appearance');
+    const positionIndex = text.indexOf('Position & size');
+    expect(contentIndex).toBeGreaterThan(-1);
+    expect(appearanceIndex).toBeGreaterThan(contentIndex);
+    expect(positionIndex).toBeGreaterThan(appearanceIndex);
+  });
+
+  it('Position & size renders collapsed by default', () => {
+    documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+    selectionRef.value = ['obj-1'];
+    const wrapper = mountPanel();
+    const positionTrigger = wrapper
+      .findAll('.collapsible__trigger')
+      .find(t => t.text().includes('Position & size'));
+    expect(positionTrigger?.attributes('aria-expanded')).toBe('false');
   });
 });

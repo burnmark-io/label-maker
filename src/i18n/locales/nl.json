@@ -169,6 +169,10 @@
   "properties": {
     "empty": "Kies een object om het te bewerken.",
     "name": "Naam",
+    "appearance": "Weergave",
+    "positionAndSize": "Positie & formaat",
+    "visible": "Zichtbaar",
+    "locked": "Vergrendeld",
     "position": "Positie",
     "size": "Grootte",
     "x": "X",

@@ -1,16 +1,5 @@
 <template>
   <div class="props">
-    <label class="props__field">
-      <span>{{ t('properties.name') }}</span>
-      <input
-        type="text"
-        class="props__input"
-        :value="object.name ?? ''"
-        :placeholder="object.type"
-        @input="update('name', ($event.target as HTMLInputElement).value || undefined)"
-      />
-    </label>
-
     <div class="props__row">
       <label class="props__field">
         <span>{{ t('properties.x') }}</span>

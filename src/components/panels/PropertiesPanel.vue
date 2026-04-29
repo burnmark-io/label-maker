@@ -20,13 +20,24 @@
       <div class="properties-panel__body">
         <DocumentProperties v-if="branch === 'document'" />
         <template v-else-if="branch === 'object' && firstObject">
-          <CommonProperties :object="firstObject" />
+          <!-- Type-specific section: leads. What is this thing? -->
           <template v-if="selectedObjects.length === 1">
             <TextProperties v-if="firstObject.type === 'text'" :object="firstObject" />
             <ImageProperties v-else-if="firstObject.type === 'image'" :object="firstObject" />
             <BarcodeProperties v-else-if="firstObject.type === 'barcode'" :object="firstObject" />
             <ShapeProperties v-else-if="firstObject.type === 'shape'" :object="firstObject" />
           </template>
+
+          <!-- Appearance: opacity, visible, locked. Frequently adjusted. -->
+          <AppearanceProperties :object="firstObject" />
+
+          <!-- Position & Size: collapsed by default; most users drag on canvas. -->
+          <CollapsibleSection
+            :title="t('properties.positionAndSize')"
+            :storage-key="positionStorageKey"
+          >
+            <CommonProperties :object="firstObject" />
+          </CollapsibleSection>
         </template>
       </div>
     </template>
@@ -44,6 +55,8 @@ import ImageProperties from './ImageProperties.vue';
 import BarcodeProperties from './BarcodeProperties.vue';
 import ShapeProperties from './ShapeProperties.vue';
 import DocumentProperties from './DocumentProperties.vue';
+import AppearanceProperties from './AppearanceProperties.vue';
+import CollapsibleSection from '@/components/common/CollapsibleSection.vue';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
@@ -60,6 +73,11 @@ const selectedObjects = computed<LabelObject[]>(() => {
 });
 
 const firstObject = computed<LabelObject | undefined>(() => selectedObjects.value[0]);
+
+const positionStorageKey = computed<string>(() => {
+  const t = firstObject.value?.type ?? 'object';
+  return `properties.collapsible.${t}.position`;
+});
 
 const headerText = computed<string>(() => {
   if (branch.value === 'document') return t('selection.headerDocument');
