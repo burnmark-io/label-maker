@@ -71,7 +71,18 @@
     "autoDetected": "auto-detected",
     "detectedMedia": "Detected: {name}",
     "noMediaDetected": "No media detected.",
-    "changeSizeHint": "Change the label size from the top-bar size selector."
+    "changeSizeHint": "Change the label size from the top-bar size selector.",
+    "errors": {
+      "no_media": "No labels or tape loaded",
+      "not_ready": "Printer is busy",
+      "cover_open": "Cover is open",
+      "paper_jam": "Paper jam",
+      "cutter_jam": "Cutter jam",
+      "media_end": "End of roll reached",
+      "label_too_long": "Label is too long for the printer",
+      "wrong_media": "Wrong media for this label — check the loaded roll",
+      "low_media": "Media is running low"
+    }
   },
   "preview": {
     "title": "Print preview",

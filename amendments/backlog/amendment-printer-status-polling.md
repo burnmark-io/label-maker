@@ -422,12 +422,17 @@ Use the error code as part of the translation key:
 import type { PrinterError } from '@thermal-label/contracts';
 
 export function localisedErrorMessage(error: PrinterError, t: (k: string) => string): string {
-  const key = `printer.error.${error.code}`;
+  const key = `printer.errors.${error.code}`;
   const translated = t(key);
   // vue-i18n returns the key itself when no translation exists.
   return translated === key ? error.message : translated;
 }
 ```
+
+The plural namespace (`printer.errors.`, not `printer.error.`) avoids
+colliding with the existing scalar `printer.error` connection-lost
+label used by `PrinterStatus.vue`. Renaming that key would have
+required touching every locale; the plural form sidesteps it.
 
 The translation file holds canonical, polished strings for known
 codes; unknown codes fall back to the driver's `message` so a new
@@ -783,7 +788,7 @@ First-occurrence toast:
 Error i18n helper:
 □ src/composables/usePrinterErrors.ts exporting
   localisedErrorMessage(error, t) per §4.4
-□ Seed printer.error.* keys for the 9 canonical codes
+□ Seed printer.errors.* keys for the 9 canonical codes
   (no_media, not_ready, cover_open, paper_jam, cutter_jam,
   media_end, label_too_long, wrong_media, low_media)
 □ Apply localisedErrorMessage anywhere errors are rendered:

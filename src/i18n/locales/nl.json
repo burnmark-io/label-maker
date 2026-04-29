@@ -71,7 +71,18 @@
     "autoDetected": "automatisch gedetecteerd",
     "detectedMedia": "Gedetecteerd: {name}",
     "noMediaDetected": "Geen media gedetecteerd.",
-    "changeSizeHint": "Wijzig de labelmaat via de maatkiezer in de bovenbalk."
+    "changeSizeHint": "Wijzig de labelmaat via de maatkiezer in de bovenbalk.",
+    "errors": {
+      "no_media": "Geen labels of tape geladen",
+      "not_ready": "Printer is bezig",
+      "cover_open": "Klep staat open",
+      "paper_jam": "Papier vastgelopen",
+      "cutter_jam": "Snijmes vastgelopen",
+      "media_end": "Einde van de rol bereikt",
+      "label_too_long": "Label is te lang voor de printer",
+      "wrong_media": "Verkeerde media voor dit label — controleer de geladen rol",
+      "low_media": "Media raakt op"
+    }
   },
   "preview": {
     "title": "Print voorbeeld",
