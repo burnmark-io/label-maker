@@ -72,6 +72,7 @@
     "detectedMedia": "Detected: {name}",
     "noMediaDetected": "No media detected.",
     "changeSizeHint": "Change the label size from the top-bar size selector.",
+    "lastCheckedSeconds": "Last checked: {seconds}s ago",
     "errors": {
       "no_media": "No labels or tape loaded",
       "not_ready": "Printer is busy",

@@ -1,5 +1,11 @@
 <template>
-  <button class="status" type="button" :title="label" :aria-expanded="open" aria-haspopup="dialog">
+  <button
+    class="status"
+    type="button"
+    :title="tooltip"
+    :aria-expanded="open"
+    aria-haspopup="dialog"
+  >
     <span class="status__dot" :class="`status__dot--${dotClass}`" aria-hidden="true" />
     <span class="status__label">{{ label }}</span>
   </button>
@@ -9,23 +15,52 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
+import { FAMILIES_WITH_STATUS_POLLING } from '@/lib/printer/registry';
+import { localisedErrorMessage } from '@/composables/usePrinterErrors';
 
 defineProps<{ open?: boolean }>();
 
 const { t } = useI18n();
 const printer = usePrinterStore();
 
+type PillState = 'disconnected' | 'connecting' | 'ready' | 'warning' | 'error';
+
+const pillState = computed<PillState>(() => {
+  const c = printer.connection;
+  if (c.kind === 'disconnected') return 'disconnected';
+  if (c.kind === 'connecting') return 'connecting';
+  if (c.kind === 'error') return 'error';
+  // connected — derive from the last poll. Pre-first-tick (lastStatus
+  // null) we show ready rather than "unknown" to avoid a yellow flash
+  // every time someone reconnects.
+  if (!FAMILIES_WITH_STATUS_POLLING.has(c.family)) return 'ready';
+  const status = printer.lastStatus;
+  if (!status) return 'ready';
+  if (!status.ready) return 'error';
+  if (status.errors.length > 0) return 'warning';
+  return 'ready';
+});
+
 const dotClass = computed(() => {
-  switch (printer.connection.kind) {
-    case 'connected':
+  switch (pillState.value) {
+    case 'ready':
       return 'green';
-    case 'connecting':
+    case 'warning':
       return 'yellow';
     case 'error':
       return 'red';
-    default:
+    case 'connecting':
+      return 'yellow';
+    case 'disconnected':
       return printer.lastPaired ? 'yellow' : 'gray';
   }
+});
+
+const primaryErrorMessage = computed(() => {
+  const status = printer.lastStatus;
+  const first = status?.errors[0];
+  if (!first) return null;
+  return localisedErrorMessage(first, t);
 });
 
 const label = computed(() => {
@@ -44,6 +79,13 @@ const label = computed(() => {
   }
   return t('printer.disconnected');
 });
+
+/**
+ * Native title tooltip — surfaces the primary error first when there
+ * is one (the user wants to know *why* the dot is red without opening
+ * the popover); falls back to the connection label otherwise.
+ */
+const tooltip = computed(() => primaryErrorMessage.value ?? label.value);
 </script>
 
 <style scoped>

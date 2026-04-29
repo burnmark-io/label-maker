@@ -61,6 +61,12 @@
             {{ t('printer.detectedMedia', { name: detectedName }) }}
           </p>
           <p v-else class="popover__note">{{ t('printer.noMediaDetected') }}</p>
+          <ul v-if="errorMessages.length > 0" class="popover__errors">
+            <li v-for="(msg, idx) in errorMessages" :key="idx">{{ msg }}</li>
+          </ul>
+          <p v-if="lastCheckedLabel" class="popover__note popover__note--checked">
+            {{ lastCheckedLabel }}
+          </p>
           <p class="popover__hint">{{ t('printer.changeSizeHint') }}</p>
           <button class="popover__btn" type="button" @click="disconnect">
             {{ t('printer.disconnect') }}
@@ -79,6 +85,7 @@ import { usePrinterStore } from '@/stores/printer';
 import { requestUsbPrinter } from '@/lib/printer/connect';
 import { openBrotherQLViaSerial } from '@/lib/printer/drivers';
 import { useBrowserCapabilities } from '@/composables/useBrowserCapabilities';
+import { localisedErrorMessage } from '@/composables/usePrinterErrors';
 import { PRINTER_HELP_URL } from '@/lib/printer/help';
 
 const { t } = useI18n();
@@ -91,6 +98,37 @@ const rootRef = ref<HTMLElement | null>(null);
 const connectError = ref<string | null>(null);
 
 const detectedName = computed(() => printer.detectedMedia?.name ?? null);
+
+const errorMessages = computed<string[]>(() => {
+  const errs = printer.lastStatus?.errors ?? [];
+  return errs.map(e => localisedErrorMessage(e, t));
+});
+
+/**
+ * "Last checked Ns ago" — uses a 1s ticking ref so the relative
+ * timestamp updates while the popover is open. The ref starts/stops
+ * with the popover visibility to avoid an idle interval.
+ */
+const now = ref(Date.now());
+let tickHandle: ReturnType<typeof setInterval> | null = null;
+function startTicker(): void {
+  if (tickHandle !== null) return;
+  now.value = Date.now();
+  tickHandle = setInterval(() => {
+    now.value = Date.now();
+  }, 1000);
+}
+function stopTicker(): void {
+  if (tickHandle === null) return;
+  clearInterval(tickHandle);
+  tickHandle = null;
+}
+
+const lastCheckedLabel = computed<string | null>(() => {
+  if (!printer.lastStatusAt) return null;
+  const seconds = Math.max(0, Math.round((now.value - printer.lastStatusAt) / 1000));
+  return t('printer.lastCheckedSeconds', { seconds });
+});
 
 const unsupportedCopy = computed(() => {
   switch (browser.value) {
@@ -107,12 +145,15 @@ function toggle(): void {
   open.value = !open.value;
   connectError.value = null;
   whyOpen.value = false;
+  if (open.value) startTicker();
+  else stopTicker();
 }
 
 function close(): void {
   open.value = false;
   connectError.value = null;
   whyOpen.value = false;
+  stopTicker();
 }
 
 async function connectUsb(): Promise<void> {
@@ -172,6 +213,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick);
+  stopTicker();
 });
 </script>
 
@@ -258,6 +300,22 @@ onBeforeUnmount(() => {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.popover__errors {
+  margin: 0;
+  padding: 0 0 0 var(--space-3);
+  list-style: disc;
+  font-size: var(--text-xs);
+  color: var(--color-error);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.popover__note--checked {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .popover__error {
