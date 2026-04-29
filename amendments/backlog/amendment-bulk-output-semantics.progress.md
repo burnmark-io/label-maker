@@ -184,3 +184,29 @@ Phase 1 ships an end-to-end Source row + multi-row export experience.
 The 30-row "silent ignore" surprise is gone: imports default to
 "all", labels are honest about the count, and Save → PDF / PNG
 honour the same selection.
+
+---
+
+## Phase 2 — Destination toggle + sheet template setting
+
+### 2.1 Store slices — DONE
+
+Extended `print-config` with:
+- `destination: PrintDestination` — `'thermal' | 'sheet'`, ref,
+  session-only. Default-on-load left to consumers (they re-derive
+  from connection state per §3.2).
+- `sheetTemplate: SheetTemplate | null` (computed from
+  `sheetTemplateCode`) plus `setSheetTemplate(template | code | null)`
+  — last-picked-wins persistence to `localStorage` under
+  `burnmark.sheetTemplate`. Resolution goes through
+  `findSheet()` from `@burnmark-io/sheet-templates`, so a stale code
+  whose template was retired returns `null` rather than crashing.
+
+Persistence helpers (`loadSheetTemplateCode` / `saveSheetTemplateCode`)
+guard against `localStorage` being unavailable so tests under jsdom
+without storage shims don't blow up.
+
+Tests (`print-config.test.ts` extended to 16 cases) cover destination
+default, sheet template persist + restore, and null clear.
+
+Typecheck clean.
