@@ -86,10 +86,10 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
     with regular ids (last user action wins).
   - Tests added (10/10 pass).
 
-- [ ] **Step 2 — Preferences: re-introduce 'properties' tab**
-  - `SidePanelTab` union gains `'properties'`
-  - Remove the `'properties' → 'objects'` migration
-  - Tests already exist for preferences? Check.
+- [x] **Step 2 — Preferences: re-introduce 'properties' tab** ✓
+  - `SidePanelTab` union: `'objects' | 'properties' | 'data' | 'preview'`
+  - Removed the `'properties' → 'objects'` migration
+  - Existing migration test rewritten to assert acceptance instead.
 
 - [ ] **Step 3 — useBuildingModifier composable**
   - New `src/composables/useBuildingModifier.ts` mirroring `useShiftKey`'s

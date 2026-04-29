@@ -30,11 +30,9 @@ describe('preferences store', () => {
     expect(prefs.sidePanelTab).toBe('data');
   });
 
-  it('migrates legacy "properties" tab value to "objects"', async () => {
+  it('accepts the "properties" tab value (re-introduced as a sibling tab)', () => {
     window.localStorage.setItem('burnmark.sidePanelTab', 'properties');
     const prefs = usePreferencesStore();
-    expect(prefs.sidePanelTab).toBe('objects');
-    await nextTick();
-    expect(window.localStorage.getItem('burnmark.sidePanelTab')).toBe('objects');
+    expect(prefs.sidePanelTab).toBe('properties');
   });
 });

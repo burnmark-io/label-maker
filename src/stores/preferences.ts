@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { useStorage } from '@vueuse/core';
 import type { SupportedLocale } from '@/i18n';
 
-export type SidePanelTab = 'objects' | 'data' | 'preview';
+export type SidePanelTab = 'objects' | 'properties' | 'data' | 'preview';
 
 /**
  * What happens when a CSV is dropped while the active dataset already has
@@ -22,12 +22,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const snapToObjects = useStorage<boolean>('burnmark.snapToObjects', true);
   const sidePanelOpen = useStorage<boolean>('burnmark.sidePanelOpen', true);
   const sidePanelTab = useStorage<SidePanelTab>('burnmark.sidePanelTab', 'objects');
-  // One-shot migration: the merged Objects+Properties tab supersedes the
-  // standalone Properties tab. Anyone whose persisted value is the old
-  // 'properties' literal lands on the merged 'objects' tab on next boot.
-  if ((sidePanelTab.value as string) === 'properties') {
-    sidePanelTab.value = 'objects';
-  }
   const locale = useStorage<SupportedLocale>('burnmark.locale', 'en');
   const tourCompleted = useStorage<boolean>('burnmark.tourCompleted', false);
   const sessionCount = useStorage<number>('burnmark.sessionCount', 0);
