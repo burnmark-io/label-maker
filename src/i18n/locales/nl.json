@@ -207,7 +207,9 @@
       "threshold": "Drempel",
       "dither": "Dithering",
       "invert": "Inverteren",
-      "replace": "Afbeelding vervangen"
+      "replace": "Afbeelding vervangen…",
+      "thermal": "Thermisch",
+      "previewAlt": "Voorbeeld van afbeelding"
     },
     "barcode": {
       "format": "Formaat",

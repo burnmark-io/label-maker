@@ -207,7 +207,9 @@
       "threshold": "Threshold",
       "dither": "Dither",
       "invert": "Invert",
-      "replace": "Replace image"
+      "replace": "Replace image…",
+      "thermal": "Thermal",
+      "previewAlt": "Image preview"
     },
     "barcode": {
       "format": "Format",
