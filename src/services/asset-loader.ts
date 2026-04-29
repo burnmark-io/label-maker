@@ -1,19 +1,20 @@
 import { InMemoryAssetLoader } from '@burnmark-io/designer-core';
+import { downsizeImage, sniffMime } from '@/lib/image/downsize';
 
 /**
  * Browser asset loader. Phase 6 will swap this for an IndexedDB-backed
  * implementation; for now, in-memory is sufficient.
  *
- * Resizes images on import to a max dimension and re-encodes them as PNG
- * to keep document sizes manageable. The plan calls for max 2400px.
+ * Image bytes go through `downsizeImage` at the upload boundary so the
+ * canvas resamples a bounded source on every paint. See `lib/image/
+ * downsize.ts` for threshold/quality rationale.
  */
-const MAX_DIMENSION = 2400;
 
 export class BurnmarkAssetLoader extends InMemoryAssetLoader {
   async storeFromBlob(blob: Blob): Promise<string> {
-    const resized = await resizeIfNeeded(blob);
-    const buffer = await resized.arrayBuffer();
-    return this.store(new Uint8Array(buffer));
+    const incoming = new Uint8Array(await blob.arrayBuffer());
+    const result = await downsizeImage(incoming);
+    return this.store(result.bytes);
   }
 
   async loadAsBlob(key: string): Promise<Blob> {
@@ -23,7 +24,7 @@ export class BurnmarkAssetLoader extends InMemoryAssetLoader {
     // mutations to the asset store).
     const copy = new Uint8Array(bytes);
     return new Blob([copy.buffer.slice(copy.byteOffset, copy.byteOffset + copy.byteLength)], {
-      type: 'image/png',
+      type: sniffMime(copy),
     });
   }
 
@@ -38,35 +39,6 @@ export class BurnmarkAssetLoader extends InMemoryAssetLoader {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
   }
-}
-
-async function resizeIfNeeded(blob: Blob): Promise<Blob> {
-  const bitmap = await createImageBitmap(blob);
-  const { width, height } = bitmap;
-  const longest = Math.max(width, height);
-  if (longest <= MAX_DIMENSION) {
-    bitmap.close();
-    return blob;
-  }
-  const ratio = MAX_DIMENSION / longest;
-  const w = Math.round(width * ratio);
-  const h = Math.round(height * ratio);
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    bitmap.close();
-    throw new Error('Failed to create 2D context for image resize');
-  }
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(out => {
-      if (out) resolve(out);
-      else reject(new Error('Failed to encode resized image'));
-    }, 'image/png');
-  });
 }
 
 function loadImageElement(url: string): Promise<HTMLImageElement> {

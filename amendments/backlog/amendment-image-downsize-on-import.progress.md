@@ -105,6 +105,49 @@ changes yet. Typecheck/lint not applicable. Commit prepared.
 
 ---
 
-## Step 3 — Asset-loader integration + loadAsBlob MIME fix (pending)
+## Step 3 — Asset-loader integration + loadAsBlob MIME fix (done)
+
+**What changed.**
+- `src/services/asset-loader.ts`: removed the in-file
+  `resizeIfNeeded` (2400px / PNG) and the `MAX_DIMENSION`
+  constant; `storeFromBlob` now reads bytes from the Blob and
+  delegates to `downsizeImage`.
+- `loadAsBlob` no longer hardcodes `image/png`; it now uses
+  `sniffMime` to label the returned Blob with the actual
+  stored MIME. Korrekt for any pass-through (JPEG/PNG/WebP/GIF/
+  SVG) and for resized output (WebP).
+- File comment updated to point at `lib/image/downsize.ts` for
+  threshold/quality rationale.
+
+**Decisions.**
+- Kept `storeFromBlob` as the funnel — every existing call site
+  (`MainToolbar.vue:178`, `ImageProperties.vue:126`) gets the
+  new behaviour without per-callsite wiring.
+- `loadAsBlob` sniffs on each read rather than tracking MIME
+  in a side table. Sniff is O(constant) — no observable cost.
+- `loadAsImage` is unchanged; it goes through `loadAsBlob` so
+  the MIME fix is inherited.
+- Bundle import (`label-import.ts:89-91`) still uses
+  `assetLoader.set(key, bytes)` directly — preserves the
+  content-hash bypass we identified during the audit.
+
+**Blockers / risks.**
+- Parallel session is editing SaveAsFileSection / i18n in the
+  same working tree. Verified the unrelated test failure they
+  introduce is not caused by my asset-loader change (isolated
+  via stash; my edits alone keep the suite green).
+
+**Gate check.**
+- Targeted vitest (downsize, ImageProperties, label-import
+  roundtrip): 23 passed.
+- `vue-tsc --noEmit`: clean.
+- `eslint`: clean.
+- Full suite has 1 unrelated failure in
+  `SaveAsFileSection.test.ts` from the parallel session's
+  uncommitted edits; reproduced and excluded.
+
+---
+
+## Step 4 — Profiling & Worker decision (pending)
 
 ## Step 4 — Profiling & Worker decision (pending)
