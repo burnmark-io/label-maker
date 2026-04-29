@@ -1,14 +1,28 @@
 import { defineStore } from 'pinia';
-import { computed, ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import type {
   MediaDescriptor,
   PreviewResult,
   PrinterAdapter,
+  PrinterStatus,
   PrintOptions,
   RawImageData,
 } from '@thermal-label/contracts';
 
-import { identifyByVidPid, type PrinterFamily } from '@/lib/printer/registry';
+import {
+  FAMILIES_WITH_STATUS_POLLING,
+  PER_MODEL_STATUS_POLLING_EXCLUSIONS,
+  identifyByVidPid,
+  modelKey,
+  type PrinterFamily,
+} from '@/lib/printer/registry';
+
+const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_BURST_MS = 2000;
+const POLL_BURST_DURATION_MS = 30_000;
+const POLL_BACKOFF_MS = [10_000, 20_000, 60_000] as const;
+/** Three transport failures in a row trips the session-scoped breaker. */
+const POLL_FAILS_BEFORE_BREAKER = 3;
 
 /**
  * PrintOptions shape augmented with the cross-driver `rotate` override
@@ -69,6 +83,22 @@ export const usePrinterStore = defineStore('printer', () => {
   const isPrinting = ref(false);
   const lastPaired = ref<LastConnected | null>(readLastConnected());
 
+  // ---- Polling state ----
+
+  const lastStatus = shallowRef<PrinterStatus | null>(null);
+  const lastStatusAt = ref<number>(0);
+  const burstUntil = ref<number>(0);
+  /**
+   * Session-scoped breaker. Trips when a printer's `getStatus()` throws
+   * `POLL_FAILS_BEFORE_BREAKER` times in a row — connection itself stays
+   * up so direct prints remain possible. Reset on the next manual or
+   * auto reconnect (`setAdapter(non-null)`).
+   */
+  const circuitBroken = ref<boolean>(false);
+
+  let pollTimer: ReturnType<typeof setTimeout> | null = null;
+  let consecutiveFailures = 0;
+
   const isConnected = computed(() => connection.value.kind === 'connected');
   const family = computed<PrinterFamily | null>(() =>
     connection.value.kind === 'connected' ? connection.value.family : null,
@@ -96,7 +126,14 @@ export const usePrinterStore = defineStore('printer', () => {
       connection.value = { kind: 'connected', family: fam, model: next.model };
       lastPaired.value = { family: fam, model: next.model };
       writeLastConnected(lastPaired.value);
+      // Fresh adapter = fresh chance for status polling.
+      circuitBroken.value = false;
+      consecutiveFailures = 0;
+      startPolling();
     } else {
+      stopPolling();
+      lastStatus.value = null;
+      lastStatusAt.value = 0;
       detectedMedia.value = null;
       // Clear the override too — selectedMedia carries driver-specific
       // fields, so leaving it set across a disconnect risks handing a
@@ -137,20 +174,24 @@ export const usePrinterStore = defineStore('printer', () => {
     writeLastConnected(null);
   }
 
+  /**
+   * Pull the live status. Assigns the full `PrinterStatus` to
+   * `lastStatus` (read by every UI surface) and propagates
+   * `detectedMedia`. Re-throws transport failures so the polling loop
+   * can drive backoff/breaker; existing single-shot callers
+   * (`useAutoReconnect`, the connect flow in `PrinterPopover`) already
+   * wrap this in try/catch.
+   *
+   * `selectedMedia` is intentionally not cleared — auto-detection is a
+   * suggestion, not a lock (canvas-sizing amendment §2.2). The override
+   * is cleared only on disconnect (`setAdapter(null)`).
+   */
   async function refreshStatus(): Promise<void> {
     if (!adapter.value) return;
-    try {
-      const status = await adapter.value.getStatus();
-      detectedMedia.value = status.detectedMedia ?? null;
-      // Don't clear `selectedMedia` here — auto-detection is a
-      // suggestion, not a lock (canvas-sizing amendment §2.2). When the
-      // user has explicitly overridden detected media (e.g. their roll
-      // is DK-22251 two-colour but the printer reports DK-22205), that
-      // override should survive every status refresh. The override is
-      // cleared only on disconnect (`setAdapter(null)`).
-    } catch (err) {
-      console.warn('[burnmark] getStatus failed', err);
-    }
+    const status = await adapter.value.getStatus();
+    lastStatus.value = status;
+    lastStatusAt.value = Date.now();
+    detectedMedia.value = status.detectedMedia ?? null;
   }
 
   async function refreshPreview(image: RawImageData): Promise<void> {
@@ -188,8 +229,100 @@ export const usePrinterStore = defineStore('printer', () => {
       };
       await adapter.value.print(image, effectiveMedia.value ?? undefined, bridgedOptions);
     } finally {
+      // Burst-poll for 30 s after a print so any post-print error
+      // (cutter jam, end-of-roll) surfaces quickly. The watch on
+      // `isPrinting` reschedules polling.
+      burstUntil.value = Date.now() + POLL_BURST_DURATION_MS;
       isPrinting.value = false;
     }
+  }
+
+  // ---- Polling loop ----
+
+  function shouldPoll(): boolean {
+    if (connection.value.kind !== 'connected') return false;
+    if (!FAMILIES_WITH_STATUS_POLLING.has(connection.value.family)) return false;
+    if (
+      PER_MODEL_STATUS_POLLING_EXCLUSIONS.has(
+        modelKey(connection.value.family, connection.value.model),
+      )
+    ) {
+      return false;
+    }
+    if (typeof document !== 'undefined' && document.hidden) return false;
+    if (isPrinting.value) return false;
+    if (circuitBroken.value) return false;
+    return true;
+  }
+
+  function scheduleNextPoll(): void {
+    if (pollTimer !== null) {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+    if (!shouldPoll()) return;
+    let interval: number;
+    if (consecutiveFailures > 0) {
+      const idx = Math.min(consecutiveFailures - 1, POLL_BACKOFF_MS.length - 1);
+      interval = POLL_BACKOFF_MS[idx]!;
+    } else if (Date.now() < burstUntil.value) {
+      interval = POLL_INTERVAL_BURST_MS;
+    } else {
+      interval = POLL_INTERVAL_MS;
+    }
+    pollTimer = setTimeout(() => {
+      void tick();
+    }, interval);
+  }
+
+  async function tick(): Promise<void> {
+    pollTimer = null;
+    if (!shouldPoll()) return;
+    try {
+      await refreshStatus();
+      consecutiveFailures = 0;
+    } catch (err) {
+      consecutiveFailures += 1;
+      console.warn('[burnmark] poll getStatus failed', err);
+      if (consecutiveFailures >= POLL_FAILS_BEFORE_BREAKER) {
+        circuitBroken.value = true;
+        // Connection itself stays up — direct prints can still be
+        // attempted without a working status query. Reset on the next
+        // setAdapter(non-null) (manual or auto reconnect).
+        return;
+      }
+    }
+    scheduleNextPoll();
+  }
+
+  function startPolling(): void {
+    consecutiveFailures = 0;
+    scheduleNextPoll();
+  }
+
+  function stopPolling(): void {
+    if (pollTimer !== null) {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  // Pause polling during a print job, resume (with burst window) after.
+  // Reusing `isPrinting` avoids a parallel printJobInFlight flag — the
+  // burst timer is set in `print()`'s finally clause just above.
+  watch(isPrinting, busy => {
+    if (busy) stopPolling();
+    else scheduleNextPoll();
+  });
+
+  // Visibility listener attached once at store init (not per-connect)
+  // to avoid leak/stale-handler issues across connect/disconnect cycles.
+  // Both branches gate internally via shouldPoll().
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopPolling();
+      else scheduleNextPoll();
+    });
   }
 
   async function disconnect(): Promise<void> {
@@ -212,6 +345,9 @@ export const usePrinterStore = defineStore('printer', () => {
     lastPreview,
     isPrinting,
     lastPaired,
+    lastStatus,
+    lastStatusAt,
+    circuitBroken,
     isConnected,
     family,
     model,
