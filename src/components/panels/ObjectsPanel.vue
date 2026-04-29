@@ -303,6 +303,8 @@ function sendBackward(id: string): void {
   cursor: pointer;
   font-size: var(--text-sm);
   color: var(--color-text);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .objects-list__row:hover {
