@@ -6,7 +6,15 @@
     <!-- Document or object — both get the sticky header -->
     <template v-else>
       <header class="properties-panel__header">
-        <span class="properties-panel__header-context">{{ headerText }}</span>
+        <EditableText
+          v-if="renameTarget"
+          class="properties-panel__header-context"
+          :value="renameTarget.name ?? ''"
+          :edit-label="t('selection.rename')"
+          :placeholder="renameTarget.placeholder"
+          @update="renameSelected"
+        />
+        <span v-else class="properties-panel__header-context">{{ headerText }}</span>
         <button
           type="button"
           class="properties-panel__deselect"
@@ -57,6 +65,9 @@ import ShapeProperties from './ShapeProperties.vue';
 import DocumentProperties from './DocumentProperties.vue';
 import AppearanceProperties from './AppearanceProperties.vue';
 import CollapsibleSection from '@/components/common/CollapsibleSection.vue';
+import EditableText from '@/components/common/EditableText.vue';
+
+const MAX_NAME_LENGTH = 80;
 
 const { t } = useI18n();
 const designer = useDesignerStore();
@@ -89,6 +100,25 @@ const headerText = computed<string>(() => {
   }
   return '';
 });
+
+// Single-object selection is renameable. Document and multi-select show
+// a static header — neither has a single name to edit (document name lives
+// in DocumentProperties; a multi-select rename would be ambiguous).
+const renameTarget = computed<{ name: string; placeholder: string } | null>(() => {
+  if (branch.value !== 'object') return null;
+  if (selectedObjects.value.length !== 1) return null;
+  const obj = firstObject.value;
+  if (!obj) return null;
+  return { name: obj.name ?? '', placeholder: obj.type };
+});
+
+function renameSelected(next: string): void {
+  const obj = firstObject.value;
+  if (!obj) return;
+  const trimmed = next.trim();
+  if (!trimmed) return;
+  designer.updateObject(obj.id, { name: trimmed.slice(0, MAX_NAME_LENGTH) });
+}
 </script>
 
 <style scoped>

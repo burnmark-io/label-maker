@@ -13,6 +13,7 @@ import type * as DesignerStore from '@/stores/designer';
 const selectionRef = ref<string[]>([]);
 const documentRef = ref<LabelDocument>(makeDoc());
 const deselectSpy = vi.fn();
+const updateObjectSpy = vi.fn();
 
 function makeDoc(objects: LabelObject[] = []): LabelDocument {
   return {
@@ -81,6 +82,7 @@ vi.mock('@/stores/designer', async () => {
       deselect: deselectSpy,
       setDocumentInfo: vi.fn(),
       setCanvas: vi.fn(),
+      updateObject: updateObjectSpy,
     }),
   };
 });
@@ -98,6 +100,7 @@ describe('PropertiesPanel', () => {
     selectionRef.value = [];
     documentRef.value = makeDoc();
     deselectSpy.mockClear();
+    updateObjectSpy.mockClear();
   });
 
   it('renders the empty state when no selection', () => {
@@ -184,5 +187,33 @@ describe('PropertiesPanel', () => {
       .findAll('.collapsible__trigger')
       .find(t => t.text().includes('Position & size'));
     expect(positionTrigger?.attributes('aria-expanded')).toBe('false');
+  });
+
+  it('selection header is renameable for single-object selection', async () => {
+    documentRef.value = makeDoc([makeText('obj-1', 'Hello')]);
+    selectionRef.value = ['obj-1'];
+    const wrapper = mountPanel();
+    const headerEditable = wrapper.find('.properties-panel__header .editable__display');
+    expect(headerEditable.exists()).toBe(true);
+    await headerEditable.trigger('click');
+    const input = wrapper.find('.properties-panel__header .editable__input');
+    (input.element as HTMLInputElement).value = 'Renamed';
+    await input.trigger('input');
+    await input.trigger('keydown.enter');
+    expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'Renamed' });
+  });
+
+  it('selection header is NOT renameable for multi-select', () => {
+    documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
+    selectionRef.value = ['obj-1', 'obj-2'];
+    const wrapper = mountPanel();
+    expect(wrapper.find('.properties-panel__header .editable__display').exists()).toBe(false);
+    expect(wrapper.find('.properties-panel__header').text()).toContain('2 items selected');
+  });
+
+  it('selection header is NOT renameable for the document branch', () => {
+    selectionRef.value = [DOCUMENT_SELECTION_ID];
+    const wrapper = mountPanel();
+    expect(wrapper.find('.properties-panel__header .editable__display').exists()).toBe(false);
   });
 });

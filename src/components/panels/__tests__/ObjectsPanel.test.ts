@@ -15,6 +15,7 @@ const documentRef = ref<LabelDocument>(makeDoc());
 const selectSpy = vi.fn((ids: string[]) => {
   selectionRef.value = ids;
 });
+const updateObjectSpy = vi.fn();
 
 function makeDoc(objects: LabelObject[] = []): LabelDocument {
   return {
@@ -50,7 +51,7 @@ vi.mock('@/stores/designer', async () => {
         return documentRef.value;
       },
       select: selectSpy,
-      updateObject: vi.fn(),
+      updateObject: updateObjectSpy,
       reorder: vi.fn(),
     }),
   };
@@ -118,5 +119,84 @@ describe('ObjectsPanel — document root row', () => {
     selectionRef.value = [DOCUMENT_SELECTION_ID];
     const wrapper = mountPanel();
     expect(wrapper.find('.objects-list__row--document').attributes('aria-pressed')).toBe('true');
+  });
+});
+
+function makeText(id: string, name?: string): LabelObject {
+  return {
+    id,
+    type: 'text',
+    name,
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 30,
+    rotation: 0,
+    opacity: 1,
+    visible: true,
+    locked: false,
+    content: 'Hello',
+    fontFamily: 'Arial',
+    fontSize: 16,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    textAlign: 'left',
+    color: '#000',
+    letterSpacing: 0,
+    lineHeight: 1.2,
+    invert: false,
+    wrap: false,
+    autoHeight: false,
+  } as unknown as LabelObject;
+}
+
+describe('ObjectsPanel — inline rename', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    selectionRef.value = [];
+    documentRef.value = makeDoc([makeText('obj-1', 'Text 1')]);
+    updateObjectSpy.mockClear();
+  });
+
+  it('clicking the row name opens the rename input', async () => {
+    const wrapper = mountPanel();
+    const editable = wrapper.findAll('.editable__display').at(-1);
+    expect(editable).toBeDefined();
+    await editable!.trigger('click');
+    expect(wrapper.find('.editable__input').exists()).toBe(true);
+  });
+
+  it('committing a non-empty name calls updateObject with the trimmed value', async () => {
+    const wrapper = mountPanel();
+    const editable = wrapper.findAll('.editable__display').at(-1);
+    await editable!.trigger('click');
+    const input = wrapper.find('.editable__input');
+    (input.element as HTMLInputElement).value = '  Greeting  ';
+    await input.trigger('input');
+    await input.trigger('keydown.enter');
+    expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'Greeting' });
+  });
+
+  it('clamps very long names to 80 characters', async () => {
+    const wrapper = mountPanel();
+    const editable = wrapper.findAll('.editable__display').at(-1);
+    await editable!.trigger('click');
+    const input = wrapper.find('.editable__input');
+    const longName = 'a'.repeat(120);
+    (input.element as HTMLInputElement).value = longName;
+    await input.trigger('input');
+    await input.trigger('keydown.enter');
+    expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { name: 'a'.repeat(80) });
+  });
+
+  it('discards an empty/whitespace-only commit (no updateObject call)', async () => {
+    const wrapper = mountPanel();
+    const editable = wrapper.findAll('.editable__display').at(-1);
+    await editable!.trigger('click');
+    const input = wrapper.find('.editable__input');
+    (input.element as HTMLInputElement).value = '   ';
+    await input.trigger('input');
+    await input.trigger('keydown.enter');
+    expect(updateObjectSpy).not.toHaveBeenCalled();
   });
 });

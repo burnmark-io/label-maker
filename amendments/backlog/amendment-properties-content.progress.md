@@ -74,7 +74,15 @@ decisions made during implementation, and any blockers discovered.
 - [x] Step 7 — ImageProperties thumbnail + Thermal sub-section
 - [x] Step 8 — BarcodeProperties data prominent + Encoding sub-section
 - [x] Step 9 — ShapeProperties visual picker + conditional fields
-- [ ] Step 10 — Inline rename in ObjectsPanel + selection header
+- [x] Step 10 — Inline rename in ObjectsPanel + selection header
+
+---
+
+## Done
+
+All 10 steps shipped. Full suite: 505 tests passing, typecheck clean.
+Ready for the user to move the amendment file to `implemented/` after
+manual UI verification.
 
 ---
 

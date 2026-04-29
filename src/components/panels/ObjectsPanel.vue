@@ -46,7 +46,13 @@
           @keydown.space.prevent="onClickRow(obj.id, $event as unknown as MouseEvent)"
         >
           <span class="objects-list__icon" aria-hidden="true">{{ iconFor(obj.type) }}</span>
-          <span class="objects-list__label">{{ obj.name ?? labelFor(obj.type) }}</span>
+          <EditableText
+            class="objects-list__label"
+            :value="obj.name ?? ''"
+            :edit-label="t('selection.rename')"
+            :placeholder="labelFor(obj.type)"
+            @update="renameObject(obj.id, $event)"
+          />
           <span
             v-if="oob.isOut(obj.id)"
             class="objects-list__warn"
@@ -160,6 +166,9 @@ import { useI18n } from 'vue-i18n';
 import { useDesignerStore, DOCUMENT_SELECTION_ID, isDocumentSelected } from '@/stores/designer';
 import { useOutOfBounds } from '@/composables/useOutOfBounds';
 import type { LabelObject } from '@burnmark-io/designer-core';
+import EditableText from '@/components/common/EditableText.vue';
+
+const MAX_NAME_LENGTH = 80;
 
 const { t } = useI18n();
 const designer = useDesignerStore();
@@ -233,6 +242,12 @@ function toggleVisible(id: string, visible: boolean): void {
 
 function toggleLocked(id: string, locked: boolean): void {
   designer.updateObject(id, { locked });
+}
+
+function renameObject(id: string, next: string): void {
+  const trimmed = next.trim();
+  if (!trimmed) return;
+  designer.updateObject(id, { name: trimmed.slice(0, MAX_NAME_LENGTH) });
 }
 
 function bringForward(id: string): void {
