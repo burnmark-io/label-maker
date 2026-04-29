@@ -100,6 +100,15 @@
       "density": "Density",
       "action": "Print"
     },
+    "source": {
+      "label": "Source",
+      "active": "Active",
+      "all": "All",
+      "range": "Range",
+      "rangeFrom": "From",
+      "rangeTo": "To",
+      "rangeAdjusted": "Range adjusted to {from}–{to}"
+    },
     "saveAsFile": {
       "heading": "Save as file",
       "png": "PNG",

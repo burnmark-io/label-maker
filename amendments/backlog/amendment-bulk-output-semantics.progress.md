@@ -79,3 +79,25 @@ multipliers, and per-document persistence.
 - `src/components/toolbar/__tests__/CanvasActions.test.ts`
 
 Typecheck clean. Impacted tests pass.
+
+### 1.2 Source row UI — DONE
+
+Reusable `src/components/output/SourceRow.vue` component:
+- Segmented control: Active | All | Range.
+- Range mode reveals two number inputs (1-indexed, inclusive).
+- Clamp on blur via `setOutputSelection`; transient inline note
+  ("Range adjusted to N–M") cleared after 3s.
+- Hides entirely when no dataset is loaded.
+- Reads/writes the print-config store; binds nothing locally.
+
+Wired into:
+- `src/components/output/PrintSection.vue` — top of the section, above
+  Copies / Density.
+- `src/components/toolbar/CanvasActions.vue` — top of the print
+  options popup, above Copies / Density.
+
+i18n keys added under `output.source.*` in `en.json` and `nl.json`.
+
+7 component tests in `src/components/output/__tests__/SourceRow.test.ts`
+cover empty-dataset hide, segment activation, range seeding,
+out-of-bounds clamp, and the from > to flip.

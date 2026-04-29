@@ -100,6 +100,15 @@
       "density": "Intensiteit",
       "action": "Printen"
     },
+    "source": {
+      "label": "Bron",
+      "active": "Actief",
+      "all": "Alle",
+      "range": "Bereik",
+      "rangeFrom": "Van",
+      "rangeTo": "Tot",
+      "rangeAdjusted": "Bereik aangepast naar {from}–{to}"
+    },
     "saveAsFile": {
       "heading": "Opslaan als bestand",
       "png": "PNG",

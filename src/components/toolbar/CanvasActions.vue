@@ -57,6 +57,7 @@
         </svg>
       </button>
       <div v-if="optionsOpen" class="actions__options" role="dialog">
+        <SourceRow />
         <label class="actions__field">
           {{ t('actions.copies') }}
           <input
@@ -196,6 +197,7 @@ import { localisedErrorMessage } from '@/composables/usePrinterErrors';
 import { FAMILIES_WITH_STATUS_POLLING } from '@/lib/printer/registry';
 import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { captureCanvasThumbnail } from '@/services/thumbnail';
+import SourceRow from '@/components/output/SourceRow.vue';
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;

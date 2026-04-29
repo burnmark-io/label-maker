@@ -1,6 +1,7 @@
 <template>
   <section v-if="printer.isConnected" class="output-print">
     <h3 class="output-print__heading">{{ t('output.print.heading') }}</h3>
+    <SourceRow />
     <div class="output-print__fields">
       <label class="output-print__field">
         <span class="output-print__label">{{ t('output.print.copies') }}</span>
@@ -41,6 +42,7 @@ import { useDesignerStore } from '@/stores/designer';
 import { useDataStore } from '@/stores/data';
 import { usePrintConfigStore } from '@/stores/print-config';
 import { useToast } from '@/composables/useToast';
+import SourceRow from './SourceRow.vue';
 
 const { t } = useI18n();
 const printer = usePrinterStore();
