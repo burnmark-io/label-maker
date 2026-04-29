@@ -14,7 +14,7 @@
       @change="onNumberChange"
     />
     <input
-      v-if="!mixed"
+      v-show="!mixed"
       type="range"
       class="hybrid__slider"
       :value="clampedValue"
@@ -25,7 +25,7 @@
       :aria-label="ariaLabel"
       @input="onSliderInput"
     />
-    <span v-if="suffix && !mixed" class="hybrid__suffix" aria-hidden="true">{{ suffix }}</span>
+    <span v-show="suffix && !mixed" class="hybrid__suffix" aria-hidden="true">{{ suffix }}</span>
   </div>
 </template>
 

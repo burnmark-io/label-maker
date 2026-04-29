@@ -60,9 +60,28 @@ describe('HybridNumberInput', () => {
 
   it('hides the slider thumb in mixed-value state and shows the placeholder', () => {
     const w = makeWrapper({ mixed: true });
-    expect(w.find('input[type="range"]').exists()).toBe(false);
+    // v-show keeps the element mounted but display:none — so the slider
+    // node's reactivity is intact when mixed flips back to false (no
+    // remount race when shared values resolve).
+    const slider = w.find('input[type="range"]');
+    expect(slider.exists()).toBe(true);
+    expect((slider.element as HTMLInputElement).style.display).toBe('none');
     const num = w.find('input[type="number"]').element as HTMLInputElement;
     expect(num.placeholder).toBe('—');
+  });
+
+  it('reveals the slider when mixed flips false on the same tick as a value commit', async () => {
+    const w = mount(HybridNumberInput, {
+      props: { modelValue: 50, min: 0, max: 100, step: 1, mixed: true, ariaLabel: 'Test' },
+    });
+    const slider = w.find('input[type="range"]');
+    expect((slider.element as HTMLInputElement).style.display).toBe('none');
+
+    // Commit a value AND flip mixed to false in one parent update — the
+    // pattern used by AppearanceProperties when the user types a shared
+    // opacity that resolves the mixed state.
+    await w.setProps({ modelValue: 60, mixed: false });
+    expect((slider.element as HTMLInputElement).style.display).not.toBe('none');
   });
 
   it('mixed state still commits a typed value (applies-to-all on multi-select)', async () => {
