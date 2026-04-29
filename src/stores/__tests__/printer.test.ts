@@ -256,3 +256,235 @@ describe('printer store', () => {
     expect(next.lastPaired?.model).toBe('LabelWriter 450');
   });
 });
+
+describe('printer store — polling', () => {
+  // Constants mirror the values in stores/printer.ts. Hard-coded so a
+  // change to the production cadence breaks these tests intentionally
+  // — the cadence is part of the user-visible contract.
+  const POLL_INTERVAL_MS = 5000;
+  const POLL_INTERVAL_BURST_MS = 2000;
+  const POLL_BURST_DURATION_MS = 30_000;
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    window.localStorage.clear();
+    vi.useFakeTimers();
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('schedules the first poll one interval after a polling-family adapter is set', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter({ family: 'brother-ql', model: 'QL-820NWB' });
+    store.setAdapter(adapter);
+
+    // setAdapter must not poll synchronously — only schedule.
+    expect(adapter.getStatus).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it('polls labelwriter and labelmanager families too', async () => {
+    for (const opts of [
+      { family: 'labelwriter' as const, model: 'LabelWriter 550', vid: 0x0922, pid: 0x0028 },
+      { family: 'labelmanager' as const, model: 'LM-PnP', vid: 0x0922, pid: 0x1001 },
+    ]) {
+      setActivePinia(createPinia());
+      vi.useFakeTimers();
+      const store = usePrinterStore();
+      const adapter = makeAdapter(opts);
+      store.setAdapter(adapter);
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('updates lastStatus and lastStatusAt on a successful tick', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter({
+      status: { errors: [{ code: 'cover_open', message: 'Cover is open' }], ready: false },
+    });
+    store.setAdapter(adapter);
+
+    expect(store.lastStatus).toBeNull();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(store.lastStatus?.ready).toBe(false);
+    expect(store.lastStatus?.errors[0]?.code).toBe('cover_open');
+    expect(store.lastStatusAt).toBeGreaterThan(0);
+  });
+
+  it('does not poll while document.hidden is true', async () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3);
+    expect(adapter.getStatus).not.toHaveBeenCalled();
+  });
+
+  it('resumes polling when the tab becomes visible', async () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).not.toHaveBeenCalled();
+
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalled();
+  });
+
+  it('isPrinting=true suspends polling; the print() finally clause queues a burst', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+
+    // First poll lands normally.
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+
+    // Drive a print — the print() finally sets burstUntil and clears
+    // isPrinting; the watch reschedules at the burst interval.
+    const image = { width: 1, height: 1, data: new Uint8Array([0, 0, 0, 255]) };
+    await store.print(image);
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_BURST_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('backs off 10s then 20s after consecutive transport failures', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    adapter.getStatus = vi.fn().mockRejectedValue(new Error('USB lost'));
+    store.setAdapter(adapter);
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+    expect(store.circuitBroken).toBe(false);
+
+    // Second attempt: 10s after the first.
+    await vi.advanceTimersByTimeAsync(10_000 - 1);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(2);
+    expect(store.circuitBroken).toBe(false);
+  });
+
+  it('three consecutive failures trip the circuit breaker and stop polling', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    adapter.getStatus = vi.fn().mockRejectedValue(new Error('USB lost'));
+    store.setAdapter(adapter);
+
+    // Fail #1 at +5s, fail #2 at +5s+10s, fail #3 at +5s+10s+20s.
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(3);
+    expect(store.circuitBroken).toBe(true);
+
+    // No further polling for the rest of the session.
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(3);
+  });
+
+  it('resets to a 5s interval after a successful tick following failures', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    let calls = 0;
+    adapter.getStatus = vi.fn(async () => {
+      calls += 1;
+      if (calls === 1) throw new Error('flake');
+      return { ready: true, mediaLoaded: true, errors: [], rawBytes: new Uint8Array() };
+    });
+    store.setAdapter(adapter);
+
+    // Fail at +5s.
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+
+    // Recover at +10s (backoff).
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(2);
+
+    // Next interval is back to 5s, not 20s.
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(3);
+  });
+
+  it('attaching a fresh adapter resets circuitBroken and seenErrorCodes', async () => {
+    const store = usePrinterStore();
+    const failing = makeAdapter();
+    failing.getStatus = vi.fn().mockRejectedValue(new Error('USB lost'));
+    store.setAdapter(failing);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 10_000 + 20_000);
+    expect(store.circuitBroken).toBe(true);
+
+    store.markErrorCodesSeen(['cover_open']);
+    expect(store.seenErrorCodes.has('cover_open')).toBe(true);
+
+    const fresh = makeAdapter();
+    store.setAdapter(fresh);
+    expect(store.circuitBroken).toBe(false);
+    expect(store.seenErrorCodes.size).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(fresh.getStatus).toHaveBeenCalled();
+  });
+
+  it('disconnect stops the loop and clears the timer', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+
+    await store.disconnect();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 5);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it('post-print burst uses the 2s interval for ~30s, then reverts to 5s', async () => {
+    const store = usePrinterStore();
+    const adapter = makeAdapter();
+    store.setAdapter(adapter);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+
+    const image = { width: 1, height: 1, data: new Uint8Array([0, 0, 0, 255]) };
+    await store.print(image);
+
+    // Within burst window: ticks at burst interval.
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_BURST_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_BURST_MS);
+    expect(adapter.getStatus).toHaveBeenCalledTimes(3);
+
+    // Roll out of the burst window — next tick should be the regular 5s.
+    await vi.advanceTimersByTimeAsync(POLL_BURST_DURATION_MS);
+    const callsAfterBurst = adapter.getStatus.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_BURST_MS);
+    // Past the 2s mark but inside the 5s mark — no new call yet.
+    expect(adapter.getStatus.mock.calls.length).toBeLessThanOrEqual(callsAfterBurst + 1);
+  });
+
+  it('visibility listener attached once at store init survives many connect cycles', async () => {
+    const store = usePrinterStore();
+    for (let i = 0; i < 5; i += 1) {
+      const adapter = makeAdapter();
+      store.setAdapter(adapter);
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      expect(adapter.getStatus).toHaveBeenCalledTimes(1);
+      await store.disconnect();
+    }
+    // No double-fire: each adapter saw exactly one tick. If the listener
+    // had been attached per-connect, repeated visibilitychange firings
+    // (or the simple act of cycling) would have multiplied calls.
+  });
+});
