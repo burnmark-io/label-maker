@@ -73,6 +73,7 @@
     "noMediaDetected": "Geen media gedetecteerd.",
     "changeSizeHint": "Wijzig de labelmaat via de maatkiezer in de bovenbalk.",
     "lastCheckedSeconds": "Laatst gecontroleerd: {seconds}s geleden",
+    "statusUnavailable": "Statusupdates niet beschikbaar voor deze printer.",
     "errors": {
       "no_media": "Geen labels of tape geladen",
       "not_ready": "Printer is bezig",

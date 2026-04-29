@@ -78,18 +78,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PrinterStatus from './PrinterStatus.vue';
 import { usePrinterStore } from '@/stores/printer';
 import { requestUsbPrinter } from '@/lib/printer/connect';
 import { openBrotherQLViaSerial } from '@/lib/printer/drivers';
 import { useBrowserCapabilities } from '@/composables/useBrowserCapabilities';
+import { useToast } from '@/composables/useToast';
 import { localisedErrorMessage } from '@/composables/usePrinterErrors';
 import { PRINTER_HELP_URL } from '@/lib/printer/help';
 
 const { t } = useI18n();
 const printer = usePrinterStore();
+const { show } = useToast();
 const { webUsb, webSerial, hasAnyTransport, browser } = useBrowserCapabilities();
 
 const open = ref(false);
@@ -130,6 +132,43 @@ const lastCheckedLabel = computed<string | null>(() => {
   return t('printer.lastCheckedSeconds', { seconds });
 });
 
+/**
+ * First-occurrence toasts. Watch the full status object — a fresh
+ * tick replaces it (shallowRef, no deep mutation), so the watcher
+ * fires on every poll.
+ */
+watch(
+  () => printer.lastStatus,
+  status => {
+    if (!status) return;
+    if (status.errors.length === 0) {
+      printer.clearSeenErrorCodes();
+      return;
+    }
+    // Suppress toasts while the popover is open — the user is already
+    // looking at the same errors there. The codes are marked seen on
+    // popover open, so re-opening doesn't re-fire either.
+    if (open.value) return;
+    const seen = printer.seenErrorCodes;
+    const fresh = status.errors.filter(e => !seen.has(e.code));
+    if (fresh.length === 0) return;
+    for (const err of fresh) {
+      show(localisedErrorMessage(err, t), 'error');
+    }
+    printer.markErrorCodesSeen(fresh.map(e => e.code));
+  },
+);
+
+// Circuit breaker — one-time, non-blocking notice so the user knows
+// status updates have stopped without spelling out the underlying
+// transport problem.
+watch(
+  () => printer.circuitBroken,
+  broken => {
+    if (broken) show(t('printer.statusUnavailable'), 'info');
+  },
+);
+
 const unsupportedCopy = computed(() => {
   switch (browser.value) {
     case 'firefox':
@@ -145,8 +184,17 @@ function toggle(): void {
   open.value = !open.value;
   connectError.value = null;
   whyOpen.value = false;
-  if (open.value) startTicker();
-  else stopTicker();
+  if (open.value) {
+    startTicker();
+    // Errors visible in the popover count as "user has seen them" —
+    // suppress any future toast for those codes (§4.3).
+    const errs = printer.lastStatus?.errors ?? [];
+    if (errs.length > 0) {
+      printer.markErrorCodesSeen(errs.map(e => e.code));
+    }
+  } else {
+    stopTicker();
+  }
 }
 
 function close(): void {
