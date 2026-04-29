@@ -38,7 +38,7 @@
 
           <!-- Appearance: opacity, visible, locked. Apply-to-all makes
                sense for these (e.g. "set all to 50% opacity"). -->
-          <AppearanceProperties :object="firstObject" />
+          <AppearanceProperties :objects="selectedObjects" />
 
           <!-- Position & Size: per-object only. Forcing two objects to the
                same X/Y stacks them; same W/H rarely matches intent. Hide

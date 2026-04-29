@@ -8,6 +8,7 @@
         :min="0"
         :max="100"
         :step="1"
+        :mixed="opacityMixed"
         suffix="%"
         :ariaLabel="t('properties.opacity')"
         @update:model-value="onOpacityChange"
@@ -16,13 +17,13 @@
 
     <ToggleField
       :label="t('properties.visible')"
-      :model-value="object.visible"
-      @update:model-value="update('visible', $event)"
+      :model-value="firstObject.visible"
+      @update:model-value="updateAll('visible', $event)"
     />
     <ToggleField
       :label="t('properties.locked')"
-      :model-value="object.locked"
-      @update:model-value="update('locked', $event)"
+      :model-value="firstObject.locked"
+      @update:model-value="updateAll('locked', $event)"
     />
   </div>
 </template>
@@ -35,18 +36,29 @@ import { useDesignerStore } from '@/stores/designer';
 import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
 import ToggleField from './ToggleField.vue';
 
-const props = defineProps<{ object: LabelObject }>();
+const props = defineProps<{ objects: readonly LabelObject[] }>();
 const { t } = useI18n();
 const designer = useDesignerStore();
 
-const opacityDisplay = computed(() => Math.round((props.object.opacity ?? 1) * 100));
+const firstObject = computed(() => props.objects[0]!);
+
+const opacityMixed = computed(() => {
+  if (props.objects.length < 2) return false;
+  const first = props.objects[0]!.opacity ?? 1;
+  return props.objects.some(o => (o.opacity ?? 1) !== first);
+});
+
+const opacityDisplay = computed(() => Math.round((firstObject.value.opacity ?? 1) * 100));
 
 function onOpacityChange(percent: number): void {
-  update('opacity', Math.max(0, Math.min(1, percent / 100)));
+  const opacity = Math.max(0, Math.min(1, percent / 100));
+  updateAll('opacity', opacity);
 }
 
-function update<K extends keyof LabelObject>(key: K, value: LabelObject[K]): void {
-  designer.updateObject(props.object.id, { [key]: value } as Partial<LabelObject>);
+function updateAll<K extends keyof LabelObject>(key: K, value: LabelObject[K]): void {
+  for (const obj of props.objects) {
+    designer.updateObject(obj.id, { [key]: value } as Partial<LabelObject>);
+  }
 }
 </script>
 

@@ -218,4 +218,17 @@ describe('PropertiesPanel', () => {
     const wrapper = mountPanel();
     expect(wrapper.find('.properties-panel__header .editable__display').exists()).toBe(false);
   });
+
+  it('multi-select: toggling Visible in Appearance applies to every selected object', async () => {
+    documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
+    selectionRef.value = ['obj-1', 'obj-2'];
+    const wrapper = mountPanel();
+    const toggles = wrapper.findAll('.toggle__input');
+    // First toggle is Visible, second is Locked.
+    const visible = toggles[0]!.element as HTMLInputElement;
+    visible.checked = false;
+    await toggles[0]!.trigger('change');
+    expect(updateObjectSpy).toHaveBeenCalledWith('obj-1', { visible: false });
+    expect(updateObjectSpy).toHaveBeenCalledWith('obj-2', { visible: false });
+  });
 });
