@@ -139,7 +139,9 @@ function onDragMove(event: { target?: { x?: () => number; y?: () => number } }):
   emit('dragmove', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
 }
 
-function onDragEnd(event: { target?: { x?: () => number; y?: () => number; width?: () => number; height?: () => number } }): void {
+function onDragEnd(event: {
+  target?: { x?: () => number; y?: () => number; width?: () => number; height?: () => number };
+}): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
   const renderedWidth = t.width ? t.width() : props.object.width;

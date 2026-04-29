@@ -139,7 +139,9 @@ function onDragMove(event: { target?: { x?: () => number; y?: () => number } }):
   emit('dragmove', t.x() - props.object.width / 2, t.y() - renderHeight.value / 2);
 }
 
-function onDragEnd(event: { target?: { x?: () => number; y?: () => number; width?: () => number; height?: () => number } }): void {
+function onDragEnd(event: {
+  target?: { x?: () => number; y?: () => number; width?: () => number; height?: () => number };
+}): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
   // For autoHeight text the stored height may differ from what Konva

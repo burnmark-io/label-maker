@@ -8,8 +8,6 @@
       @wheel="onWheel"
       @dblclick="onStageDoubleClick"
       @pointerdown="onStagePointerDown"
-      @pointermove="onStagePointerMove"
-      @pointerup="onStagePointerUp"
     >
       <VLayer>
         <PaperBackground
@@ -70,10 +68,7 @@
 
       <!-- Marquee rubber-band layer — above objects, below transformer -->
       <VLayer :config="{ listening: false }">
-        <VRect
-          v-if="marquee.active"
-          :config="marqueeRectConfig"
-        />
+        <VRect v-if="marquee.active" :config="marqueeRectConfig" />
       </VLayer>
 
       <VLayer>
@@ -268,6 +263,9 @@ onBeforeUnmount(() => {
     containerRef.value.removeEventListener('touchend', onTouchEnd);
     containerRef.value.removeEventListener('touchcancel', onTouchEnd);
   }
+  // Clean up marquee window listeners in case a drag was in progress.
+  window.removeEventListener('pointermove', onMarqueeMove);
+  window.removeEventListener('pointerup', onMarqueeUp);
   konvaStage.value = null;
 });
 
@@ -405,6 +403,14 @@ function pointerToDot(px: number, py: number): { x: number; y: number } {
   };
 }
 
+/** Convert a native PointerEvent's client position to canvas-dot coordinates. */
+function nativeEventToDot(e: PointerEvent): { x: number; y: number } | null {
+  const container = containerRef.value;
+  if (!container) return null;
+  const rect = container.getBoundingClientRect();
+  return pointerToDot(e.clientX - rect.left, e.clientY - rect.top);
+}
+
 function isOnObject(event: { target?: { name?: () => string } }): boolean {
   const target = event.target;
   if (!target) return false;
@@ -412,9 +418,93 @@ function isOnObject(event: { target?: { name?: () => string } }): boolean {
   return name === 'object';
 }
 
+// ---------------------------------------------------------------------------
+// Marquee move/up use native window listeners instead of Konva events.
+// Konva suppresses pointermove while isDragging()/isTransforming() is true
+// (e.g. a stuck drag state after the browser lost focus mid-transform).
+// Window listeners bypass that suppression and always fire.
+// ---------------------------------------------------------------------------
+
+function onMarqueeMove(e: PointerEvent): void {
+  if (!marquee.value.tracking) return;
+  const dot = nativeEventToDot(e);
+  if (!dot) return;
+  const dx = dot.x - marquee.value.startX;
+  const dy = dot.y - marquee.value.startY;
+  if (!marquee.value.dragging) {
+    if (Math.hypot(dx, dy) < MARQUEE_THRESHOLD) return;
+    marquee.value.dragging = true;
+    marquee.value.active = true;
+  }
+  marquee.value.endX = dot.x;
+  marquee.value.endY = dot.y;
+}
+
+function onMarqueeUp(e: PointerEvent): void {
+  // Always clean up the move listener (pointerup is registered once: true).
+  window.removeEventListener('pointermove', onMarqueeMove);
+  if (!marquee.value.tracking) return;
+
+  if (!marquee.value.dragging) {
+    // Threshold never crossed — let the Konva @click deselect fire normally.
+    marquee.value.active = false;
+    marquee.value.tracking = false;
+    marquee.value.dragging = false;
+    return;
+  }
+
+  // Snap to the exact release position before evaluating.
+  const finalDot = nativeEventToDot(e);
+  if (finalDot) {
+    marquee.value.endX = finalDot.x;
+    marquee.value.endY = finalDot.y;
+  }
+
+  const m = marquee.value;
+  const rectMinX = Math.min(m.startX, m.endX);
+  const rectMinY = Math.min(m.startY, m.endY);
+  const rectMaxX = Math.max(m.startX, m.endX);
+  const rectMaxY = Math.max(m.startY, m.endY);
+
+  // Find all visible, non-locked objects whose AABB intersects the rect.
+  // Rotation is intentionally ignored (industry-standard marquee behaviour).
+  const hits: string[] = [];
+  for (const obj of document.value.objects) {
+    if (!obj.visible) continue;
+    if (obj.locked) continue;
+    const objMaxX = obj.x + obj.width;
+    const objMaxY = obj.y + obj.height;
+    if (objMaxX > rectMinX && obj.x < rectMaxX && objMaxY > rectMinY && obj.y < rectMaxY) {
+      hits.push(obj.id);
+    }
+  }
+
+  if (hits.length > 0 || !m.shiftHeld) {
+    const newSelection = m.shiftHeld ? [...new Set([...designer.selection, ...hits])] : hits;
+    if (newSelection.length > 0) designer.select(newSelection);
+    else designer.deselect();
+  }
+
+  // Keep dragging=true until after Konva's @click fires (which deselects on
+  // empty-canvas clicks). The Konva click fires synchronously from the canvas
+  // element's pointerup listener — before this window listener — so dragging
+  // is already true at that point. Clear it on the next microtask.
+  marquee.value.active = false;
+  marquee.value.tracking = false;
+  void Promise.resolve().then(() => {
+    marquee.value.dragging = false;
+  });
+}
+
 function onStagePointerDown(event: {
   target?: { name?: () => string };
-  evt?: { shiftKey?: boolean; button?: number; clientX?: number; clientY?: number; pointerId?: number };
+  evt?: {
+    shiftKey?: boolean;
+    button?: number;
+    clientX?: number;
+    clientY?: number;
+    pointerId?: number;
+  };
 }): void {
   // Do not start a marquee when clicking on an object, when text is being
   // edited, or when it's not the primary (left) button.
@@ -436,94 +526,9 @@ function onStagePointerDown(event: {
     shiftHeld: event.evt?.shiftKey ?? false,
     dragging: false,
   };
-}
 
-function onStagePointerMove(_event: {
-  target?: { name?: () => string };
-  evt?: PointerEvent;
-}): void {
-  // Only track if a pointerdown on empty canvas started tracking.
-  if (!marquee.value.tracking) return;
-
-  const pos = konvaStage.value?.getPointerPosition();
-  if (!pos) return;
-
-  const dot = pointerToDot(pos.x, pos.y);
-  const dx = dot.x - marquee.value.startX;
-  const dy = dot.y - marquee.value.startY;
-
-  if (!marquee.value.dragging) {
-    if (Math.hypot(dx, dy) < MARQUEE_THRESHOLD) return;
-    marquee.value.dragging = true;
-    marquee.value.active = true;
-  }
-
-  marquee.value.endX = dot.x;
-  marquee.value.endY = dot.y;
-}
-
-function onStagePointerUp(_event: {
-  target?: { name?: () => string };
-  evt?: { shiftKey?: boolean };
-}): void {
-  if (!marquee.value.tracking) return;
-
-  if (!marquee.value.dragging) {
-    // No marquee threshold reached — reset state; existing click/deselect
-    // handler on @click fires normally.
-    marquee.value.active = false;
-    marquee.value.tracking = false;
-    marquee.value.dragging = false;
-    return;
-  }
-
-  const m = marquee.value;
-  const rectMinX = Math.min(m.startX, m.endX);
-  const rectMinY = Math.min(m.startY, m.endY);
-  const rectMaxX = Math.max(m.startX, m.endX);
-  const rectMaxY = Math.max(m.startY, m.endY);
-
-  // Find all visible, non-locked objects whose AABB intersects the rect.
-  const hits: string[] = [];
-  for (const obj of document.value.objects) {
-    if (!obj.visible) continue;
-    if (obj.locked) continue;
-    // Object AABB (using stored x/y/width/height — ignoring rotation for
-    // marquee hit testing, consistent with industry-standard tools).
-    const objMinX = obj.x;
-    const objMinY = obj.y;
-    const objMaxX = obj.x + obj.width;
-    const objMaxY = obj.y + obj.height;
-    // AABB intersection test.
-    if (
-      objMaxX > rectMinX &&
-      objMinX < rectMaxX &&
-      objMaxY > rectMinY &&
-      objMinY < rectMaxY
-    ) {
-      hits.push(obj.id);
-    }
-  }
-
-  if (hits.length > 0 || !m.shiftHeld) {
-    const newSelection = m.shiftHeld
-      ? [...new Set([...designer.selection, ...hits])]
-      : hits;
-    if (newSelection.length > 0) {
-      designer.select(newSelection);
-    } else {
-      designer.deselect();
-    }
-  }
-
-  // Reset marquee state. Keep `dragging` true momentarily so that the
-  // @click event (which fires after @pointerup) skips its deselect logic.
-  // We clear it on the next microtask via Promise.resolve().
-  marquee.value.active = false;
-  marquee.value.tracking = false;
-  void Promise.resolve().then(() => {
-    marquee.value.dragging = false;
-  });
+  window.addEventListener('pointermove', onMarqueeMove);
+  window.addEventListener('pointerup', onMarqueeUp, { once: true });
 }
 
 let dragOriginalPositions = new Map<string, { x: number; y: number }>();

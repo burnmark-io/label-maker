@@ -107,7 +107,12 @@ function selectedRowsForExport(): Record<string, string>[] {
 async function onExportPng(): Promise<void> {
   try {
     const rows = selectedRowsForExport();
-    const result = await exportPngBatch(designer, rows, data.mapping, safeFileName(designer.document.name));
+    const result = await exportPngBatch(
+      designer,
+      rows,
+      data.mapping,
+      safeFileName(designer.document.name),
+    );
     const ext = result.zipped ? 'zip' : 'png';
     downloadBlob(result.blob, `${safeFileName(designer.document.name)}.${ext}`);
     if (result.errors.size > 0) {

@@ -18,10 +18,7 @@
             @open-library="libraryOpen = true"
           />
         </section>
-        <SidePanel
-          data-tour="side-panel"
-          @open-sheet-picker="sheetOpen = true"
-        />
+        <SidePanel data-tour="side-panel" @open-sheet-picker="sheetOpen = true" />
       </main>
       <InstallPrompt />
       <ImportDropOverlay />

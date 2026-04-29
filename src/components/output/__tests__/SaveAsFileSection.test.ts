@@ -141,11 +141,7 @@ describe('SaveAsFileSection', () => {
     await wrapper.findAll('.output-save-as-file__btn')[1]!.trigger('click');
     await new Promise(r => setTimeout(r, 0));
     expect(exportPdf).toHaveBeenCalledTimes(1);
-    expect(exportPdf).toHaveBeenCalledWith([
-      { name: 'row1' },
-      { name: 'row2' },
-      { name: 'row3' },
-    ]);
+    expect(exportPdf).toHaveBeenCalledWith([{ name: 'row1' }, { name: 'row2' }, { name: 'row3' }]);
   });
 
   it('PNG export with Source = All produces a zip', async () => {
@@ -188,10 +184,6 @@ describe('SaveAsFileSection', () => {
     await wrapper.findAll('.output-save-as-file__btn')[1]!.trigger('click');
     await new Promise(r => setTimeout(r, 0));
     expect(exportPdf).toHaveBeenCalledTimes(1);
-    expect(exportPdf).toHaveBeenCalledWith([
-      { name: 'row3' },
-      { name: 'row4' },
-      { name: 'row5' },
-    ]);
+    expect(exportPdf).toHaveBeenCalledWith([{ name: 'row3' }, { name: 'row4' }, { name: 'row5' }]);
   });
 });

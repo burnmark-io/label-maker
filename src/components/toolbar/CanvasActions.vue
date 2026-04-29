@@ -364,9 +364,7 @@ async function runSinglePrint(): Promise<void> {
 async function runBatchPrint(resumeFrom = 0): Promise<void> {
   const indices = config.rowsForSelection;
   const rowsForBatch =
-    indices.length > 0
-      ? indices.map(i => applyMappingToRow(data.rows[i]!, data.mapping))
-      : [{}]; // no-dataset path: one synthetic row, copies multiplier drives the run
+    indices.length > 0 ? indices.map(i => applyMappingToRow(data.rows[i]!, data.mapping)) : [{}]; // no-dataset path: one synthetic row, copies multiplier drives the run
   const copiesPerRow = Math.max(1, Math.min(30, config.copies || 1));
   const rowsTotal = rowsForBatch.length;
   const total = rowsTotal * copiesPerRow;

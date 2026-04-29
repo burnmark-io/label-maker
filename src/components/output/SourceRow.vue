@@ -104,10 +104,8 @@ function onPick(kind: OutputSelection['kind']): void {
 function onRangeBlur(): void {
   const total = rowCount.value;
   if (total === 0) return;
-  const rawFrom =
-    fromInput.value === '' || fromInput.value == null ? 1 : Number(fromInput.value);
-  const rawTo =
-    toInput.value === '' || toInput.value == null ? total : Number(toInput.value);
+  const rawFrom = fromInput.value === '' || fromInput.value == null ? 1 : Number(fromInput.value);
+  const rawTo = toInput.value === '' || toInput.value == null ? total : Number(toInput.value);
   const from = Math.min(Math.max(1, Math.round(rawFrom) || 1), total);
   const to = Math.min(Math.max(from, Math.round(rawTo) || from), total);
   const wasAdjusted = from !== rawFrom || to !== rawTo;

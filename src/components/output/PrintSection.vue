@@ -71,9 +71,7 @@ const { show, update, dismiss } = useToast();
 // Section is visible when there's any output destination available —
 // either a connected thermal printer or a configured sheet template.
 // The DestinationRow's first-run CTA covers the "neither" state.
-const showSection = computed<boolean>(
-  () => config.thermalPossible || config.sheetPossible,
-);
+const showSection = computed<boolean>(() => config.thermalPossible || config.sheetPossible);
 
 const canPrint = computed<boolean>(() => {
   if (printer.isPrinting) return false;
@@ -169,9 +167,7 @@ async function runSinglePrint(): Promise<void> {
 async function runBatchPrint(resumeFrom = 0): Promise<void> {
   const indices = config.rowsForSelection;
   const rowsForBatch =
-    indices.length > 0
-      ? indices.map(i => applyMappingToRow(data.rows[i]!, data.mapping))
-      : [{}];
+    indices.length > 0 ? indices.map(i => applyMappingToRow(data.rows[i]!, data.mapping)) : [{}];
   const copiesPerRow = Math.max(1, Math.min(30, config.copies || 1));
   const rowsTotal = rowsForBatch.length;
   const total = rowsTotal * copiesPerRow;

@@ -32,7 +32,10 @@ interface GroupContext {
 function buildGroupContext(
   objects: { id: string; x: number; y: number; width: number; height: number; rotation: number }[],
 ): GroupContext {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const obj of objects) {
     if (obj.x < minX) minX = obj.x;
     if (obj.y < minY) minY = obj.y;
@@ -45,8 +48,8 @@ function buildGroupContext(
   const perObject = new Map<string, ObjectSnapshot>();
   for (const obj of objects) {
     perObject.set(obj.id, {
-      offsetX: (obj.x + obj.width / 2) - cx,
-      offsetY: (obj.y + obj.height / 2) - cy,
+      offsetX: obj.x + obj.width / 2 - cx,
+      offsetY: obj.y + obj.height / 2 - cy,
       width: obj.width,
       height: obj.height,
       rotation: obj.rotation,

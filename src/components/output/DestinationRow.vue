@@ -2,7 +2,11 @@
   <div v-if="showRow" class="destination-row">
     <div v-if="config.showDestinationToggle" class="destination-row__toggle-wrap">
       <span class="destination-row__label">{{ t('output.destination.label') }}</span>
-      <div class="destination-row__toggle" role="radiogroup" :aria-label="t('output.destination.label')">
+      <div
+        class="destination-row__toggle"
+        role="radiogroup"
+        :aria-label="t('output.destination.label')"
+      >
         <button
           type="button"
           role="radio"
@@ -31,7 +35,12 @@
       class="destination-row__change"
       @click="emit('open-sheet-picker')"
     >
-      {{ t('output.destination.sheetCurrent', { brand: config.sheetTemplate.brand, part: config.sheetTemplate.part }) }}
+      {{
+        t('output.destination.sheetCurrent', {
+          brand: config.sheetTemplate.brand,
+          part: config.sheetTemplate.part,
+        })
+      }}
     </button>
     <button
       v-else-if="!config.thermalPossible && !config.sheetPossible"

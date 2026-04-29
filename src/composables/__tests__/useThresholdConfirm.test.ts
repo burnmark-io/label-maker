@@ -35,7 +35,7 @@ describe('useThresholdConfirm', () => {
     await expect(promise).resolves.toBe(false);
   });
 
-  it('don\'t-ask-again skips subsequent prompts in the session', async () => {
+  it("don't-ask-again skips subsequent prompts in the session", async () => {
     const t = useThresholdConfirm();
     const first = t.confirmIfNeeded({ count: 60, destination: 'thermal' });
     t.accept(true);
@@ -46,7 +46,7 @@ describe('useThresholdConfirm', () => {
     await expect(second).resolves.toBe(true);
   });
 
-  it('don\'t-ask-again is per-session — reset clears it', async () => {
+  it("don't-ask-again is per-session — reset clears it", async () => {
     const t = useThresholdConfirm();
     const first = t.confirmIfNeeded({ count: 60, destination: 'thermal' });
     t.accept(true);

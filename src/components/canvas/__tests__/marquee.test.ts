@@ -38,18 +38,10 @@ function aabbIntersectsMarquee(obj: LabelObject, rect: MarqueeRect): boolean {
   const objMinY = obj.y;
   const objMaxX = obj.x + obj.width;
   const objMaxY = obj.y + obj.height;
-  return (
-    objMaxX > rect.minX &&
-    objMinX < rect.maxX &&
-    objMaxY > rect.minY &&
-    objMinY < rect.maxY
-  );
+  return objMaxX > rect.minX && objMinX < rect.maxX && objMaxY > rect.minY && objMinY < rect.maxY;
 }
 
-function marqueeHits(
-  objects: LabelObject[],
-  rect: MarqueeRect,
-): string[] {
+function marqueeHits(objects: LabelObject[], rect: MarqueeRect): string[] {
   return objects
     .filter(obj => obj.visible && !obj.locked)
     .filter(obj => aabbIntersectsMarquee(obj, rect))
