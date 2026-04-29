@@ -38,7 +38,9 @@
         max="40"
         :value="object.strokeWidth"
         class="props__input"
-        @change="update('strokeWidth', clamp(Number(($event.target as HTMLInputElement).value), 1, 40))"
+        @change="
+          update('strokeWidth', clamp(Number(($event.target as HTMLInputElement).value), 1, 40))
+        "
       />
     </label>
 

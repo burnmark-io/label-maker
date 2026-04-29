@@ -23,7 +23,9 @@ const QR_BARCODE_FORMATS = new Set(['qrcode', 'microqr', 'gs1qrcode']);
  * rest so QR codes share a "QR 1, QR 2" pool independent of "Barcode 1,
  * Barcode 2" for 1D / other 2D formats.
  */
-export function typeLabelKeyFor(obj: Pick<LabelObject, 'type'> & Partial<LabelObject>): TypeLabelKey {
+export function typeLabelKeyFor(
+  obj: Pick<LabelObject, 'type'> & Partial<LabelObject>,
+): TypeLabelKey {
   switch (obj.type) {
     case 'text':
       return 'text';

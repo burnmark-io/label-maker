@@ -1,11 +1,17 @@
 <template>
   <transition name="banner-fade">
-    <div v-if="banner.mode === 'adopt' && banner.payload" class="banner banner--adopt" role="status">
+    <div
+      v-if="banner.mode === 'adopt' && banner.payload"
+      class="banner banner--adopt"
+      role="status"
+    >
       <span class="banner__message">
-        {{ t('banner.adopt.title', {
-          media: banner.payload.media.name,
-          printer: banner.payload.printerName,
-        }) }}
+        {{
+          t('banner.adopt.title', {
+            media: banner.payload.media.name,
+            printer: banner.payload.printerName,
+          })
+        }}
       </span>
       <div class="banner__actions">
         <button class="banner__btn banner__btn--primary" type="button" @click="onUse">

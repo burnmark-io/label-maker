@@ -15,10 +15,7 @@ import type { PrinterError } from '@thermal-label/contracts';
  * Pass `t` from `useI18n()` at the call site — the helper is a plain
  * function so it works in components and Pinia stores alike.
  */
-export function localisedErrorMessage(
-  error: PrinterError,
-  t: (key: string) => string,
-): string {
+export function localisedErrorMessage(error: PrinterError, t: (key: string) => string): string {
   const key = `printer.errors.${error.code}`;
   const translated = t(key);
   return translated === key ? error.message : translated;

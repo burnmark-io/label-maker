@@ -151,9 +151,7 @@ const deleteLabel = computed<string>(() => {
   }
   const name = deleteSingleName.value;
   const display =
-    name.length > DELETE_LABEL_NAME_LIMIT
-      ? `${name.slice(0, DELETE_LABEL_NAME_LIMIT)}…`
-      : name;
+    name.length > DELETE_LABEL_NAME_LIMIT ? `${name.slice(0, DELETE_LABEL_NAME_LIMIT)}…` : name;
   return t('properties.delete.single', { name: display });
 });
 

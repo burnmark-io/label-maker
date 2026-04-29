@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LabelObject } from '@burnmark-io/designer-core';
-import {
-  autoNameFor,
-  nextNameForType,
-  parseTrailingNumber,
-  typeLabelKeyFor,
-} from '../auto-name';
+import { autoNameFor, nextNameForType, parseTrailingNumber, typeLabelKeyFor } from '../auto-name';
 
 function obj(partial: Partial<LabelObject> & { type: LabelObject['type'] }): LabelObject {
   return {
@@ -150,10 +145,7 @@ describe('autoNameFor', () => {
   });
 
   it('computes the auto-name based on existing pool', () => {
-    const objects = [
-      obj({ type: 'text', name: 'Text 1' }),
-      obj({ type: 'text', name: 'Text 2' }),
-    ];
+    const objects = [obj({ type: 'text', name: 'Text 1' }), obj({ type: 'text', name: 'Text 2' })];
     expect(autoNameFor({ type: 'text' }, objects, prefixFor)).toBe('Text 3');
   });
 

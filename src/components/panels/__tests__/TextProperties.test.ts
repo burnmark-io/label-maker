@@ -71,9 +71,7 @@ describe('TextProperties', () => {
 
   it('Style sub-section is collapsed by default', () => {
     const w = mountText();
-    const styleTrigger = w
-      .findAll('.collapsible__trigger')
-      .find(t => t.text().includes('Style'));
+    const styleTrigger = w.findAll('.collapsible__trigger').find(t => t.text().includes('Style'));
     expect(styleTrigger?.attributes('aria-expanded')).toBe('false');
   });
 

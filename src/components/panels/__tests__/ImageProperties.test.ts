@@ -27,7 +27,10 @@ vi.mock('@/stores/designer', async () => {
 
 // jsdom needs a stub for URL.createObjectURL / revokeObjectURL.
 beforeEach(() => {
-  Object.defineProperty(URL, 'createObjectURL', { value: vi.fn(() => 'blob:fake'), writable: true });
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: vi.fn(() => 'blob:fake'),
+    writable: true,
+  });
   Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), writable: true });
   updateObjectSpy.mockClear();
   loadAsBlobSpy.mockClear();
@@ -78,9 +81,7 @@ describe('ImageProperties', () => {
 
   it('Thermal sub-section is collapsed by default', () => {
     const w = mountImage();
-    const trigger = w
-      .findAll('.collapsible__trigger')
-      .find(t => t.text().includes('Thermal'));
+    const trigger = w.findAll('.collapsible__trigger').find(t => t.text().includes('Thermal'));
     expect(trigger?.attributes('aria-expanded')).toBe('false');
   });
 });

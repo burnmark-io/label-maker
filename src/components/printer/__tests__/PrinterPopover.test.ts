@@ -185,7 +185,7 @@ describe('PrinterPopover render branches', () => {
 
     const wrapper = mountPopover();
     await openPopover(wrapper);
-    const usbBtn = wrapper.findAll('.popover__btn').find((b) => b.text().includes('USB'))!;
+    const usbBtn = wrapper.findAll('.popover__btn').find(b => b.text().includes('USB'))!;
     await usbBtn.trigger('click');
     await nextTick();
     await nextTick();

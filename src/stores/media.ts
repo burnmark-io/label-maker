@@ -376,8 +376,7 @@ export const useMediaStore = defineStore('media', () => {
       ) {
         return;
       }
-      const touched =
-        designer.canUndo && designer.document.objects.length > 0;
+      const touched = designer.canUndo && designer.document.objects.length > 0;
       if (touched) {
         // The connected printer's model is the friendliest user-facing
         // label we have for the banner.

@@ -21,9 +21,7 @@ export interface BrowserCapabilities {
 export function useBrowserCapabilities(): BrowserCapabilities {
   const webUsb = computed(() => typeof navigator !== 'undefined' && 'usb' in navigator);
   const webSerial = computed(() => typeof navigator !== 'undefined' && 'serial' in navigator);
-  const webBluetooth = computed(
-    () => typeof navigator !== 'undefined' && 'bluetooth' in navigator,
-  );
+  const webBluetooth = computed(() => typeof navigator !== 'undefined' && 'bluetooth' in navigator);
   const hasAnyTransport = computed(() => webUsb.value || webSerial.value);
   const browser = computed<Browser>(() => detectBrowser());
   return { webUsb, webSerial, webBluetooth, hasAnyTransport, browser };

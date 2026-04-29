@@ -103,11 +103,7 @@ export const useDesignerStore = defineStore('designer', () => {
 
   function ensureAutoName<T extends LabelObject>(input: Omit<T, 'id'>): Omit<T, 'id'> {
     const objects = composable.designer.document.objects;
-    const name = autoNameFor(
-      input as Parameters<typeof autoNameFor>[0],
-      objects,
-      autoNamePrefix,
-    );
+    const name = autoNameFor(input as Parameters<typeof autoNameFor>[0], objects, autoNamePrefix);
     if (name === undefined) return input;
     return { ...input, name } as Omit<T, 'id'>;
   }
