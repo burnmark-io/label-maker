@@ -70,83 +70,105 @@ beforeEach(async () => {
   await resetIdb();
 });
 
-describe('useDocumentLifecycle.confirmDestructiveSwap', () => {
-  it('resolves true without prompting when there is no undo history', async () => {
+describe('useDocumentLifecycle.confirmSwapWithSave', () => {
+  it("returns 'proceed' without prompting when there is no undo history", async () => {
     const lifecycle = withSetup();
     designerState.canUndo = false;
-    const result = await lifecycle.confirmDestructiveSwap();
-    expect(result).toBe(true);
+    const result = await lifecycle.confirmSwapWithSave();
+    expect(result).toBe('proceed');
     expect(lifecycle.confirmer.open.value).toBe(false);
   });
 
   it('opens the confirmer when there is unsaved work', async () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
-    const promise = lifecycle.confirmDestructiveSwap();
+    const promise = lifecycle.confirmSwapWithSave({ incomingName: 'incoming' });
     expect(lifecycle.confirmer.open.value).toBe(true);
     lifecycle.confirmer.resolve();
-    expect(await promise).toBe(true);
+    expect(await promise).toBe('save');
   });
 
-  it('returns false when the user cancels', async () => {
+  it("returns 'discard' when the user picks the secondary action", async () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
-    const promise = lifecycle.confirmDestructiveSwap();
+    const promise = lifecycle.confirmSwapWithSave({ incomingName: 'incoming' });
+    lifecycle.confirmer.resolveSecondary();
+    expect(await promise).toBe('discard');
+  });
+
+  it("returns 'cancel' when the user cancels", async () => {
+    const lifecycle = withSetup();
+    designerState.canUndo = true;
+    const promise = lifecycle.confirmSwapWithSave();
     lifecycle.confirmer.cancel();
-    expect(await promise).toBe(false);
+    expect(await promise).toBe('cancel');
   });
 
-  it('uses the generic replaceConfirm copy when called without an incoming name', async () => {
+  it('uses the no-incoming copy when called without an incoming name', async () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
-    const promise = lifecycle.confirmDestructiveSwap();
-    expect(lifecycle.confirmer.options.value?.message).toContain('unsaved changes will be lost');
-    lifecycle.confirmer.resolve();
+    const promise = lifecycle.confirmSwapWithSave();
+    expect(lifecycle.confirmer.options.value?.message).toContain(
+      'Continuing will replace what',
+    );
+    lifecycle.confirmer.cancel();
     await promise;
   });
 
-  it('uses the name-aware replaceConfirmWithIncoming copy when called with an incoming name', async () => {
+  it('uses the name-aware copy when called with an incoming name', async () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
     designerState.document.name = 'My great label';
-    const promise = lifecycle.confirmDestructiveSwap({ incomingName: 'colleague.label' });
+    const promise = lifecycle.confirmSwapWithSave({ incomingName: 'colleague.label' });
     const message = lifecycle.confirmer.options.value?.message ?? '';
     expect(message).toContain('My great label');
     expect(message).toContain('colleague.label');
-    lifecycle.confirmer.resolve();
+    lifecycle.confirmer.cancel();
+    await promise;
+  });
+
+  it('renders the three-button shape (primaryLabel + secondaryLabel)', async () => {
+    const lifecycle = withSetup();
+    designerState.canUndo = true;
+    const promise = lifecycle.confirmSwapWithSave({ incomingName: 'incoming' });
+    const opts = lifecycle.confirmer.options.value;
+    expect(opts).toBeTruthy();
+    expect(opts && 'primaryLabel' in opts ? opts.primaryLabel : null).toBe('Save & open');
+    expect(opts && 'secondaryLabel' in opts ? opts.secondaryLabel : null).toBe('Discard & open');
+    lifecycle.confirmer.cancel();
     await promise;
   });
 });
 
-describe('useDocumentLifecycle.confirmDestructiveSwap race guard', () => {
-  it('returns false immediately when a swap is already in flight', async () => {
+describe('useDocumentLifecycle.confirmSwapWithSave race guard', () => {
+  it("returns 'cancel' immediately when a swap is already in flight", async () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
-    const first = lifecycle.confirmDestructiveSwap();
+    const first = lifecycle.confirmSwapWithSave({ incomingName: 'a' });
     expect(lifecycle.confirmer.open.value).toBe(true);
 
     // Second call while the first is awaiting user input — must no-op,
     // not yank the prompt out from under the first.
-    const second = await lifecycle.confirmDestructiveSwap();
-    expect(second).toBe(false);
+    const second = await lifecycle.confirmSwapWithSave({ incomingName: 'b' });
+    expect(second).toBe('cancel');
     expect(lifecycle.confirmer.open.value).toBe(true);
 
     lifecycle.confirmer.resolve();
-    expect(await first).toBe(true);
+    expect(await first).toBe('save');
   });
 
   it('releases the guard after a resolved swap so subsequent calls work', async () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
 
-    const first = lifecycle.confirmDestructiveSwap();
+    const first = lifecycle.confirmSwapWithSave({ incomingName: 'a' });
     lifecycle.confirmer.resolve();
-    expect(await first).toBe(true);
+    expect(await first).toBe('save');
 
-    const second = lifecycle.confirmDestructiveSwap();
+    const second = lifecycle.confirmSwapWithSave({ incomingName: 'b' });
     expect(lifecycle.confirmer.open.value).toBe(true);
     lifecycle.confirmer.cancel();
-    expect(await second).toBe(false);
+    expect(await second).toBe('cancel');
   });
 });
 

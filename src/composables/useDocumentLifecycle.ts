@@ -7,7 +7,6 @@ export type SwapChoice = 'proceed' | 'save' | 'discard' | 'cancel';
 
 export interface DocumentLifecycle {
   confirmer: ConfirmController;
-  confirmDestructiveSwap(opts?: { incomingName?: string }): Promise<boolean>;
   confirmSwapWithSave(opts?: { incomingName?: string }): Promise<SwapChoice>;
   newBlankDocument(): void;
   assignNewId(): string;
@@ -35,36 +34,6 @@ export function useDocumentLifecycle(): DocumentLifecycle {
   const designer = useDesignerStore();
   const { t } = useI18n();
   const confirmer = useConfirm();
-
-  /**
-   * Returns true to proceed, false to abort. The single "is there real
-   * work to lose" signal is `designer.canUndo`: the first-visit sample,
-   * freshly opened library docs, and freshly imported share docs all
-   * call `clearHistory()` on load, so canUndo === false reliably means
-   * "nothing the user could be surprised to lose."
-   */
-  async function confirmDestructiveSwap(opts: { incomingName?: string } = {}): Promise<boolean> {
-    if (isSwapping.value) return false;
-    isSwapping.value = true;
-    try {
-      if (!designer.canUndo) return true;
-      const messageKey = opts.incomingName
-        ? 'library.replaceConfirmWithIncoming'
-        : 'library.replaceConfirm';
-      return await confirmer.confirm({
-        title: t('library.replaceConfirmTitle'),
-        message: t(messageKey, {
-          current: designer.document.name,
-          incoming: opts.incomingName ?? '',
-        }),
-        confirmLabel: t('library.replaceConfirmAction'),
-        cancelLabel: t('common.cancel'),
-        tone: 'danger',
-      });
-    } finally {
-      isSwapping.value = false;
-    }
-  }
 
   /**
    * Three-way swap prompt. Returns one of:
@@ -132,7 +101,6 @@ export function useDocumentLifecycle(): DocumentLifecycle {
 
   return {
     confirmer,
-    confirmDestructiveSwap,
     confirmSwapWithSave,
     newBlankDocument,
     assignNewId,
