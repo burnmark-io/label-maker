@@ -342,7 +342,12 @@
       "fill": "Vulling",
       "strokeWidth": "Lijndikte",
       "cornerRadius": "Hoekstraal",
-      "invert": "Inverteren"
+      "invert": "Inverteren",
+      "lineDirection": "Richting",
+      "lineHorizontal": "Horizontaal",
+      "lineVertical": "Verticaal",
+      "lineDiagonalLtr": "Diagonaal ↗",
+      "lineDiagonalRtl": "Diagonaal ↘"
     }
   },
   "canvas": {

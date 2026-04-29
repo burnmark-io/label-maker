@@ -342,7 +342,12 @@
       "fill": "Fill",
       "strokeWidth": "Stroke width",
       "cornerRadius": "Corner radius",
-      "invert": "Invert"
+      "invert": "Invert",
+      "lineDirection": "Direction",
+      "lineHorizontal": "Horizontal",
+      "lineVertical": "Vertical",
+      "lineDiagonalLtr": "Diagonal ↗",
+      "lineDiagonalRtl": "Diagonal ↘"
     }
   },
   "canvas": {
