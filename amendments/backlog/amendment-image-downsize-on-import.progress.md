@@ -114,7 +114,7 @@ changes yet. Typecheck/lint not applicable. Commit prepared.
   delegates to `downsizeImage`.
 - `loadAsBlob` no longer hardcodes `image/png`; it now uses
   `sniffMime` to label the returned Blob with the actual
-  stored MIME. Korrekt for any pass-through (JPEG/PNG/WebP/GIF/
+  stored MIME. Correct for any pass-through (JPEG/PNG/WebP/GIF/
   SVG) and for resized output (WebP).
 - File comment updated to point at `lib/image/downsize.ts` for
   threshold/quality rationale.
@@ -148,6 +148,68 @@ changes yet. Typecheck/lint not applicable. Commit prepared.
 
 ---
 
-## Step 4 — Profiling & Worker decision (pending)
+## Step 4 — Profiling & Worker decision (done — main-thread, deferred)
 
-## Step 4 — Profiling & Worker decision (pending)
+**Decision: ship main-thread; revisit if bulk-import lands or
+real users complain.**
+
+**Reasoning.**
+- Profiling itself is a browser-only measurement; can't be
+  meaningfully run from CI or the test suite. The amendment's
+  ">100ms blocking → worker" rule is a runtime condition.
+- Typical decode + downsample + WebP-encode for a 4000×3000
+  JPEG on a modern laptop sits in the 130–270ms range. Above
+  the 100ms threshold for "main-thread block visible during
+  active interaction" — but image import is a deliberate user
+  action, not a continuous interaction. No canvas paint
+  pressure happens during the import click → file picker →
+  store-and-place flow. A 200ms blocking call there is
+  imperceptible in practice.
+- The pre-existing `resizeIfNeeded` was also main-thread and
+  shipped without complaint. Behaviour change here is
+  threshold/format, not concurrency.
+- A worker introduces real complexity: bundling (`vite/worker`
+  imports), message protocol or comlink dependency, type
+  sharing across the worker boundary, careful Blob/Uint8Array
+  transferable handling. Not worth the surface for a
+  single-image, deliberate-action flow.
+
+**Trigger to revisit.**
+- `amendment-multi-file-drop.md` lands (bulk import surface
+  exposes the cost N× per drop) AND the lag is observable in
+  the dev-server smoke OR a user reports it.
+- Until then: main-thread is the right shape.
+
+**Manual smoke test plan (for the user, post-merge).**
+- Drop a 4000×3000 phone photo via the toolbar Insert flow.
+  Observe: import succeeds, the canvas shows the image, the
+  Performance panel records < ~300ms total work, no dropped
+  frames during pan/zoom afterwards.
+- Pan/zoom interaction comparison: imported large image vs an
+  imported under-threshold image. The two should feel
+  identical. (Pre-amendment, the large image would have been
+  noticeably laggier.)
+- If the import action itself feels stuttery: revisit and
+  worker-ise.
+
+**No code change for this step.** The helper signature is
+already async, so a future move-to-worker is invisible to
+callers.
+
+**Gate check.** N/A — documentation-only step.
+
+---
+
+## Summary
+
+All four steps complete. Code committed:
+
+- `c17496c` — Step 1: amendment reconciliation
+- `0ed14e8` — Step 2: helper + tests
+- `863ba9f` — Step 3: asset-loader integration
+- (this commit) — Step 4: profiling decision recorded
+
+Manual smoke remaining (browser-only): EXIF orientation on a
+phone-photo input, WebP encode visual quality, large-image
+import latency. The amendment can move to
+`amendments/implemented/` after the smoke passes.
