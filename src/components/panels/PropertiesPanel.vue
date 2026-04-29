@@ -50,6 +50,15 @@
           >
             <CommonProperties :object="firstObject" />
           </CollapsibleSection>
+
+          <button
+            type="button"
+            class="properties-panel__delete"
+            :title="deleteTitle"
+            @click="onDeleteClick"
+          >
+            {{ deleteLabel }}
+          </button>
         </template>
       </div>
     </template>
@@ -70,11 +79,14 @@ import DocumentProperties from './DocumentProperties.vue';
 import AppearanceProperties from './AppearanceProperties.vue';
 import CollapsibleSection from '@/components/common/CollapsibleSection.vue';
 import EditableText from '@/components/common/EditableText.vue';
+import { useObjectActions } from '@/composables/useObjectActions';
 
 const MAX_NAME_LENGTH = 80;
+const DELETE_LABEL_NAME_LIMIT = 30;
 
 const { t } = useI18n();
 const designer = useDesignerStore();
+const { deleteSelection } = useObjectActions();
 
 const branch = computed<'empty' | 'document' | 'object'>(() => {
   if (isDocumentSelected(designer.selection)) return 'document';
@@ -122,6 +134,38 @@ function renameSelected(next: string): void {
   const trimmed = next.trim();
   if (!trimmed) return;
   designer.updateObject(obj.id, { name: trimmed.slice(0, MAX_NAME_LENGTH) });
+}
+
+// Single-object label truncates the name at ~30 chars so the button
+// doesn't balloon for objects with long auto-names; the full name lands
+// in the title attribute. See amendment §5.6.
+const deleteSingleName = computed<string>(() => {
+  const obj = firstObject.value;
+  if (!obj) return '';
+  return obj.name?.trim() || obj.type;
+});
+
+const deleteLabel = computed<string>(() => {
+  if (selectedObjects.value.length > 1) {
+    return t('properties.delete.multi', { n: selectedObjects.value.length });
+  }
+  const name = deleteSingleName.value;
+  const display =
+    name.length > DELETE_LABEL_NAME_LIMIT
+      ? `${name.slice(0, DELETE_LABEL_NAME_LIMIT)}…`
+      : name;
+  return t('properties.delete.single', { name: display });
+});
+
+const deleteTitle = computed<string | undefined>(() => {
+  if (selectedObjects.value.length !== 1) return undefined;
+  const name = deleteSingleName.value;
+  if (name.length <= DELETE_LABEL_NAME_LIMIT) return undefined;
+  return t('properties.delete.tooltipFullName', { name });
+});
+
+function onDeleteClick(): void {
+  deleteSelection();
 }
 </script>
 
@@ -191,11 +235,47 @@ function renameSelected(next: string): void {
   padding-top: var(--space-4);
 }
 
+.properties-panel__delete {
+  align-self: stretch;
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-error);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 40px;
+  transition:
+    background var(--duration-fast) var(--easing),
+    color var(--duration-fast) var(--easing);
+}
+
+.properties-panel__delete:hover {
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+}
+
+.properties-panel__delete:focus-visible {
+  outline: 2px solid var(--color-error);
+  outline-offset: -2px;
+}
+
 @media (pointer: coarse) {
   .properties-panel__deselect {
     min-height: 44px;
     min-width: 44px;
     font-size: var(--text-sm);
+  }
+
+  .properties-panel__delete {
+    min-height: 48px;
+    font-size: var(--text-base);
   }
 }
 </style>

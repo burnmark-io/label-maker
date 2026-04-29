@@ -14,6 +14,7 @@ const selectionRef = ref<string[]>([]);
 const documentRef = ref<LabelDocument>(makeDoc());
 const deselectSpy = vi.fn();
 const updateObjectSpy = vi.fn();
+const removeObjectSpy = vi.fn();
 
 function makeDoc(objects: LabelObject[] = []): LabelDocument {
   return {
@@ -83,6 +84,7 @@ vi.mock('@/stores/designer', async () => {
       setDocumentInfo: vi.fn(),
       setCanvas: vi.fn(),
       updateObject: updateObjectSpy,
+      removeObject: removeObjectSpy,
     }),
   };
 });
@@ -101,6 +103,7 @@ describe('PropertiesPanel', () => {
     documentRef.value = makeDoc();
     deselectSpy.mockClear();
     updateObjectSpy.mockClear();
+    removeObjectSpy.mockClear();
   });
 
   it('renders the empty state when no selection', () => {
@@ -217,6 +220,82 @@ describe('PropertiesPanel', () => {
     selectionRef.value = [DOCUMENT_SELECTION_ID];
     const wrapper = mountPanel();
     expect(wrapper.find('.properties-panel__header .editable__display').exists()).toBe(false);
+  });
+
+  describe('Delete affordance', () => {
+    it('does not render Delete button when selection is empty', () => {
+      const wrapper = mountPanel();
+      expect(wrapper.find('.properties-panel__delete').exists()).toBe(false);
+    });
+
+    it('does not render Delete button for the document selection', () => {
+      selectionRef.value = [DOCUMENT_SELECTION_ID];
+      const wrapper = mountPanel();
+      expect(wrapper.find('.properties-panel__delete').exists()).toBe(false);
+    });
+
+    it('renders "Delete {name}" for a single named object', () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'Greeting')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      const btn = wrapper.find('.properties-panel__delete');
+      expect(btn.exists()).toBe(true);
+      expect(btn.text()).toBe('Delete Greeting');
+    });
+
+    it('falls back to type when single object has no name', () => {
+      documentRef.value = makeDoc([makeText('obj-1')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      expect(wrapper.find('.properties-panel__delete').text()).toBe('Delete text');
+    });
+
+    it('renders "Delete {n} items" for multi-select', () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
+      selectionRef.value = ['obj-1', 'obj-2'];
+      const wrapper = mountPanel();
+      expect(wrapper.find('.properties-panel__delete').text()).toBe('Delete 2 items');
+    });
+
+    it('truncates long single-object names and surfaces the full name in the tooltip', () => {
+      const longName = 'Greeting on the front of the box for shipping orders';
+      documentRef.value = makeDoc([makeText('obj-1', longName)]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      const btn = wrapper.find('.properties-panel__delete');
+      // Truncated to ~30 chars + ellipsis.
+      expect(btn.text().endsWith('…')).toBe(true);
+      expect(btn.text().length).toBeLessThan(`Delete ${longName}`.length);
+      expect(btn.attributes('title')).toBe(`Delete ${longName}`);
+    });
+
+    it('does not set a tooltip when the name fits under the truncation limit', () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'A')]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      const btn = wrapper.find('.properties-panel__delete');
+      expect(btn.attributes('title')).toBeUndefined();
+    });
+
+    it('clicking Delete invokes removeObject for every selected id and clears selection', async () => {
+      documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
+      selectionRef.value = ['obj-1', 'obj-2'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__delete').trigger('click');
+      expect(removeObjectSpy).toHaveBeenCalledWith('obj-1');
+      expect(removeObjectSpy).toHaveBeenCalledWith('obj-2');
+      expect(removeObjectSpy).toHaveBeenCalledTimes(2);
+      expect(deselectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('locked objects are deletable through the button (matches keyboard behaviour)', async () => {
+      const locked = { ...makeText('obj-1', 'Locked'), locked: true } as LabelObject;
+      documentRef.value = makeDoc([locked]);
+      selectionRef.value = ['obj-1'];
+      const wrapper = mountPanel();
+      await wrapper.find('.properties-panel__delete').trigger('click');
+      expect(removeObjectSpy).toHaveBeenCalledWith('obj-1');
+    });
   });
 
   it('multi-select: toggling Visible in Appearance applies to every selected object', async () => {

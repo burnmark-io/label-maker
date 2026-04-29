@@ -1,6 +1,7 @@
 import { onMounted, onBeforeUnmount } from 'vue';
 import type { LabelObject, LabelObjectInput } from '@burnmark-io/designer-core';
 import { useDesignerStore } from '@/stores/designer';
+import { useObjectActions } from './useObjectActions';
 
 /**
  * Global keyboard shortcuts for the editor. Mounted once at the app shell
@@ -9,6 +10,7 @@ import { useDesignerStore } from '@/stores/designer';
  */
 export function useKeyboardShortcuts(): void {
   const designer = useDesignerStore();
+  const { deleteSelection } = useObjectActions();
   const clipboard: { items: LabelObjectInput[] } = { items: [] };
 
   function isEditableTarget(target: EventTarget | null): boolean {
@@ -47,11 +49,6 @@ export function useKeyboardShortcuts(): void {
     for (const o of selectedObjects()) {
       designer.updateObject(o.id, { x: o.x + dx, y: o.y + dy });
     }
-  }
-
-  function deleteSelection(): void {
-    for (const id of [...designer.selection]) designer.removeObject(id);
-    designer.deselect();
   }
 
   function selectAll(): void {

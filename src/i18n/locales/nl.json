@@ -380,6 +380,11 @@
       "lineVertical": "Verticaal",
       "lineDiagonalLtr": "Diagonaal ↗",
       "lineDiagonalRtl": "Diagonaal ↘"
+    },
+    "delete": {
+      "single": "{name} verwijderen",
+      "multi": "{n} items verwijderen",
+      "tooltipFullName": "{name} verwijderen"
     }
   },
   "canvas": {
