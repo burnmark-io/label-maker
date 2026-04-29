@@ -73,8 +73,7 @@ vi.mock('@/stores/designer', async () => {
         return selectionRef.value;
       },
       get selectedObjectIds() {
-        return computed(() => selectionRef.value.filter(id => id !== DOCUMENT_SELECTION_ID))
-          .value;
+        return computed(() => selectionRef.value.filter(id => id !== DOCUMENT_SELECTION_ID)).value;
       },
       get document() {
         return documentRef.value;

@@ -171,9 +171,7 @@ const reversed = computed(() => [...objects.value].reverse());
 
 const isDocSelected = computed(() => isDocumentSelected(designer.selection));
 
-const documentName = computed(
-  () => designer.document.name?.trim() || t('document.untitled'),
-);
+const documentName = computed(() => designer.document.name?.trim() || t('document.untitled'));
 
 const canvasSizeLabel = computed<string>(() => {
   const c = designer.document.canvas;

@@ -155,15 +155,34 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
     just verified by test)
   - 8/8 tests pass
 
-- [ ] **Step 10 — i18n keys + final wiring**
-  - Add new keys to `en.json` + `nl.json`:
-    `panel.properties` (already exists), `properties.empty`,
-    `properties.documentLabel`, `selection.headerSingle`,
-    `selection.headerMulti`, `selection.deselect`,
-    `document.name`, `document.description`, `document.background`,
-    `document.created`, `document.updated`, `document.objectCount`,
-    `document.canvasSizeChange`
-  - Final `npm run typecheck && npm run lint && npm run test`
+- [x] **Step 10 — final wiring + verification** ✓
+  - i18n keys all landed in step 5; en.json and nl.json in sync
+  - `npm run build` passes (typecheck + vite production build)
+  - `npm run test` 434/434 pass
+  - `npm run lint` clean
+  - Prettier ran on touched files (3 reformatted)
+
+---
+
+## Verification status
+
+- ✅ Static: typecheck, lint, prettier, full test suite
+- ✅ Production build succeeds
+- ⚠️ **Browser smoke test NOT run.** The dev server requires a
+  long-running process; per scope of this run, code correctness was
+  verified via tests + build only. **Recommended manual passes before
+  shipping:**
+    - Click an object → Properties tab activates with the object's fields
+    - Click empty canvas → Object tab activates
+    - Shift-click in Object list to build a multi-selection — no tab
+      switching during; on Shift release, switch to Properties
+    - Click document root → Properties shows document fields
+    - Esc clears selection → return to Object tab
+    - On a phone (or coarse-pointer narrow viewport): collapsed drawer
+      shows the tab bar; Properties badge reflects selection count;
+      tap Properties tab to expand directly into editing
+    - Edit document name in DocumentProperties; verify it persists in
+      the topbar/library
 
 ---
 
