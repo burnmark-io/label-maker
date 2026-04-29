@@ -78,6 +78,9 @@
       <button type="button" class="library__btn" @click="emit('close')">
         {{ t('common.close') }}
       </button>
+      <button type="button" class="library__btn" @click="onImportClick">
+        {{ t('library.importButton') }}
+      </button>
       <button
         v-if="designAlreadyExists"
         type="button"
@@ -98,11 +101,21 @@
         {{ designAlreadyExists ? t('library.update') : t('library.save') }}
       </button>
     </template>
+
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept=".label,.zip,application/json,application/zip"
+      class="library__file-input"
+      aria-hidden="true"
+      tabindex="-1"
+      @change="onFilePicked"
+    />
   </Modal>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useDesignerStore } from '@/stores/designer';
@@ -124,6 +137,21 @@ const lifecycle = useDocumentLifecycle();
 const labelImport = useLabelImport();
 
 const emptySlots = computed(() => Math.max(0, library.MAX_SLOTS - library.entries.length));
+
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+function onImportClick(): void {
+  fileInputRef.value?.click();
+}
+
+async function onFilePicked(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  await labelImport.runImport(file);
+  emit('close');
+}
 
 const designAlreadyExists = computed(() =>
   library.entries.some(e => e.id === designer.document.id),
@@ -426,5 +454,17 @@ watch(
 .library__btn--primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.library__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

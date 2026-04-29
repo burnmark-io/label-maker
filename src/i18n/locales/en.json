@@ -594,6 +594,7 @@
     "save": "Save current",
     "saveAsNew": "Save as new",
     "update": "Update",
+    "importButton": "Import…",
     "saved": "Design saved",
     "savedAsNew": "Saved as a new copy. Now editing the new label.",
     "newLabelToast": "New label created",
