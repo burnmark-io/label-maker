@@ -55,7 +55,55 @@ changes yet. Typecheck/lint not applicable. Commit prepared.
 
 ---
 
-## Step 2 — Helper + Tests (pending)
+## Step 2 — Helper + Tests (done)
+
+**What changed.**
+- New `src/lib/image/downsize.ts` exporting
+  `IMAGE_MAX_DIMENSION` (1500), `WEBP_QUALITY` (0.8),
+  `sniffMime`, `DownsizeResult`, and `downsizeImage`.
+- Pure pre-decode MIME sniff (JPEG / PNG / WebP / GIF / SVG /
+  fallback).
+- Decode via `createImageBitmap(blob, { imageOrientation:
+  'from-image' })` — EXIF orientation flag honoured.
+- Re-encode via `OffscreenCanvas.convertToBlob` when
+  available, falling back to `<canvas>.toBlob` for legacy
+  Safari.
+- Added `readBlobBytes` helper with FileReader fallback,
+  matching the existing pattern in `services/label-import.ts`
+  (jsdom's Blob has no `.arrayBuffer()`).
+- New `src/lib/image/__tests__/downsize.test.ts` with 20
+  cases covering sniff, pass-through, resize math (landscape /
+  portrait / square / arbitrary aspect / threshold edge),
+  WebP magic-byte verification, MIME-on-decode-Blob, EXIF
+  orientation flag forwarding, decode-failure propagation,
+  and constants. Tests stub `createImageBitmap` and
+  `OffscreenCanvas` globally — jsdom doesn't ship them.
+
+**Decisions.**
+- Bytes-in/bytes-out signature (per amendment), not Blob-in/
+  Blob-out — keeps the helper independent of the asset-loader
+  boundary and matches the "every entry point" framing.
+- FakeOffscreenCanvas test stub returns a fixed RIFF…WEBP
+  magic-byte preamble so tests can assert "valid WebP" without
+  needing a real encoder.
+- Tests do not measure actual encode quality / file size —
+  those require a real codec. Manual dev-server smoke handles
+  that.
+
+**Blockers / risks.**
+- Can't unit-test EXIF orientation end-to-end (jsdom). Test
+  asserts the flag is forwarded; real-orientation behaviour
+  is gated on browser smoke.
+- WebP encode is shimmed; production behaviour depends on the
+  browser's WebP encoder. Smoke before considering done.
+
+**Gate check.**
+- `vitest run src/lib/image/__tests__/downsize.test.ts` →
+  20 passed.
+- `vue-tsc --noEmit` → clean.
+- `eslint` → clean.
+
+---
 
 ## Step 3 — Asset-loader integration + loadAsBlob MIME fix (pending)
 
