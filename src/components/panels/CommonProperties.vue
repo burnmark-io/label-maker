@@ -56,14 +56,15 @@
     </div>
 
     <label class="props__field">
-      <span>{{ t('properties.rotation') }} ({{ Math.round(object.rotation) }}°)</span>
-      <input
-        type="range"
-        min="-180"
-        max="180"
-        class="props__input"
-        :value="Math.round(object.rotation)"
-        @input="update('rotation', Number(($event.target as HTMLInputElement).value))"
+      <span>{{ t('properties.rotation') }}</span>
+      <HybridNumberInput
+        :model-value="Math.round(object.rotation)"
+        :min="-180"
+        :max="180"
+        :step="1"
+        suffix="°"
+        :ariaLabel="t('properties.rotation')"
+        @update:model-value="update('rotation', $event)"
       />
     </label>
   </div>
@@ -73,6 +74,7 @@
 import type { LabelObject } from '@burnmark-io/designer-core';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
+import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
 
 const props = defineProps<{ object: LabelObject }>();
 const { t } = useI18n();

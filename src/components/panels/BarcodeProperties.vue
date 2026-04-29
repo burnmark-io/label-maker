@@ -45,14 +45,14 @@
     </div>
 
     <label class="props__field">
-      <span>{{ t('properties.barcode.scale') }} ({{ live.options.scale ?? 4 }})</span>
-      <input
-        type="range"
-        min="1"
-        max="12"
-        :value="live.options.scale ?? 4"
-        class="props__input"
-        @input="updateOption('scale', Number(($event.target as HTMLInputElement).value))"
+      <span>{{ t('properties.barcode.scale') }}</span>
+      <HybridNumberInput
+        :model-value="live.options.scale ?? 4"
+        :min="1"
+        :max="12"
+        :step="1"
+        :ariaLabel="t('properties.barcode.scale')"
+        @update:model-value="updateOption('scale', $event)"
       />
     </label>
 
@@ -93,6 +93,7 @@ import { useDataStore } from '@/stores/data';
 import { applyMask, getRule, hasPlaceholders, validate } from '@/lib/barcode/validation';
 import InsertVariableButton from './InsertVariableButton.vue';
 import ToggleField from './ToggleField.vue';
+import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
 
 const props = defineProps<{ object: BarcodeObject }>();
 const { t } = useI18n();

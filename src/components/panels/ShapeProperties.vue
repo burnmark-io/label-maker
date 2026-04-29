@@ -23,26 +23,26 @@
     />
 
     <label v-if="!object.fill || object.shape === 'line'" class="props__field">
-      <span>{{ t('properties.shape.strokeWidth') }} ({{ object.strokeWidth }})</span>
+      <span>{{ t('properties.shape.strokeWidth') }}</span>
       <input
-        type="range"
+        type="number"
         min="1"
         max="40"
         :value="object.strokeWidth"
         class="props__input"
-        @input="update('strokeWidth', Number(($event.target as HTMLInputElement).value))"
+        @change="update('strokeWidth', clamp(Number(($event.target as HTMLInputElement).value), 1, 40))"
       />
     </label>
 
     <label v-if="object.shape === 'rectangle'" class="props__field">
-      <span>{{ t('properties.shape.cornerRadius') }} ({{ object.cornerRadius ?? 0 }})</span>
-      <input
-        type="range"
-        min="0"
-        max="80"
-        :value="object.cornerRadius ?? 0"
-        class="props__input"
-        @input="update('cornerRadius', Number(($event.target as HTMLInputElement).value))"
+      <span>{{ t('properties.shape.cornerRadius') }}</span>
+      <HybridNumberInput
+        :model-value="object.cornerRadius ?? 0"
+        :min="0"
+        :max="80"
+        :step="1"
+        :ariaLabel="t('properties.shape.cornerRadius')"
+        @update:model-value="update('cornerRadius', $event)"
       />
     </label>
 
@@ -60,6 +60,7 @@ import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
 import ToggleField from './ToggleField.vue';
 import ColorPicker from './ColorPicker.vue';
+import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
 
 const props = defineProps<{ object: ShapeObject }>();
 const { t } = useI18n();
@@ -67,6 +68,11 @@ const designer = useDesignerStore();
 
 function update<K extends keyof ShapeObject>(key: K, value: ShapeObject[K]): void {
   designer.updateObject(props.object.id, { [key]: value } as Partial<ShapeObject>);
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  if (Number.isNaN(v)) return lo;
+  return Math.min(Math.max(v, lo), hi);
 }
 </script>
 

@@ -15,14 +15,14 @@
     </label>
 
     <label class="props__field">
-      <span>{{ t('properties.image.threshold') }} ({{ object.threshold }})</span>
-      <input
-        type="range"
-        min="0"
-        max="255"
-        :value="object.threshold"
-        class="props__input"
-        @input="update('threshold', Number(($event.target as HTMLInputElement).value))"
+      <span>{{ t('properties.image.threshold') }}</span>
+      <HybridNumberInput
+        :model-value="object.threshold"
+        :min="0"
+        :max="255"
+        :step="1"
+        :ariaLabel="t('properties.image.threshold')"
+        @update:model-value="update('threshold', $event)"
       />
     </label>
 
@@ -44,6 +44,7 @@ import type { ImageObject } from '@burnmark-io/designer-core';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
 import ToggleField from './ToggleField.vue';
+import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
 
 const props = defineProps<{ object: ImageObject }>();
 const { t } = useI18n();

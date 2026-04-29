@@ -37,6 +37,12 @@ decisions made during implementation, and any blockers discovered.
 
 ## Decisions
 
+- **Vue prop naming.** vue-tsc strict prop checking does not normalise
+  `:aria-label` → `ariaLabel`; bind in camelCase (`:ariaLabel="..."`)
+  in templates that pass to HybridNumberInput. Surfaced in step 4.
+
+
+
 - **Auto-naming kicks in only when `input.name` is undefined.** If a
   caller (e.g. duplicate via Cmd+D) passes a name, that name wins —
   duplicates preserve source name; sample-label keeps custom names if
@@ -62,7 +68,7 @@ decisions made during implementation, and any blockers discovered.
 - [x] Step 1 — Auto-naming infrastructure (commit 4db1c1e)
 - [x] Step 2 — HybridNumberInput component
 - [x] Step 3 — CollapsibleSection component
-- [ ] Step 4 — Swap range sliders → HybridNumberInput
+- [x] Step 4 — Swap range sliders → HybridNumberInput
 - [ ] Step 5 — Section reorder + Appearance + drop name input
 - [ ] Step 6 — TextProperties WYSIWYG + Style sub-section
 - [ ] Step 7 — ImageProperties thumbnail + Thermal sub-section
