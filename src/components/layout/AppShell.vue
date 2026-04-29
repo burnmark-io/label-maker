@@ -206,10 +206,19 @@ async function onHashChange(): Promise<void> {
     return;
   }
 
-  const ok = await lifecycle.confirmDestructiveSwap({ incomingName: shared.name });
-  if (!ok) {
+  const incomingName = shared.name || t('lifecycle.swapIncomingFallback');
+  const choice = await lifecycle.confirmSwapWithSave({ incomingName });
+  if (choice === 'cancel') {
     clearHashFromUrl();
     return;
+  }
+  if (choice === 'save') {
+    const savedName = designer.document.name;
+    const ok = await labelImport.saveCurrentToLibrary();
+    if (!ok) return;
+    show(t('lifecycle.savedThenOpening', { saved: savedName, incoming: incomingName }), 'info', {
+      ttlMs: 4000,
+    });
   }
 
   designer.loadDocument(shared);
