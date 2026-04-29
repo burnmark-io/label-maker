@@ -215,6 +215,7 @@
       "format": "Formaat",
       "data": "Gegevens",
       "scale": "Schaal",
+      "encoding": "Codering",
       "includeText": "Tekst tonen",
       "errorCorrection": "Foutcorrectie",
       "ecLow": "Laag",

@@ -215,6 +215,7 @@
       "format": "Format",
       "data": "Data",
       "scale": "Scale",
+      "encoding": "Encoding",
       "includeText": "Show text",
       "errorCorrection": "Error correction",
       "ecLow": "Low",

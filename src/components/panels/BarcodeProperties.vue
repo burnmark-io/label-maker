@@ -44,43 +44,48 @@
       </p>
     </div>
 
-    <label class="props__field">
-      <span>{{ t('properties.barcode.scale') }}</span>
-      <HybridNumberInput
-        :model-value="live.options.scale ?? 4"
-        :min="1"
-        :max="12"
-        :step="1"
-        :ariaLabel="t('properties.barcode.scale')"
-        @update:model-value="updateOption('scale', $event)"
+    <CollapsibleSection
+      :title="t('properties.barcode.encoding')"
+      storage-key="properties.collapsible.barcode.encoding"
+    >
+      <label class="props__field">
+        <span>{{ t('properties.barcode.scale') }}</span>
+        <HybridNumberInput
+          :model-value="live.options.scale ?? 4"
+          :min="1"
+          :max="12"
+          :step="1"
+          :ariaLabel="t('properties.barcode.scale')"
+          @update:model-value="updateOption('scale', $event)"
+        />
+      </label>
+
+      <label v-if="isQrFormat" class="props__field">
+        <span>{{ t('properties.barcode.errorCorrection') }}</span>
+        <select
+          :value="live.options.eclevel ?? 'M'"
+          class="props__input"
+          @change="
+            updateOption(
+              'eclevel',
+              ($event.target as HTMLSelectElement).value as 'L' | 'M' | 'Q' | 'H',
+            )
+          "
+        >
+          <option value="L">{{ t('properties.barcode.ecLow') }} (L)</option>
+          <option value="M">{{ t('properties.barcode.ecMedium') }} (M)</option>
+          <option value="Q">{{ t('properties.barcode.ecQuartile') }} (Q)</option>
+          <option value="H">{{ t('properties.barcode.ecHigh') }} (H)</option>
+        </select>
+      </label>
+
+      <ToggleField
+        v-if="!isQrFormat"
+        :label="t('properties.barcode.includeText')"
+        :model-value="live.options.includetext ?? true"
+        @update:model-value="updateOption('includetext', $event)"
       />
-    </label>
-
-    <label v-if="isQrFormat" class="props__field">
-      <span>{{ t('properties.barcode.errorCorrection') }}</span>
-      <select
-        :value="live.options.eclevel ?? 'M'"
-        class="props__input"
-        @change="
-          updateOption(
-            'eclevel',
-            ($event.target as HTMLSelectElement).value as 'L' | 'M' | 'Q' | 'H',
-          )
-        "
-      >
-        <option value="L">{{ t('properties.barcode.ecLow') }} (L)</option>
-        <option value="M">{{ t('properties.barcode.ecMedium') }} (M)</option>
-        <option value="Q">{{ t('properties.barcode.ecQuartile') }} (Q)</option>
-        <option value="H">{{ t('properties.barcode.ecHigh') }} (H)</option>
-      </select>
-    </label>
-
-    <ToggleField
-      v-if="!isQrFormat"
-      :label="t('properties.barcode.includeText')"
-      :model-value="live.options.includetext ?? true"
-      @update:model-value="updateOption('includetext', $event)"
-    />
+    </CollapsibleSection>
   </div>
 </template>
 
@@ -94,6 +99,7 @@ import { applyMask, getRule, hasPlaceholders, validate } from '@/lib/barcode/val
 import InsertVariableButton from './InsertVariableButton.vue';
 import ToggleField from './ToggleField.vue';
 import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
+import CollapsibleSection from '@/components/common/CollapsibleSection.vue';
 
 const props = defineProps<{ object: BarcodeObject }>();
 const { t } = useI18n();

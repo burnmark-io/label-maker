@@ -72,7 +72,7 @@ decisions made during implementation, and any blockers discovered.
 - [x] Step 5 — Section reorder + Appearance + drop name input
 - [x] Step 6 — TextProperties WYSIWYG + Style sub-section
 - [x] Step 7 — ImageProperties thumbnail + Thermal sub-section
-- [ ] Step 8 — BarcodeProperties data prominent + Encoding sub-section
+- [x] Step 8 — BarcodeProperties data prominent + Encoding sub-section
 - [ ] Step 9 — ShapeProperties visual picker + conditional fields
 - [ ] Step 10 — Inline rename in ObjectsPanel + selection header
 
