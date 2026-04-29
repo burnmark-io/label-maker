@@ -61,7 +61,7 @@ decisions made during implementation, and any blockers discovered.
 
 - [x] Step 1 — Auto-naming infrastructure (commit 4db1c1e)
 - [x] Step 2 — HybridNumberInput component
-- [ ] Step 3 — CollapsibleSection component
+- [x] Step 3 — CollapsibleSection component
 - [ ] Step 4 — Swap range sliders → HybridNumberInput
 - [ ] Step 5 — Section reorder + Appearance + drop name input
 - [ ] Step 6 — TextProperties WYSIWYG + Style sub-section
