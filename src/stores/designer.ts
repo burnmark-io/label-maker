@@ -1,6 +1,18 @@
 import { defineStore } from 'pinia';
 import { computed, triggerRef } from 'vue';
 import { useLabelDesigner } from '@burnmark-io/designer-vue';
+
+/**
+ * Sentinel id used to represent "the document itself is selected" inside
+ * the existing `selection: string[]` shape — keeps the selection model a
+ * flat string array and avoids a discriminated-union migration. Mutually
+ * exclusive with regular object ids: `select()` strips this if combined.
+ */
+export const DOCUMENT_SELECTION_ID = '$document';
+
+export function isDocumentSelected(selection: readonly string[]): boolean {
+  return selection.length === 1 && selection[0] === DOCUMENT_SELECTION_ID;
+}
 import {
   exportBundled as exportBundledCore,
   exportPdf as exportPdfCore,
@@ -118,6 +130,47 @@ export const useDesignerStore = defineStore('designer', () => {
   }
 
   /**
+   * Edit document name / description. designer-core has no public mutator
+   * for these and the private `mutate` helper that pushes history isn't
+   * exposed, so we mirror `setDocumentMetadata`'s pattern: mutate in place
+   * + trigger the ref. Trade-off: name/description edits don't appear in
+   * undo history. Acceptable for now — these fields previously had no
+   * editable surface at all; adding undo is a designer-core enhancement.
+   */
+  function setDocumentInfo(patch: { name?: string; description?: string }): void {
+    const raw = composable.designer.document;
+    if (patch.name !== undefined) raw.name = patch.name;
+    if (patch.description !== undefined) raw.description = patch.description;
+    raw.updatedAt = new Date().toISOString();
+    triggerRef(composable.document);
+  }
+
+  /**
+   * Selection guard: document and regular object ids are mutually
+   * exclusive selection scopes. If both are present (e.g. a Shift-click
+   * adding a regular object while the document was selected), the regular
+   * objects win and the sentinel is dropped — last user action takes
+   * priority.
+   */
+  function select(ids: readonly string[]): void {
+    const hasDoc = ids.includes(DOCUMENT_SELECTION_ID);
+    const hasObj = ids.some(id => id !== DOCUMENT_SELECTION_ID);
+    const next = hasDoc && hasObj ? ids.filter(id => id !== DOCUMENT_SELECTION_ID) : [...ids];
+    composable.select(next);
+  }
+
+  /**
+   * Selection filtered to regular object ids only — strips the
+   * `$document` sentinel. Use this for any consumer that iterates
+   * selection looking up actual `LabelObject`s; passing the sentinel to
+   * `document.objects.find(...)` returns `undefined` and corrupts
+   * downstream logic.
+   */
+  const selectedObjectIds = computed<string[]>(() =>
+    composable.selection.value.filter(id => id !== DOCUMENT_SELECTION_ID),
+  );
+
+  /**
    * Doc snapshot used for rendering, exports, and the print pipeline.
    *
    * For a horizontal die-cut canvas we swap `widthDots`/`heightDots`
@@ -207,6 +260,7 @@ export const useDesignerStore = defineStore('designer', () => {
   return {
     document: reactiveDocument,
     selection: composable.selection,
+    selectedObjectIds,
     canUndo: composable.canUndo,
     canRedo: composable.canRedo,
     isRendering: composable.isRendering,
@@ -219,13 +273,14 @@ export const useDesignerStore = defineStore('designer', () => {
     updateObject,
     removeObject,
     reorder: composable.reorder,
-    select: composable.select,
+    select,
     deselect: composable.deselect,
     loadDocument,
     newDocument: composable.newDocument,
     setCanvas,
     setOrientation,
     setDocumentMetadata,
+    setDocumentInfo,
     undo: composable.undo,
     redo: composable.redo,
     clearHistory: composable.clearHistory,

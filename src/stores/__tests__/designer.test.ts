@@ -27,7 +27,7 @@ vi.mock('@burnmark-io/designer-core', async () => {
   return { ...actual, renderFull: renderFullSpy };
 });
 
-import { useDesignerStore } from '../designer';
+import { useDesignerStore, isDocumentSelected, DOCUMENT_SELECTION_ID } from '../designer';
 
 describe('designer store — orientation-aware render', () => {
   beforeEach(() => {
@@ -77,5 +77,56 @@ describe('designer store — orientation-aware render', () => {
     expect(designer.designer.document.canvas.widthDots).toBe(100);
     expect(designer.designer.document.canvas.heightDots).toBe(50);
     expect(designer.designer.document.canvas.orientation).toBe('horizontal');
+  });
+});
+
+describe('designer store — selection model with document sentinel', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  it('isDocumentSelected returns true only for the lone sentinel', () => {
+    expect(isDocumentSelected([DOCUMENT_SELECTION_ID])).toBe(true);
+    expect(isDocumentSelected([])).toBe(false);
+    expect(isDocumentSelected(['some-object-id'])).toBe(false);
+    expect(isDocumentSelected([DOCUMENT_SELECTION_ID, 'some-object-id'])).toBe(false);
+  });
+
+  it('select() drops the sentinel when combined with regular object ids (last action wins)', () => {
+    const designer = useDesignerStore();
+    designer.select([DOCUMENT_SELECTION_ID, 'obj-a']);
+    expect(designer.selection).toEqual(['obj-a']);
+  });
+
+  it('select([sentinel]) sets pure document selection', () => {
+    const designer = useDesignerStore();
+    designer.select(['obj-a']);
+    designer.select([DOCUMENT_SELECTION_ID]);
+    expect(designer.selection).toEqual([DOCUMENT_SELECTION_ID]);
+    expect(isDocumentSelected(designer.selection)).toBe(true);
+  });
+
+  it('selectedObjectIds filters out the sentinel', () => {
+    const designer = useDesignerStore();
+    designer.select([DOCUMENT_SELECTION_ID]);
+    expect(designer.selectedObjectIds).toEqual([]);
+
+    designer.select(['obj-a', 'obj-b']);
+    expect(designer.selectedObjectIds).toEqual(['obj-a', 'obj-b']);
+  });
+
+  it('setDocumentInfo patches name and description in place', () => {
+    const designer = useDesignerStore();
+    designer.setDocumentInfo({ name: 'My label', description: 'A test description' });
+    expect(designer.document.name).toBe('My label');
+    expect(designer.document.description).toBe('A test description');
+  });
+
+  it('setDocumentInfo bumps updatedAt', async () => {
+    const designer = useDesignerStore();
+    const before = designer.document.updatedAt;
+    await new Promise(r => setTimeout(r, 5));
+    designer.setDocumentInfo({ name: 'New name' });
+    expect(designer.document.updatedAt).not.toBe(before);
   });
 });
