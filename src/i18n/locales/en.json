@@ -113,7 +113,9 @@
       "heading": "Save as file",
       "png": "PNG",
       "pdf": "PDF",
-      "label": ".label"
+      "label": ".label",
+      "rangeOption": "Range {from}–{to}",
+      "errorsToast": "Exported {ok} of {total}; {failed} row(s) failed"
     }
   },
   "toolbar": {

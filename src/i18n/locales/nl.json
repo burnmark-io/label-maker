@@ -113,6 +113,8 @@
       "heading": "Opslaan als bestand",
       "png": "PNG",
       "pdf": "PDF",
+      "rangeOption": "Bereik {from}–{to}",
+      "errorsToast": "{ok} van {total} geëxporteerd; {failed} rij(en) mislukt",
       "label": ".label"
     }
   },

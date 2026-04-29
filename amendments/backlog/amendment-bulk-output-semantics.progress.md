@@ -101,3 +101,44 @@ i18n keys added under `output.source.*` in `en.json` and `nl.json`.
 7 component tests in `src/components/output/__tests__/SourceRow.test.ts`
 cover empty-dataset hide, segment activation, range seeding,
 out-of-bounds clamp, and the from > to flip.
+
+### 1.3 SaveAsFileSection multi-row export — DONE
+
+`src/components/output/SaveAsFileSection.vue`:
+- Header gains a Source `<select>` (Active / All / Range — Range
+  option label reads "Range N–M" when the slice is set; the user
+  edits range bounds via the SourceRow in the Print section).
+- PDF export uses `exportPdfBatch(designer, rows, mapping)` — passes
+  the mapped row array so designer-core renders an N-page PDF.
+- PNG export uses `exportPngBatch(designer, rows, mapping, baseName)`
+  — single PNG when count = 1, JSZip-bundled `<base>-001.png` …
+  `<base>-NNN.png` when count > 1. Per-row render errors collected
+  and reported via toast.
+- `.label` / `.bnmk` button hidden when Source ≠ Active. (Out of
+  scope: the file currently only renders `.label`; `.bnmk` will
+  follow the same hide rule when its button arrives.)
+
+New services:
+- `src/services/export/pdf-batch.ts`
+- `src/services/export/png-batch.ts`
+
+`jszip` was already a dependency — no package.json change needed.
+
+Tests extended: 11 cases in
+`src/components/output/__tests__/SaveAsFileSection.test.ts` cover
+both single-row and multi-row paths plus the `.label` visibility rule.
+
+**Decision — Source dropdown displays read-only Range bounds.** The
+range edit affordance lives in the SourceRow in the Print section; the
+Save-as-file dropdown only displays the chosen kind and switches
+between Active / All / Range. Picking Range from the dropdown without
+an existing range seeds 1..rowCount. This keeps the section header
+compact (per §7.3 layout density) while still surfacing the slice the
+buttons will act on.
+
+**Decision — JSZip flush in tests.** vitest jsdom doesn't propagate
+`generateAsync`'s internal scheduler in a single microtask flush; the
+PNG-zip test loops `flushPromises` + a 5ms timer five times to let it
+resolve. Documented inline.
+
+Typecheck clean. Full suite (612 tests) green.
