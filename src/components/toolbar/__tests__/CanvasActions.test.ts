@@ -38,6 +38,7 @@ vi.mock('@/stores/data', () => ({
     rows: [],
     mapping: {},
     hasData: false,
+    currentIndex: 0,
   }),
 }));
 

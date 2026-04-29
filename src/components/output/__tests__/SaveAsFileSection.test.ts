@@ -14,7 +14,7 @@ const showMock = vi.fn();
 
 vi.mock('@/stores/designer', () => ({
   useDesignerStore: () => ({
-    document: { name: 'My label' },
+    document: { id: 'doc-1', name: 'My label' },
     exportPng,
     exportPdf,
     toJSON,
@@ -22,7 +22,7 @@ vi.mock('@/stores/designer', () => ({
 }));
 
 vi.mock('@/stores/data', () => ({
-  useDataStore: () => ({ rows: [], mapping: {} }),
+  useDataStore: () => ({ rows: [], mapping: {}, currentIndex: 0 }),
 }));
 
 vi.mock('@/composables/useToast', () => ({

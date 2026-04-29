@@ -34,6 +34,7 @@ vi.mock('@/stores/printer', () => ({
 
 vi.mock('@/stores/designer', () => ({
   useDesignerStore: () => ({
+    document: { id: 'doc-1' },
     renderToRGBA: vi.fn(async () => ({
       width: 100,
       height: 50,
@@ -43,7 +44,7 @@ vi.mock('@/stores/designer', () => ({
 }));
 
 vi.mock('@/stores/data', () => ({
-  useDataStore: () => ({ currentVariables: {} }),
+  useDataStore: () => ({ currentVariables: {}, rows: [], currentIndex: 0 }),
 }));
 
 vi.mock('@/composables/useToast', () => ({
