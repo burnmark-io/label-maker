@@ -113,24 +113,23 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
   - Stub PropertiesPanel.vue created (empty-state only); content fills
     in step 6
 
-- [ ] **Step 6 — PropertiesPanel component**
-  - New `src/components/panels/PropertiesPanel.vue`
-  - Three render branches: empty / document / objects
-  - Sticky selection header at top with `[Deselect]` button (44px touch
-    target on coarse-pointer)
-  - Object branch: render `CommonProperties` + per-type component(s).
-    For multi-select of mixed types: only `CommonProperties`. For
-    single-type multi-select: also the type-specific component (deferred
-    multi-rendering remains a Properties-content concern; for now, single
-    object only renders type-specific).
-  - Tests
+- [x] **Step 6 — PropertiesPanel component** ✓
+  - Three branches (empty / document / object) gated by a single
+    computed; sticky selection header with the Deselect button
+  - **Multi-select rendering rule (interim):** type-specific components
+    only render when `selectedObjects.length === 1`. Multi-select shows
+    `CommonProperties` only. Per the amendment, a richer multi-select
+    rendering ships with `amendment-multi-select-fixes.md`.
+  - 7/7 tests pass
 
-- [ ] **Step 7 — DocumentProperties component**
-  - New `src/components/panels/DocumentProperties.vue`
-  - Editable: name, description, background (colour picker)
-  - Read-only: canvas size (with toolbar hint), createdAt, updatedAt,
-    object count
-  - Wired to designer store actions added in Step 1
+- [x] **Step 7 — DocumentProperties component** ✓
+  - Editable name (text), description (textarea), background (colour input)
+  - Read-only canvas size (mm-derived from dots/dpi, hint text points
+    at the toolbar size picker), created/updated (locale-formatted),
+  - object count
+  - Wires to `setDocumentInfo` and `setCanvas({ background })`.
+  - Combined into one commit with PropertiesPanel — they're inseparable
+    for the document branch to render.
 
 - [ ] **Step 8 — ObjectsPanel: drop inline expansion + add document root**
   - Remove the chevron column and the `objects-list__form` region
