@@ -22,6 +22,7 @@
 import { computed, ref, watch } from 'vue';
 import { applyTemplate, BarcodeEngine, type BarcodeObject } from '@burnmark-io/designer-core';
 import { useDataStore } from '@/stores/data';
+import { useTransformContext } from '@/composables/useTransformContext';
 
 const engine = new BarcodeEngine();
 const data = useDataStore();
@@ -59,6 +60,7 @@ interface KonvaNodeRef {
 
 const nodeRef = ref<KonvaNodeRef | null>(null);
 const image = ref<ImageBitmap | HTMLImageElement | null>(null);
+const { groupContext } = useTransformContext();
 
 const renderedData = computed(() => applyTemplate(props.object.data, data.currentVariables));
 
@@ -126,10 +128,12 @@ function onDragMove(event: { target?: { x?: () => number; y?: () => number } }):
   emit('dragmove', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
 }
 
-function onDragEnd(event: { target?: { x?: () => number; y?: () => number } }): void {
+function onDragEnd(event: { target?: { x?: () => number; y?: () => number; width?: () => number; height?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragend', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
+  const renderedWidth = t.width ? t.width() : props.object.width;
+  const renderedHeight = t.height ? t.height() : props.object.height;
+  emit('dragend', t.x() - renderedWidth / 2, t.y() - renderedHeight / 2);
 }
 
 function onTransformEnd(): void {
@@ -141,9 +145,32 @@ function onTransformEnd(): void {
   const newHeight = Math.max(8, node.height() * sy);
   node.scaleX(1);
   node.scaleY(1);
+
+  const ctx = groupContext.value;
+  const snap = ctx?.perObject.get(props.object.id);
+  let x: number;
+  let y: number;
+  if (ctx && snap) {
+    const scaleX = newWidth / snap.width;
+    const scaleY = newHeight / snap.height;
+    const dRotDeg = node.rotation() - snap.rotation;
+    const dRotRad = (dRotDeg * Math.PI) / 180;
+    const ox = snap.offsetX * scaleX;
+    const oy = snap.offsetY * scaleY;
+    const cosD = Math.cos(dRotRad);
+    const sinD = Math.sin(dRotRad);
+    const newCx = ctx.centre.x + (ox * cosD - oy * sinD);
+    const newCy = ctx.centre.y + (ox * sinD + oy * cosD);
+    x = newCx - newWidth / 2;
+    y = newCy - newHeight / 2;
+  } else {
+    x = node.x() - newWidth / 2;
+    y = node.y() - newHeight / 2;
+  }
+
   emit('transformend', {
-    x: node.x() - newWidth / 2,
-    y: node.y() - newHeight / 2,
+    x,
+    y,
     width: newWidth,
     height: newHeight,
     rotation: node.rotation(),

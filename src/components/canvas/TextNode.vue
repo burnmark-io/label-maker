@@ -24,7 +24,7 @@ import { useTransformContext } from '@/composables/useTransformContext';
 
 const data = useDataStore();
 const shiftKey = useShiftKey();
-const { activeAnchor } = useTransformContext();
+const { activeAnchor, groupContext } = useTransformContext();
 
 const props = defineProps<{
   object: TextObject;
@@ -139,10 +139,13 @@ function onDragMove(event: { target?: { x?: () => number; y?: () => number } }):
   emit('dragmove', t.x() - props.object.width / 2, t.y() - renderHeight.value / 2);
 }
 
-function onDragEnd(event: { target?: { x?: () => number; y?: () => number } }): void {
+function onDragEnd(event: { target?: { x?: () => number; y?: () => number; width?: () => number; height?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragend', t.x() - props.object.width / 2, t.y() - renderHeight.value / 2);
+  // For autoHeight text the stored height may differ from what Konva
+  // actually rendered — read the live node height to avoid position drift.
+  const renderedHeight = props.object.autoHeight && t.height ? t.height() : props.object.height;
+  emit('dragend', t.x() - props.object.width / 2, t.y() - renderedHeight / 2);
 }
 
 const MIN_DIM = 10;
@@ -342,9 +345,33 @@ function onTransformEnd(): void {
   const newWidth = node.width();
   const newHeight = node.height();
 
+  // In a multi-select context compute position relative to group centre
+  // so the relative layout is preserved across scale/rotate operations.
+  const ctx = groupContext.value;
+  const snap = ctx?.perObject.get(props.object.id);
+  let posX: number;
+  let posY: number;
+  if (ctx && snap) {
+    const scaleX = newWidth / snap.width;
+    const scaleY = newHeight / snap.height;
+    const dRotDeg = node.rotation() - snap.rotation;
+    const dRotRad = (dRotDeg * Math.PI) / 180;
+    const ox = snap.offsetX * scaleX;
+    const oy = snap.offsetY * scaleY;
+    const cosD = Math.cos(dRotRad);
+    const sinD = Math.sin(dRotRad);
+    const newCx = ctx.centre.x + (ox * cosD - oy * sinD);
+    const newCy = ctx.centre.y + (ox * sinD + oy * cosD);
+    posX = newCx - newWidth / 2;
+    posY = newCy - newHeight / 2;
+  } else {
+    posX = node.x() - newWidth / 2;
+    posY = node.y() - newHeight / 2;
+  }
+
   const patch: TransformEndPatch = {
-    x: node.x() - newWidth / 2,
-    y: node.y() - newHeight / 2,
+    x: posX,
+    y: posY,
     width: newWidth,
     rotation: node.rotation(),
   };

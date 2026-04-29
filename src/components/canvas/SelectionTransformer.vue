@@ -6,7 +6,7 @@
 import { computed, onMounted, ref, watch, nextTick } from 'vue';
 import type { LabelObject } from '@burnmark-io/designer-core';
 import type { KonvaNode, KonvaStage } from './konva-types';
-import { useTransformContext } from '@/composables/useTransformContext';
+import { useTransformContext, type PerObjectSnapshot } from '@/composables/useTransformContext';
 
 const props = defineProps<{
   selectedIds: string[];
@@ -25,7 +25,7 @@ interface KonvaTransformer extends KonvaNode {
 }
 
 const transformerRef = ref<{ getNode(): KonvaTransformer } | null>(null);
-const { activeAnchor } = useTransformContext();
+const { activeAnchor, groupContext } = useTransformContext();
 
 const ALL_ANCHORS = [
   'top-left',
@@ -83,6 +83,46 @@ function onTransformStart(): void {
   const tr = transformerRef.value?.getNode();
   if (!tr) return;
   activeAnchor.value = tr.getActiveAnchor?.() ?? '';
+
+  // Capture group-relative context so per-object transformend handlers
+  // can compute positions relative to the group centre rather than each
+  // object's own centre — see §5 of amendment-multi-select-fixes.md.
+  const objs = props.selectedObjects;
+  if (objs.length === 0) {
+    groupContext.value = null;
+    return;
+  }
+
+  // Compute axis-aligned bounding box of all selected objects.
+  // For a rotated object the AABB is conservative (we use its x/y/w/h
+  // stored values), which is acceptable — the math stays correct.
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const obj of objs) {
+    if (obj.x < minX) minX = obj.x;
+    if (obj.y < minY) minY = obj.y;
+    if (obj.x + obj.width > maxX) maxX = obj.x + obj.width;
+    if (obj.y + obj.height > maxY) maxY = obj.y + obj.height;
+  }
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+
+  const perObject = new Map<string, PerObjectSnapshot>();
+  for (const obj of objs) {
+    const objCx = obj.x + obj.width / 2;
+    const objCy = obj.y + obj.height / 2;
+    perObject.set(obj.id, {
+      offsetX: objCx - cx,
+      offsetY: objCy - cy,
+      width: obj.width,
+      height: obj.height,
+      rotation: obj.rotation,
+    });
+  }
+
+  groupContext.value = { centre: { x: cx, y: cy }, perObject };
 }
 
 async function syncSelection(): Promise<void> {

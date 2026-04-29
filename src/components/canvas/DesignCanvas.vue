@@ -7,6 +7,9 @@
       @tap="onStageClick"
       @wheel="onWheel"
       @dblclick="onStageDoubleClick"
+      @pointerdown="onStagePointerDown"
+      @pointermove="onStagePointerMove"
+      @pointerup="onStagePointerUp"
     >
       <VLayer>
         <PaperBackground
@@ -62,6 +65,14 @@
           :width="viewport.labelWidthDots.value"
           :height="viewport.labelHeightDots.value"
           :scale="viewport.zoom.value"
+        />
+      </VLayer>
+
+      <!-- Marquee rubber-band layer — above objects, below transformer -->
+      <VLayer :config="{ listening: false }">
+        <VRect
+          v-if="marquee.active"
+          :config="marqueeRectConfig"
         />
       </VLayer>
 
@@ -271,6 +282,9 @@ function onStageClick(event: {
   if (!target) return;
   const name = typeof target.name === 'function' ? target.name() : '';
   if (name === 'object') return;
+  // If the pointer just completed a marquee drag, the pointerup handler
+  // already set the selection — skip the deselect here.
+  if (marquee.value.dragging) return;
   designer.deselect();
   if (editingTextId.value) finishEditing();
 }
@@ -319,6 +333,197 @@ function finishEditing(): void {
 
 function cancelEditing(): void {
   editingTextId.value = null;
+}
+
+// ---------------------------------------------------------------------------
+// Marquee (rubber-band) select
+// ---------------------------------------------------------------------------
+
+/** Threshold in canvas dots before the drag becomes a marquee. */
+const MARQUEE_THRESHOLD = 3;
+
+interface MarqueeState {
+  /** Whether the marquee rect is currently visible. */
+  active: boolean;
+  /**
+   * Whether we received a pointerdown on empty canvas and are tracking
+   * pointer movement (may or may not have crossed the threshold yet).
+   */
+  tracking: boolean;
+  /** Start point in canvas-dot coordinates. */
+  startX: number;
+  startY: number;
+  /** Current pointer position in canvas-dot coordinates. */
+  endX: number;
+  endY: number;
+  /** Whether Shift was held at pointerdown. */
+  shiftHeld: boolean;
+  /**
+   * Whether we've crossed the 3-dot threshold and a marquee rect is
+   * in progress. Kept true until after the @click event fires so that
+   * the click handler can skip its deselect logic.
+   */
+  dragging: boolean;
+}
+
+const marquee = ref<MarqueeState>({
+  active: false,
+  tracking: false,
+  startX: 0,
+  startY: 0,
+  endX: 0,
+  endY: 0,
+  shiftHeld: false,
+  dragging: false,
+});
+
+const marqueeRectConfig = computed(() => {
+  const m = marquee.value;
+  const x = Math.min(m.startX, m.endX);
+  const y = Math.min(m.startY, m.endY);
+  const w = Math.abs(m.endX - m.startX);
+  const h = Math.abs(m.endY - m.startY);
+  const strokeWidth = 1.5 / viewport.zoom.value;
+  return {
+    x,
+    y,
+    width: w,
+    height: h,
+    stroke: '#f59e0b',
+    strokeWidth,
+    fill: '#f59e0b22',
+    dash: [4 / viewport.zoom.value, 3 / viewport.zoom.value],
+    listening: false,
+  };
+});
+
+/** Convert a stage-container pixel position to canvas-dot coordinates. */
+function pointerToDot(px: number, py: number): { x: number; y: number } {
+  return {
+    x: (px - viewport.offsetX.value) / viewport.zoom.value,
+    y: (py - viewport.offsetY.value) / viewport.zoom.value,
+  };
+}
+
+function isOnObject(event: { target?: { name?: () => string } }): boolean {
+  const target = event.target;
+  if (!target) return false;
+  const name = typeof target.name === 'function' ? target.name() : '';
+  return name === 'object';
+}
+
+function onStagePointerDown(event: {
+  target?: { name?: () => string };
+  evt?: { shiftKey?: boolean; button?: number; clientX?: number; clientY?: number; pointerId?: number };
+}): void {
+  // Do not start a marquee when clicking on an object, when text is being
+  // edited, or when it's not the primary (left) button.
+  if (isOnObject(event)) return;
+  if (editingTextId.value) return;
+  if (event.evt?.button !== undefined && event.evt.button !== 0) return;
+
+  const pos = konvaStage.value?.getPointerPosition();
+  if (!pos) return;
+
+  const dot = pointerToDot(pos.x, pos.y);
+  marquee.value = {
+    active: false,
+    tracking: true,
+    startX: dot.x,
+    startY: dot.y,
+    endX: dot.x,
+    endY: dot.y,
+    shiftHeld: event.evt?.shiftKey ?? false,
+    dragging: false,
+  };
+}
+
+function onStagePointerMove(_event: {
+  target?: { name?: () => string };
+  evt?: PointerEvent;
+}): void {
+  // Only track if a pointerdown on empty canvas started tracking.
+  if (!marquee.value.tracking) return;
+
+  const pos = konvaStage.value?.getPointerPosition();
+  if (!pos) return;
+
+  const dot = pointerToDot(pos.x, pos.y);
+  const dx = dot.x - marquee.value.startX;
+  const dy = dot.y - marquee.value.startY;
+
+  if (!marquee.value.dragging) {
+    if (Math.hypot(dx, dy) < MARQUEE_THRESHOLD) return;
+    marquee.value.dragging = true;
+    marquee.value.active = true;
+  }
+
+  marquee.value.endX = dot.x;
+  marquee.value.endY = dot.y;
+}
+
+function onStagePointerUp(_event: {
+  target?: { name?: () => string };
+  evt?: { shiftKey?: boolean };
+}): void {
+  if (!marquee.value.tracking) return;
+
+  if (!marquee.value.dragging) {
+    // No marquee threshold reached — reset state; existing click/deselect
+    // handler on @click fires normally.
+    marquee.value.active = false;
+    marquee.value.tracking = false;
+    marquee.value.dragging = false;
+    return;
+  }
+
+  const m = marquee.value;
+  const rectMinX = Math.min(m.startX, m.endX);
+  const rectMinY = Math.min(m.startY, m.endY);
+  const rectMaxX = Math.max(m.startX, m.endX);
+  const rectMaxY = Math.max(m.startY, m.endY);
+
+  // Find all visible, non-locked objects whose AABB intersects the rect.
+  const hits: string[] = [];
+  for (const obj of document.value.objects) {
+    if (!obj.visible) continue;
+    if (obj.locked) continue;
+    // Object AABB (using stored x/y/width/height — ignoring rotation for
+    // marquee hit testing, consistent with industry-standard tools).
+    const objMinX = obj.x;
+    const objMinY = obj.y;
+    const objMaxX = obj.x + obj.width;
+    const objMaxY = obj.y + obj.height;
+    // AABB intersection test.
+    if (
+      objMaxX > rectMinX &&
+      objMinX < rectMaxX &&
+      objMaxY > rectMinY &&
+      objMinY < rectMaxY
+    ) {
+      hits.push(obj.id);
+    }
+  }
+
+  if (hits.length > 0 || !m.shiftHeld) {
+    const newSelection = m.shiftHeld
+      ? [...new Set([...designer.selection, ...hits])]
+      : hits;
+    if (newSelection.length > 0) {
+      designer.select(newSelection);
+    } else {
+      designer.deselect();
+    }
+  }
+
+  // Reset marquee state. Keep `dragging` true momentarily so that the
+  // @click event (which fires after @pointerup) skips its deselect logic.
+  // We clear it on the next microtask via Promise.resolve().
+  marquee.value.active = false;
+  marquee.value.tracking = false;
+  void Promise.resolve().then(() => {
+    marquee.value.dragging = false;
+  });
 }
 
 let dragOriginalPositions = new Map<string, { x: number; y: number }>();

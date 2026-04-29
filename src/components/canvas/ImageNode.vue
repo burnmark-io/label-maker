@@ -22,7 +22,7 @@
 import { computed, ref, watch } from 'vue';
 import type { ImageObject } from '@burnmark-io/designer-core';
 import { useDesignerStore } from '@/stores/designer';
-import { computeFit } from '@/lib/image/fit';
+import { useTransformContext } from '@/composables/useTransformContext';
 
 const props = defineProps<{
   object: ImageObject;
@@ -58,6 +58,7 @@ interface KonvaNodeRef {
 const nodeRef = ref<KonvaNodeRef | null>(null);
 
 const designer = useDesignerStore();
+const { groupContext } = useTransformContext();
 const image = ref<HTMLImageElement | null>(null);
 
 watch(
@@ -76,35 +77,22 @@ watch(
   { immediate: true },
 );
 
-const config = computed(() => {
-  const img = image.value;
-  const source = img ? { width: img.naturalWidth, height: img.naturalHeight } : null;
-  const fit = computeFit({
-    fit: props.object.fit,
-    bbox: { width: props.object.width, height: props.object.height },
-    source,
-  });
-  return {
-    id: props.object.id,
-    name: 'object',
-    x: props.object.x + props.object.width / 2,
-    y: props.object.y + props.object.height / 2,
-    rotation: props.object.rotation,
-    opacity: props.object.opacity,
-    visible: props.object.visible,
-    listening: !props.object.locked,
-    draggable: props.draggable && !props.object.locked,
-    image: img,
-    width: fit.width,
-    height: fit.height,
-    offsetX: fit.offsetX,
-    offsetY: fit.offsetY,
-    cropX: fit.cropX,
-    cropY: fit.cropY,
-    cropWidth: fit.cropWidth,
-    cropHeight: fit.cropHeight,
-  };
-});
+const config = computed(() => ({
+  id: props.object.id,
+  name: 'object',
+  x: props.object.x + props.object.width / 2,
+  y: props.object.y + props.object.height / 2,
+  offsetX: props.object.width / 2,
+  offsetY: props.object.height / 2,
+  width: props.object.width,
+  height: props.object.height,
+  rotation: props.object.rotation,
+  opacity: props.object.opacity,
+  visible: props.object.visible,
+  listening: !props.object.locked,
+  draggable: props.draggable && !props.object.locked,
+  image: image.value,
+}));
 
 const placeholderConfig = computed(() => ({
   id: props.object.id,
@@ -132,10 +120,12 @@ function onDragMove(event: { target?: { x?: () => number; y?: () => number } }):
   emit('dragmove', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
 }
 
-function onDragEnd(event: { target?: { x?: () => number; y?: () => number } }): void {
+function onDragEnd(event: { target?: { x?: () => number; y?: () => number; width?: () => number; height?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragend', t.x() - props.object.width / 2, t.y() - props.object.height / 2);
+  const renderedWidth = t.width ? t.width() : props.object.width;
+  const renderedHeight = t.height ? t.height() : props.object.height;
+  emit('dragend', t.x() - renderedWidth / 2, t.y() - renderedHeight / 2);
 }
 
 function onTransformEnd(): void {
@@ -143,17 +133,36 @@ function onTransformEnd(): void {
   if (!node) return;
   const sx = node.scaleX();
   const sy = node.scaleY();
-  // Multiply against the stored bbox dims, not node.width()/height():
-  // for non-fill fit modes the Konva node renders at the inner-image
-  // size, not the bbox. The user-facing transform is "scale the bbox";
-  // the image then re-fits inside.
-  const newWidth = Math.max(8, props.object.width * sx);
-  const newHeight = Math.max(8, props.object.height * sy);
+  const newWidth = Math.max(8, node.width() * sx);
+  const newHeight = Math.max(8, node.height() * sy);
   node.scaleX(1);
   node.scaleY(1);
+
+  const ctx = groupContext.value;
+  const snap = ctx?.perObject.get(props.object.id);
+  let x: number;
+  let y: number;
+  if (ctx && snap) {
+    const scaleX = newWidth / snap.width;
+    const scaleY = newHeight / snap.height;
+    const dRotDeg = node.rotation() - snap.rotation;
+    const dRotRad = (dRotDeg * Math.PI) / 180;
+    const ox = snap.offsetX * scaleX;
+    const oy = snap.offsetY * scaleY;
+    const cosD = Math.cos(dRotRad);
+    const sinD = Math.sin(dRotRad);
+    const newCx = ctx.centre.x + (ox * cosD - oy * sinD);
+    const newCy = ctx.centre.y + (ox * sinD + oy * cosD);
+    x = newCx - newWidth / 2;
+    y = newCy - newHeight / 2;
+  } else {
+    x = node.x() - newWidth / 2;
+    y = node.y() - newHeight / 2;
+  }
+
   emit('transformend', {
-    x: node.x() - newWidth / 2,
-    y: node.y() - newHeight / 2,
+    x,
+    y,
     width: newWidth,
     height: newHeight,
     rotation: node.rotation(),
