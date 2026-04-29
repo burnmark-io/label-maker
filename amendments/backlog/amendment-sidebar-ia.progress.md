@@ -141,14 +141,19 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
   - Reflects selected state via `aria-pressed`
   - 7/7 tests pass
 
-- [ ] **Step 9 — Mobile drawer: persistent tab bar + full-width**
-  - Below 900px (the existing breakpoint), keep the tab bar visible in
-    the collapsed state too (today it's `display: none`)
-  - Below 768px AND coarse-pointer: drawer is `width: 100vw`, flush bottom corners
+- [x] **Step 9 — Mobile drawer: persistent tab bar + full-width** ✓
+  - Tab bar stays visible in collapsed state on mobile (was hidden);
+    body region collapses, tab bar remains as the discovery surface
   - Tap inactive tab while collapsed → expand + switch
-  - Tap active tab while expanded → collapse
-  - 56px tab bar height on coarse-pointer
-  - Selection-count badge visible on collapsed Properties tab
+  - Tap active tab while expanded (mobile only) → collapse
+  - On desktop, tap active tab is a no-op — mobile-only collapse
+    behaviour gated via `useMediaQuery('(max-width: 900px)')`
+  - `(pointer: coarse) and (max-width: 768px)`: drawer is `width: 100vw`,
+    border + radius removed, tabs get `min-height: 56px`
+  - Tablet portrait (768–900px) keeps the inset rail look
+  - Selection badge visible on collapsed Properties tab (already true,
+    just verified by test)
+  - 8/8 tests pass
 
 - [ ] **Step 10 — i18n keys + final wiring**
   - Add new keys to `en.json` + `nl.json`:

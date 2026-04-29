@@ -26,7 +26,7 @@
         type="button"
         class="side-panel__tab"
         :class="{ 'side-panel__tab--active': prefs.sidePanelTab === tab.id }"
-        @click="prefs.sidePanelTab = tab.id"
+        @click="onTabClick(tab.id)"
         @keydown.right.prevent="cycle(1)"
         @keydown.left.prevent="cycle(-1)"
       >
@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useMediaQuery } from '@vueuse/core';
 import { usePreferencesStore, type SidePanelTab } from '@/stores/preferences';
 import { useDesignerStore, isDocumentSelected } from '@/stores/designer';
 import { useTabAutoSwitch } from '@/composables/useTabAutoSwitch';
@@ -73,6 +74,11 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const prefs = usePreferencesStore();
 const designer = useDesignerStore();
+
+// Mobile breakpoint matches the existing `@media (max-width: 900px)` rules
+// in this file. The collapse/expand drawer behaviour only meaningfully
+// applies below this width.
+const isMobile = useMediaQuery('(max-width: 900px)');
 
 useTabAutoSwitch();
 
@@ -96,6 +102,32 @@ function cycle(delta: number): void {
   const idx = ids.indexOf(prefs.sidePanelTab);
   const next = (idx + delta + ids.length) % ids.length;
   prefs.sidePanelTab = ids[next];
+}
+
+/**
+ * Mobile drawer gestures (per amendment §7.3):
+ *   - Tap inactive tab while collapsed → expand + switch
+ *   - Tap active tab while expanded    → collapse
+ *   - Tap inactive tab while expanded  → switch (drawer stays open)
+ *   - Tap active tab while collapsed   → expand (no tab change)
+ *
+ * Collapse-on-active-tap only fires on mobile — on desktop the panel
+ * is a fixed rail with no collapse affordance, so the gesture has no
+ * meaning there and clicking the active tab is a no-op (matches the
+ * old behaviour).
+ */
+function onTabClick(id: SidePanelTab): void {
+  const wasActive = prefs.sidePanelTab === id;
+  if (isMobile.value && !prefs.sidePanelOpen) {
+    prefs.sidePanelOpen = true;
+    if (!wasActive) prefs.sidePanelTab = id;
+    return;
+  }
+  if (isMobile.value && wasActive) {
+    prefs.sidePanelOpen = false;
+    return;
+  }
+  prefs.sidePanelTab = id;
 }
 </script>
 
@@ -197,12 +229,28 @@ function cycle(delta: number): void {
   .side-panel__handle {
     display: inline-flex;
   }
-  .side-panel--collapsed .side-panel__tabs,
+  /* Tab bar stays visible in collapsed state — it's the discovery surface
+     (amendment §7.2). Only the body region collapses. */
   .side-panel--collapsed .side-panel__body {
     display: none;
   }
-  .side-panel--collapsed .side-panel__handle {
+  .side-panel--collapsed .side-panel__tabs {
     border-bottom: none;
+  }
+}
+
+/* Full-viewport drawer on touch + narrow viewports — flush bottom edges
+   so it reads as the primary surface, not a floating sheet (amendment
+   §7.1). Tablet portrait (768–900px) keeps the inset look. */
+@media (pointer: coarse) and (max-width: 768px) {
+  .side-panel {
+    width: 100vw;
+    border-left: none;
+    border-radius: 0;
+  }
+  .side-panel__tab {
+    /* 44px hit target + padding; amendment §7.4. */
+    min-height: 56px;
   }
 }
 </style>
