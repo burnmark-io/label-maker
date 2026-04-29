@@ -49,10 +49,19 @@ function makeText(id: string, name?: string): LabelObject {
     opacity: 1,
     visible: true,
     locked: false,
-    text: 'Hello',
+    content: 'Hello',
     fontFamily: 'Arial',
     fontSize: 16,
-  } as LabelObject;
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    textAlign: 'left',
+    color: '#000',
+    letterSpacing: 0,
+    lineHeight: 1.2,
+    invert: false,
+    wrap: false,
+    autoHeight: false,
+  } as unknown as LabelObject;
 }
 
 vi.mock('@/stores/designer', async () => {

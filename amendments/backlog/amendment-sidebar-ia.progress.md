@@ -131,16 +131,15 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
   - Combined into one commit with PropertiesPanel — they're inseparable
     for the document branch to render.
 
-- [ ] **Step 8 — ObjectsPanel: drop inline expansion + add document root**
-  - Remove the chevron column and the `objects-list__form` region
-  - Remove `expandedId` logic
-  - Add document root row at top:
-    - Icon (📄), label = `document.name || 'Untitled label'`, subtitle = canvas dims
-    - `aria-pressed` reflects document selection
-    - Click → `designer.select([DOCUMENT_SELECTION_ID])`
-    - No lock/visible/reorder controls
-    - Visually distinct (lighter background, separator beneath)
-  - Tests for new row + click behaviour
+- [x] **Step 8 — ObjectsPanel: drop inline expansion + add document root** ✓
+  - Removed chevron, expanded form region, expandedId watcher, all
+    per-type property imports
+  - Document row renders above the layer list with separator beneath,
+    document icon, name (falling back to "Untitled label"), and the
+    canvas-size subtitle
+  - Click always replaces selection (no shift handling for the doc row)
+  - Reflects selected state via `aria-pressed`
+  - 7/7 tests pass
 
 - [ ] **Step 9 — Mobile drawer: persistent tab bar + full-width**
   - Below 900px (the existing breakpoint), keep the tab bar visible in

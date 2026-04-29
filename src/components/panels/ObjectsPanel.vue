@@ -1,5 +1,28 @@
 <template>
   <div class="objects-panel">
+    <ul class="objects-list" role="list">
+      <li
+        class="objects-list__item objects-list__item--document"
+        :class="{ 'objects-list__item--selected': isDocSelected }"
+      >
+        <div
+          class="objects-list__row objects-list__row--document"
+          role="button"
+          tabindex="0"
+          :aria-pressed="isDocSelected"
+          @click="onClickDocument"
+          @keydown.enter.prevent="onClickDocument"
+          @keydown.space.prevent="onClickDocument"
+        >
+          <span class="objects-list__icon" aria-hidden="true">📄</span>
+          <span class="objects-list__doc-info">
+            <span class="objects-list__label">{{ documentName }}</span>
+            <span class="objects-list__doc-subtitle">{{ canvasSizeLabel }}</span>
+          </span>
+        </div>
+      </li>
+    </ul>
+
     <p v-if="!objects.length" class="panel__empty">
       {{ t('panel.emptyObjects') }}
     </p>
@@ -11,17 +34,13 @@
         class="objects-list__item"
         :class="{
           'objects-list__item--selected': designer.selection.includes(obj.id),
-          'objects-list__item--expanded': expandedId === obj.id,
         }"
       >
         <div
-          :id="rowHeaderId(obj.id)"
           :ref="el => bindRow(obj.id, el as HTMLElement | null)"
           class="objects-list__row"
           role="button"
           tabindex="0"
-          :aria-expanded="expandedId === obj.id"
-          :aria-controls="formRegionId(obj.id)"
           @click="onClickRow(obj.id, $event)"
           @keydown.enter.prevent="onClickRow(obj.id, $event as unknown as MouseEvent)"
           @keydown.space.prevent="onClickRow(obj.id, $event as unknown as MouseEvent)"
@@ -129,27 +148,6 @@
           >
             ↓
           </button>
-          <span
-            class="objects-list__chevron"
-            :class="{ 'objects-list__chevron--open': expandedId === obj.id }"
-            aria-hidden="true"
-          >
-            ▸
-          </span>
-        </div>
-
-        <div
-          v-if="expandedId === obj.id"
-          :id="formRegionId(obj.id)"
-          role="region"
-          :aria-labelledby="rowHeaderId(obj.id)"
-          class="objects-list__form"
-        >
-          <CommonProperties :object="obj" />
-          <TextProperties v-if="obj.type === 'text'" :object="obj" />
-          <ImageProperties v-else-if="obj.type === 'image'" :object="obj" />
-          <BarcodeProperties v-else-if="obj.type === 'barcode'" :object="obj" />
-          <ShapeProperties v-else-if="obj.type === 'shape'" :object="obj" />
         </div>
       </li>
     </ul>
@@ -157,16 +155,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useId, watch } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useDesignerStore } from '@/stores/designer';
+import { useDesignerStore, DOCUMENT_SELECTION_ID, isDocumentSelected } from '@/stores/designer';
 import { useOutOfBounds } from '@/composables/useOutOfBounds';
 import type { LabelObject } from '@burnmark-io/designer-core';
-import CommonProperties from './CommonProperties.vue';
-import TextProperties from './TextProperties.vue';
-import ImageProperties from './ImageProperties.vue';
-import BarcodeProperties from './BarcodeProperties.vue';
-import ShapeProperties from './ShapeProperties.vue';
 
 const { t } = useI18n();
 const designer = useDesignerStore();
@@ -176,36 +169,25 @@ const objects = computed<LabelObject[]>(() => designer.document.objects);
 // Top-of-list = top-of-z-order
 const reversed = computed(() => [...objects.value].reverse());
 
-// Selection drives expansion. Length 0 → no expand. Length ≥ 1 → expand the
-// most-recently-clicked id (last element of selection, which is how
-// shift-click toggle order is recorded).
-const expandedId = computed<string | null>(() => {
-  const sel = designer.selection;
-  if (sel.length === 0) return null;
-  const lastId = sel[sel.length - 1];
-  return objects.value.some(o => o.id === lastId) ? lastId : null;
-});
+const isDocSelected = computed(() => isDocumentSelected(designer.selection));
 
-const idPrefix = useId();
-function rowHeaderId(id: string): string {
-  return `${idPrefix}-row-${id}`;
-}
-function formRegionId(id: string): string {
-  return `${idPrefix}-form-${id}`;
-}
+const documentName = computed(
+  () => designer.document.name?.trim() || t('document.untitled'),
+);
+
+const canvasSizeLabel = computed<string>(() => {
+  const c = designer.document.canvas;
+  const widthMm = (c.widthDots / c.dpi) * 25.4;
+  const heightMm = c.heightDots > 0 ? (c.heightDots / c.dpi) * 25.4 : 0;
+  if (heightMm === 0) return `${widthMm.toFixed(0)}mm × continuous`;
+  return `${widthMm.toFixed(0)} × ${heightMm.toFixed(0)} mm`;
+});
 
 const rowEls = new Map<string, HTMLElement>();
 function bindRow(id: string, el: HTMLElement | null): void {
   if (el) rowEls.set(id, el);
   else rowEls.delete(id);
 }
-
-watch(expandedId, async id => {
-  if (!id) return;
-  await nextTick();
-  const el = rowEls.get(id);
-  el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-});
 
 function iconFor(type: LabelObject['type']): string {
   switch (type) {
@@ -239,6 +221,12 @@ function onClickRow(id: string, event: MouseEvent | KeyboardEvent): void {
   } else {
     designer.select([id]);
   }
+}
+
+// The document root row never participates in shift-add (mutually exclusive
+// with regular object selection per amendment §6.2). Always replaces.
+function onClickDocument(): void {
+  designer.select([DOCUMENT_SELECTION_ID]);
 }
 
 function toggleVisible(id: string, visible: boolean): void {
@@ -297,8 +285,15 @@ function sendBackward(id: string): void {
   background: var(--color-primary-subtle);
 }
 
-.objects-list__item--expanded {
+.objects-list__item--document {
   background: var(--color-bg-canvas);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.objects-list__item--document.objects-list__item--selected {
+  background: var(--color-primary-subtle);
 }
 
 .objects-list__row {
@@ -314,6 +309,10 @@ function sendBackward(id: string): void {
 
 .objects-list__row:hover {
   background: var(--color-primary-subtle);
+}
+
+.objects-list__row--document {
+  align-items: flex-start;
 }
 
 .objects-list__item--selected > .objects-list__row {
@@ -341,6 +340,21 @@ function sendBackward(id: string): void {
   text-transform: none;
 }
 
+.objects-list__doc-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.objects-list__doc-subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .objects-list__warn {
   font-size: 12px;
   line-height: 1;
@@ -364,27 +378,5 @@ function sendBackward(id: string): void {
 .objects-list__action:hover {
   background: rgba(0, 0, 0, 0.06);
   color: var(--color-text);
-}
-
-.objects-list__chevron {
-  width: 14px;
-  text-align: center;
-  font-size: 10px;
-  color: var(--color-text-muted);
-  transition: transform var(--duration-fast) var(--easing);
-  flex-shrink: 0;
-}
-
-.objects-list__chevron--open {
-  transform: rotate(90deg);
-  color: var(--color-text);
-}
-
-.objects-list__form {
-  padding: var(--space-3);
-  padding-top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
 }
 </style>
