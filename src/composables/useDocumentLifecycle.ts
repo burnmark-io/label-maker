@@ -3,9 +3,12 @@ import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
 import { useConfirm, type ConfirmController } from './useConfirm';
 
+export type SwapChoice = 'proceed' | 'save' | 'discard' | 'cancel';
+
 export interface DocumentLifecycle {
   confirmer: ConfirmController;
   confirmDestructiveSwap(opts?: { incomingName?: string }): Promise<boolean>;
+  confirmSwapWithSave(opts?: { incomingName?: string }): Promise<SwapChoice>;
   newBlankDocument(): void;
   assignNewId(): string;
 }
@@ -63,6 +66,45 @@ export function useDocumentLifecycle(): DocumentLifecycle {
     }
   }
 
+  /**
+   * Three-way swap prompt. Returns one of:
+   * - `'proceed'` — there is no work to lose; no prompt was shown. Caller
+   *   should load without saving. Distinct from `'discard'` so callers
+   *   can tell the prompt was skipped vs. the user actively chose discard.
+   * - `'save'`  — save current to the library before loading the incoming.
+   * - `'discard'` — load the incoming, throw away current canvas work.
+   * - `'cancel'` — abort; canvas state preserved.
+   */
+  async function confirmSwapWithSave(
+    opts: { incomingName?: string } = {},
+  ): Promise<SwapChoice> {
+    if (isSwapping.value) return 'cancel';
+    isSwapping.value = true;
+    try {
+      if (!designer.canUndo) return 'proceed';
+      const messageKey = opts.incomingName
+        ? 'lifecycle.swapMessage'
+        : 'lifecycle.swapMessageNoIncoming';
+      const result = await confirmer.choose({
+        title: t('lifecycle.swapTitle'),
+        message: t(messageKey, {
+          current: designer.document.name,
+          incoming: opts.incomingName ?? '',
+        }),
+        primaryLabel: t('lifecycle.swapSaveAndOpen'),
+        secondaryLabel: t('lifecycle.swapDiscardAndOpen'),
+        cancelLabel: t('common.cancel'),
+        primaryTone: 'primary',
+        secondaryTone: 'danger',
+      });
+      if (result === 'primary') return 'save';
+      if (result === 'secondary') return 'discard';
+      return 'cancel';
+    } finally {
+      isSwapping.value = false;
+    }
+  }
+
   function newBlankDocument(): void {
     designer.newDocument();
     designer.clearHistory();
@@ -88,7 +130,13 @@ export function useDocumentLifecycle(): DocumentLifecycle {
     return next;
   }
 
-  return { confirmer, confirmDestructiveSwap, newBlankDocument, assignNewId };
+  return {
+    confirmer,
+    confirmDestructiveSwap,
+    confirmSwapWithSave,
+    newBlankDocument,
+    assignNewId,
+  };
 }
 
 /** Test-only helper: clear the swap guard between unit tests. */
