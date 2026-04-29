@@ -127,6 +127,17 @@
     "sheetSetup": {
       "useThis": "Use this sheet"
     },
+    "progress": {
+      "printing": "Printing {total} labels — row {row} of {rowsTotal}, copy {copy} of {copies}",
+      "printingSimple": "Printing {total} labels — row {row} of {rowsTotal}",
+      "generatingSheet": "Generating sheet PDF…",
+      "errorRow": "Row {row} failed — {message}",
+      "successCount": "Printed {count} labels",
+      "cancelled": "Cancelled after {printed} of {total} labels",
+      "cancel": "Cancel",
+      "resume": "Resume from row {row}",
+      "dismiss": "Dismiss"
+    },
     "button": {
       "print": "Print",
       "printNLabels": "Print {n} labels",

@@ -127,6 +127,17 @@
     "sheetSetup": {
       "useThis": "Dit vel gebruiken"
     },
+    "progress": {
+      "printing": "{total} labels printen — rij {row} van {rowsTotal}, exemplaar {copy} van {copies}",
+      "printingSimple": "{total} labels printen — rij {row} van {rowsTotal}",
+      "generatingSheet": "Vel-PDF genereren…",
+      "errorRow": "Rij {row} mislukt — {message}",
+      "successCount": "{count} labels geprint",
+      "cancelled": "Geannuleerd na {printed} van {total} labels",
+      "cancel": "Annuleren",
+      "resume": "Hervatten vanaf rij {row}",
+      "dismiss": "Sluiten"
+    },
     "button": {
       "print": "Printen",
       "printNLabels": "{n} labels printen",

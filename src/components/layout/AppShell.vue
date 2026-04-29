@@ -42,6 +42,7 @@
 
     <AppFooter />
     <ToastStack />
+    <PrintProgressToast />
     <AboutDialog :open="aboutOpen" @close="aboutOpen = false" />
     <HelpDialog :open="helpOpen" @close="helpOpen = false" @restart-tour="onRestartTour" />
     <PrivacyDialog
@@ -82,6 +83,7 @@ import ImportDropOverlay from './ImportDropOverlay.vue';
 import BatchPanel from '@/components/batch/BatchPanel.vue';
 import SheetDialog from '@/components/sheets/SheetDialog.vue';
 import SheetViewer from '@/components/sheets/SheetViewer.vue';
+import PrintProgressToast from '@/components/feedback/PrintProgressToast.vue';
 import { useSheetViewer } from '@/composables/useSheetViewer';
 import DesignLibrary from '@/components/library/DesignLibrary.vue';
 import ShareDialog from '@/components/share/ShareDialog.vue';

@@ -331,3 +331,67 @@ Phase 2 ships an end-to-end Thermal | Sheet output toggle. Sheet
 template is now a persistent setting, not a per-print interruption.
 Sheet output renders directly from the regular Print button into the
 inline viewer — one click, output appears (ADR-001 satisfied).
+
+---
+
+## Phase 3 — Progress toast + BatchPanel removal
+
+### 3.1 PrintProgressToast + thermal-batch service — DONE
+
+**`src/services/print/thermal-batch.ts` (new)** —
+`runThermalBatch(designer, printer, opts)` iterates `rows × copies`
+row-major, calling `printer.print(image, { copies: 1, density })` per
+label so cutter-capable printers cut after every label (§5.1, §5.2).
+Generator is `renderBatch` from designer-core. The service surfaces
+progress via `onProgress`, supports `shouldCancel` (polled between
+labels, halt after current label), and `onRowError` (resume / halt
+choice). Returns a `BatchSummary` with `printed / total / cancelled /
+errors / lastRowIndex` for the caller to drive UI on. `resumeFrom`
+parameter lets a follow-up call pick up where a halted batch left off.
+
+**`src/composables/usePrintProgress.ts` (new)** — module-level
+singleton state for the inline progress toast: `start` /
+`startSheetGeneration` / `update` / `fail(rowIndex, msg, onResume?)` /
+`succeed` / `cancel` / `markCancelled` / `dismiss`. The
+`isCancelRequested` getter is what the batch service polls between
+labels.
+
+**`src/components/feedback/PrintProgressToast.vue` (new)** — bottom-
+right toast (singleton via the composable). Renders:
+- Printing: progress bar + "Printing N labels — row X of R, copy Y of Z".
+- Generating sheet: simple "Generating sheet PDF…" message.
+- Error: row-failed message + Resume / Dismiss.
+- Cancelled: "Cancelled after X of N labels" + Dismiss.
+- Success: "Printed N labels", auto-dismisses after 4s.
+
+Mounted in `AppShell` so the toast is global.
+
+**Print path wiring** — `CanvasActions.vue` and `PrintSection.vue`
+now route `count > 1` thermal prints through `runThermalBatch` (with
+the progress toast); `count = 1` keeps the existing single-shot
+`printer.print(image, { copies: 1 })` path. No-dataset + copies > 1
+synthesizes a single empty row so the batch loop drives copies.
+
+Sheet path gets a delayed "Generating sheet PDF…" toast (250ms
+threshold) so common <1s renders don't flash the toast (§10).
+
+i18n keys: `progress.*` in both locales.
+
+**Decision — synthetic empty row for no-dataset batch.** Plan §1.3
+mentions "no dataset, copies = 5 → 5 labels". Rather than treat
+this as a special case in the batch service, the consumer passes
+`rows = [{}]` and `copies = 5`. The renderBatch generator yields
+once with empty variables, the copy loop drives the 5-print
+behaviour. Single code path, accurate per-copy progress.
+
+**Decision — count == 1 still uses `printer.print({ copies: 1 })`.**
+Avoids re-architecting the trivial single-print path that already
+works. The new batch path is opt-in based on `config.count > 1`.
+
+**Touched test:** `PrintSection.test.ts`'s "Print invokes
+printer.print with copies + density" updated to `copies = 1` (the
+3-copy variant now goes through the batch path which doesn't expose
+a single `printer.print(_, { copies: 3 })` call). The existing
+single-print contract is preserved — verified by the updated case.
+
+Full suite (631 tests) green; typecheck clean.

@@ -101,10 +101,10 @@ describe('PrintSection', () => {
     expect(button.attributes('disabled')).toBeDefined();
   });
 
-  it('clicking Print invokes printer.print with configured copies + density', async () => {
+  it('clicking Print with copies = 1 invokes printer.print once', async () => {
     const wrapper = mountSection();
     const config = usePrintConfigStore();
-    config.copies = 3;
+    config.copies = 1;
     config.density = 'light';
 
     await wrapper.find('.output-print__action').trigger('click');
@@ -112,7 +112,7 @@ describe('PrintSection', () => {
 
     expect(printMock).toHaveBeenCalledTimes(1);
     expect(printMock).toHaveBeenCalledWith(expect.anything(), {
-      copies: 3,
+      copies: 1,
       density: 'light',
     });
   });

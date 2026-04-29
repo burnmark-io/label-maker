@@ -47,9 +47,13 @@ import { useToast } from '@/composables/useToast';
 import SourceRow from './SourceRow.vue';
 import DestinationRow from './DestinationRow.vue';
 import { renderSheet } from '@/services/export/sheet-render';
+import { runThermalBatch } from '@/services/print/thermal-batch';
+import { applyMappingToRow } from '@/services/column-mapper';
 import { useSheetViewer } from '@/composables/useSheetViewer';
+import { usePrintProgress } from '@/composables/usePrintProgress';
 
 const sheetViewer = useSheetViewer();
+const printProgress = usePrintProgress();
 
 const emit = defineEmits<{
   (e: 'open-sheet-picker'): void;
@@ -118,6 +122,14 @@ async function onPrint(): Promise<void> {
     await onPrintToSheet();
     return;
   }
+  if (config.count > 1) {
+    await runBatchPrint();
+    return;
+  }
+  await runSinglePrint();
+}
+
+async function runSinglePrint(): Promise<void> {
   const toastId = show(t('actions.printingTo', { model: printer.model ?? '' }), 'info', {
     sticky: true,
   });
@@ -146,12 +158,55 @@ async function onPrint(): Promise<void> {
   }
 }
 
+async function runBatchPrint(): Promise<void> {
+  const indices = config.rowsForSelection;
+  const rowsForBatch =
+    indices.length > 0
+      ? indices.map(i => applyMappingToRow(data.rows[i]!, data.mapping))
+      : [{}];
+  const copiesPerRow = Math.max(1, Math.min(30, config.copies || 1));
+  const rowsTotal = rowsForBatch.length;
+  const total = rowsTotal * copiesPerRow;
+
+  printProgress.start(total, rowsTotal, copiesPerRow);
+  try {
+    const summary = await runThermalBatch(designer, printer, {
+      rows: rowsForBatch,
+      copies: copiesPerRow,
+      density: config.density,
+      onProgress(p) {
+        printProgress.update({
+          rowIndex: p.rowIndex,
+          copy: p.copy,
+          completed: p.completed,
+        });
+      },
+      shouldCancel: () => printProgress.isCancelRequested(),
+    });
+    if (summary.cancelled) {
+      printProgress.markCancelled(summary.printed);
+    } else if (summary.errors.size > 0) {
+      const firstRow = summary.errors.keys().next().value as number;
+      const message = summary.errors.get(firstRow) ?? '';
+      printProgress.fail(firstRow, message);
+    } else {
+      printProgress.succeed(summary.printed);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    printProgress.fail(0, message);
+  }
+}
+
 async function onPrintToSheet(): Promise<void> {
   const sheet = config.sheetTemplate;
   if (!sheet) {
     emit('open-sheet-picker');
     return;
   }
+  const slowToastTimer = window.setTimeout(() => {
+    printProgress.startSheetGeneration();
+  }, 250);
   try {
     const indices = config.rowsForSelection;
     const rows = indices.map(i => data.rows[i]!).filter(Boolean);
@@ -161,6 +216,10 @@ async function onPrintToSheet(): Promise<void> {
       mapping: data.mapping,
       copies: Math.max(1, config.copies || 1),
     });
+    window.clearTimeout(slowToastTimer);
+    if (printProgress.state.value.kind === 'generating-sheet') {
+      printProgress.dismiss();
+    }
     const fileName = `${designer.document.name}-${sheet.brand}-${sheet.part}.pdf`
       .toLowerCase()
       .replace(/[^a-z0-9.-]+/g, '-');
@@ -174,6 +233,10 @@ async function onPrintToSheet(): Promise<void> {
       emptyOnLastPage: result.emptyOnLastPage,
     });
   } catch (err) {
+    window.clearTimeout(slowToastTimer);
+    if (printProgress.state.value.kind === 'generating-sheet') {
+      printProgress.dismiss();
+    }
     show(err instanceof Error ? err.message : String(err), 'error');
   }
 }
