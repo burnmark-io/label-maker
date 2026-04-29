@@ -95,6 +95,13 @@ export const usePrinterStore = defineStore('printer', () => {
    * auto reconnect (`setAdapter(non-null)`).
    */
   const circuitBroken = ref<boolean>(false);
+  /**
+   * Error codes that have already been surfaced as a first-occurrence
+   * toast in this session. Drives "toast once per code, not every poll"
+   * behaviour in the status pill component (§4.3). Cleared on
+   * (re)connect; the consumer clears it when the errors array empties.
+   */
+  const seenErrorCodes = shallowRef<ReadonlySet<string>>(new Set<string>());
 
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let consecutiveFailures = 0;
@@ -129,11 +136,13 @@ export const usePrinterStore = defineStore('printer', () => {
       // Fresh adapter = fresh chance for status polling.
       circuitBroken.value = false;
       consecutiveFailures = 0;
+      seenErrorCodes.value = new Set<string>();
       startPolling();
     } else {
       stopPolling();
       lastStatus.value = null;
       lastStatusAt.value = 0;
+      seenErrorCodes.value = new Set<string>();
       detectedMedia.value = null;
       // Clear the override too — selectedMedia carries driver-specific
       // fields, so leaving it set across a disconnect risks handing a
@@ -307,6 +316,20 @@ export const usePrinterStore = defineStore('printer', () => {
     }
   }
 
+  /** Mark error codes as already-surfaced. Used by the toast wiring. */
+  function markErrorCodesSeen(codes: readonly string[]): void {
+    if (codes.length === 0) return;
+    const next = new Set(seenErrorCodes.value);
+    for (const c of codes) next.add(c);
+    seenErrorCodes.value = next;
+  }
+
+  /** Reset the seen-codes set. Called when the errors array empties. */
+  function clearSeenErrorCodes(): void {
+    if (seenErrorCodes.value.size === 0) return;
+    seenErrorCodes.value = new Set<string>();
+  }
+
   // Pause polling during a print job, resume (with burst window) after.
   // Reusing `isPrinting` avoids a parallel printJobInFlight flag — the
   // burst timer is set in `print()`'s finally clause just above.
@@ -348,6 +371,7 @@ export const usePrinterStore = defineStore('printer', () => {
     lastStatus,
     lastStatusAt,
     circuitBroken,
+    seenErrorCodes,
     isConnected,
     family,
     model,
@@ -363,5 +387,7 @@ export const usePrinterStore = defineStore('printer', () => {
     refreshPreview,
     print,
     disconnect,
+    markErrorCodesSeen,
+    clearSeenErrorCodes,
   };
 });
