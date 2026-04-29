@@ -137,7 +137,7 @@
     "objects": "Objecten",
     "properties": "Eigenschappen",
     "data": "Gegevens",
-    "preview": "Voorbeeld",
+    "output": "Output",
     "noSelection": "Selecteer een object om de eigenschappen te bewerken",
     "emptyObjects": "Voeg tekst, een afbeelding, barcode of vorm toe om te beginnen",
     "objectsHint": "Klik op een object om de details te bewerken.",

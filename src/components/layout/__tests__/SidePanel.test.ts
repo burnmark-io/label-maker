@@ -109,10 +109,10 @@ function mountPanel() {
 }
 
 describe('SidePanel — tab structure', () => {
-  it('renders four tabs in order: Objects, Properties, Data, Preview', () => {
+  it('renders four tabs in order: Objects, Properties, Data, Output', () => {
     const wrapper = mountPanel();
     const labels = wrapper.findAll('.side-panel__tab').map(t => t.text());
-    expect(labels.map(l => l.split(/\s/)[0])).toEqual(['Objects', 'Properties', 'Data', 'Preview']);
+    expect(labels.map(l => l.split(/\s/)[0])).toEqual(['Objects', 'Properties', 'Data', 'Output']);
   });
 
   it('hides the Properties badge when nothing is selected', () => {

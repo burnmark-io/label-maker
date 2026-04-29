@@ -50,7 +50,7 @@
       <ObjectsPanel v-if="prefs.sidePanelTab === 'objects'" />
       <PropertiesPanel v-else-if="prefs.sidePanelTab === 'properties'" />
       <DataPanel v-else-if="prefs.sidePanelTab === 'data'" @open-batch="emit('open-batch')" />
-      <PrintPreview v-else-if="prefs.sidePanelTab === 'preview'" />
+      <PrintPreview v-else-if="prefs.sidePanelTab === 'output'" />
     </div>
   </aside>
 </template>
@@ -86,7 +86,7 @@ const tabs = computed<{ id: SidePanelTab; label: string }[]>(() => [
   { id: 'objects', label: t('panel.objects') },
   { id: 'properties', label: t('panel.properties') },
   { id: 'data', label: t('panel.data') },
-  { id: 'preview', label: t('panel.preview') },
+  { id: 'output', label: t('panel.output') },
 ]);
 
 // Document selection contributes 0 to the badge count — it's a single

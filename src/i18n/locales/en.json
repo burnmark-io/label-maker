@@ -137,7 +137,7 @@
     "objects": "Objects",
     "properties": "Properties",
     "data": "Data",
-    "preview": "Preview",
+    "output": "Output",
     "noSelection": "Select an object to edit its properties",
     "emptyObjects": "Add a text, image, barcode or shape to get started",
     "objectsHint": "Click any object to edit its details.",

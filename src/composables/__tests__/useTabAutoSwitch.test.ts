@@ -69,16 +69,16 @@ describe('useTabAutoSwitch', () => {
     scope.stop();
   });
 
-  it('does not switch when user is manually on Preview', async () => {
+  it('does not switch when user is manually on Output', async () => {
     const scope = effectScope();
     scope.run(() => useTabAutoSwitch());
     const designer = useDesignerStore();
     const prefs = usePreferencesStore();
 
-    prefs.sidePanelTab = 'preview';
+    prefs.sidePanelTab = 'output';
     designer.select(['obj-a']);
     await nextTick();
-    expect(prefs.sidePanelTab).toBe('preview');
+    expect(prefs.sidePanelTab).toBe('output');
     scope.stop();
   });
 
