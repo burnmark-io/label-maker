@@ -12,6 +12,7 @@ import {
 } from '../media';
 import { useDesignerStore } from '../designer';
 import { usePrinterStore } from '../printer';
+import { useResizeBannerStore } from '../resizeBanner';
 
 function makeMedia(overrides: Partial<MediaDescriptor> = {}): MediaDescriptor {
   return {
@@ -186,21 +187,122 @@ describe('media store — auto-resize-on-printer-connect', () => {
     expect(media.heightMm).toBeCloseTo(28, 0);
   });
 
-  it('does not auto-apply when user has manually picked', async () => {
+  it('untouched canvas with stale source: manual still adopts (canUndo gate)', async () => {
+    // Old behaviour: source !== 'detected' → suppress. Was wrong: a
+    // user with a stale `manual` source from a previous session who
+    // hasn't started designing yet should pick up the new printer's
+    // media (amendment §4.5.1 supersedes canvas-sizing §2.2).
     const media = useMediaStore();
+    const designer = useDesignerStore();
     const printer = usePrinterStore();
 
-    // Manual pick first.
     media.pickCommonSize(62, null);
+    designer.clearHistory();
     expect(media.source).toBe('manual');
+    expect(designer.canUndo).toBe(false);
+
+    printer.setDetectedMedia(makeMedia({ widthMm: 89, heightMm: 28 }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(media.widthMm).toBeCloseTo(89, 0);
+  });
+
+  it('touched canvas surfaces the adopt banner instead of swapping', async () => {
+    const media = useMediaStore();
+    const designer = useDesignerStore();
+    const printer = usePrinterStore();
+    const banner = useResizeBannerStore();
+
+    media.pickCommonSize(62, null);
+    designer.clearHistory();
+    // Simulate the user actually designing — any history-producing
+    // change does. setCanvas runs through the history wrapper.
+    designer.setCanvas({ widthDots: media.widthDots, heightDots: 100 });
+    designer.addObject({
+      type: 'text',
+      content: 'hi',
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 20,
+      rotation: 0,
+      opacity: 1,
+      locked: false,
+      visible: true,
+      color: '#000',
+      fontFamily: 'Inter',
+      fontSize: 12,
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textAlign: 'left',
+      verticalAlign: 'top',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      invert: false,
+      wrap: true,
+      autoHeight: false,
+    } as never);
+    expect(designer.canUndo).toBe(true);
+    expect(designer.document.objects.length).toBeGreaterThan(0);
+
     const widthBefore = media.widthMm;
+    const heightBefore = media.heightMm;
 
     printer.setDetectedMedia(makeMedia({ widthMm: 89, heightMm: 28 }));
     await Promise.resolve();
     await Promise.resolve();
 
     expect(media.widthMm).toBeCloseTo(widthBefore, 1);
-    expect(media.source).toBe('manual');
+    expect(media.heightMm).toBe(heightBefore);
+    expect(banner.mode).toBe('adopt');
+    expect(banner.payload?.media.widthMm).toBe(89);
+  });
+
+  it('empty canvas with canUndo=true (user nuked everything) still adopts silently', async () => {
+    const media = useMediaStore();
+    const designer = useDesignerStore();
+    const printer = usePrinterStore();
+    const banner = useResizeBannerStore();
+
+    media.pickCommonSize(62, null);
+    designer.clearHistory();
+    // Add then delete everything, leaving canUndo=true but no objects.
+    designer.addObject({
+      type: 'text',
+      content: 'tmp',
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 20,
+      rotation: 0,
+      opacity: 1,
+      locked: false,
+      visible: true,
+      color: '#000',
+      fontFamily: 'Inter',
+      fontSize: 12,
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textAlign: 'left',
+      verticalAlign: 'top',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      invert: false,
+      wrap: true,
+      autoHeight: false,
+    } as never);
+    const id = designer.document.objects[0]!.id;
+    designer.removeObject(id);
+    expect(designer.canUndo).toBe(true);
+    expect(designer.document.objects.length).toBe(0);
+
+    printer.setDetectedMedia(makeMedia({ widthMm: 89, heightMm: 28 }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(media.widthMm).toBeCloseTo(89, 0);
+    expect(banner.mode).toBe('idle');
   });
 });
 

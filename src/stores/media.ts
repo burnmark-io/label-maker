@@ -5,6 +5,7 @@ import type { SheetTemplate } from '@burnmark-io/sheet-templates';
 
 import { useDesignerStore } from '@/stores/designer';
 import { usePrinterStore } from '@/stores/printer';
+import { useResizeBannerStore } from '@/stores/resizeBanner';
 
 /**
  * Per `amendment-canvas-sizing.md` — canvas size and the "where it came
@@ -112,6 +113,7 @@ export function defaultOrientationFor(
 export const useMediaStore = defineStore('media', () => {
   const designer = useDesignerStore();
   const printer = usePrinterStore();
+  const resizeBanner = useResizeBannerStore();
 
   // ---- Derived from the document ----
   const dpi = computed(() => designer.document.canvas.dpi || DEFAULT_DPI);
@@ -345,26 +347,45 @@ export const useMediaStore = defineStore('media', () => {
     });
   }
 
-  // ---- Auto-resize-on-printer-connect ----
-
+  // ---- Auto-resize-on-printer-connect / paper-roll-change ----
+  //
   // Watch `printer.detectedMedia`. When it transitions to a non-null
-  // value AND `source === 'detected'`, apply it. If `source !== 'detected'`,
-  // the user has made a deliberate pick — detection is a suggestion,
-  // never a lock (amendment §2.2).
+  // value, route through the canUndo-based gate from
+  // `amendment-printer-status-polling.md §4.5.1`:
+  //   - canvas untouched (`!canUndo` OR `objects.length === 0`) →
+  //     silent `pickDetected`. Demo content has `canUndo === false`
+  //     after the first-visit `clearHistory` call, so it counts as
+  //     untouched.
+  //   - canvas touched → surface the adopt-confirmation banner instead
+  //     of swapping the user's work; they click [Use this size] when
+  //     they actually want the change.
+  //
+  // This rule supersedes the older `source === 'detected'` gate from
+  // `amendment-canvas-sizing.md §2.2`. A user with stale
+  // `source: 'manual'` from a previous session, who hasn't started
+  // designing yet, now correctly auto-adopts the new printer's media.
   watch(
     () => printer.detectedMedia,
-    media => {
-      if (!media) return;
-      if (source.value !== 'detected') return;
-      // Avoid no-op churn if the detected media already matches.
+    detected => {
+      if (!detected) return;
+      // Avoid no-op churn when detection just confirms the current size.
       if (
-        Math.abs(media.widthMm - widthMm.value) < 0.5 &&
-        ((media.heightMm ?? null) === heightMm.value ||
-          (media.heightMm === undefined && heightMm.value === null))
+        Math.abs(detected.widthMm - widthMm.value) < 0.5 &&
+        ((detected.heightMm ?? null) === heightMm.value ||
+          (detected.heightMm === undefined && heightMm.value === null))
       ) {
         return;
       }
-      pickDetected(media);
+      const touched =
+        designer.canUndo && designer.document.objects.length > 0;
+      if (touched) {
+        // The connected printer's model is the friendliest user-facing
+        // label we have for the banner.
+        const printerName = printer.model ?? '';
+        resizeBanner.showAdopt({ media: detected, printerName });
+        return;
+      }
+      pickDetected(detected);
     },
   );
 

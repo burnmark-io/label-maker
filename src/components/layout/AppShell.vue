@@ -8,6 +8,7 @@
           :aria-label="t('canvas.ariaLabel')"
           data-tour="canvas"
         >
+          <CanvasResizeBanner />
           <DesignCanvas />
           <span class="visually-hidden" aria-live="polite">{{ canvasSummary }}</span>
           <MainToolbar data-tour="toolbar" />
@@ -62,6 +63,7 @@ import TopBar from './TopBar.vue';
 import SidePanel from './SidePanel.vue';
 import AppFooter from './AppFooter.vue';
 import DesignCanvas from '@/components/canvas/DesignCanvas.vue';
+import CanvasResizeBanner from '@/components/canvas/CanvasResizeBanner.vue';
 import MainToolbar from '@/components/toolbar/MainToolbar.vue';
 import CanvasActions from '@/components/toolbar/CanvasActions.vue';
 import ToastStack from '@/components/common/ToastStack.vue';
