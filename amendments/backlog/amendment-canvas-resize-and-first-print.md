@@ -25,6 +25,13 @@
 >   selector, `source` field, auto-adopt-when-`source === 'detected'`
 >   watcher, and out-of-bounds visual treatment. This amendment builds
 >   on those primitives.
+> - `amendment-printer-status-polling.md` (ships alongside) — owns the
+>   auto-adopt-gate change (canUndo-based, replacing the source-based
+>   gate) and the adopt-confirmation banner store/component. This
+>   amendment composes with both: the welcome-template family swap
+>   (§8.3) reuses the same untouched-canvas predicate, and the canvas
+>   resize pipeline extends the same banner store/component with the
+>   `overflow` mode (§5).
 > - `amendment-canvas-orientation.md` (backlog) — orientation is
 >   display-only via `getRenderDoc()`; resize logic ignores orientation
 >   toggles entirely.
@@ -80,11 +87,15 @@ In:
 - Resize logic that reflows content when canvas dimensions change:
   position rescaled proportionally always, size rescaled per object's
   `resizeBehavior`, edge-anchored shapes recompute inset to new edges.
-- Canvas-resize feedback banner — two modes (overflow, auto-adopt
-  confirmation).
+- Canvas-resize feedback banner — `overflow` mode (the polling
+  sibling introduces the banner store/component with `adopt` mode;
+  this amendment extends it).
 - `fitContentToCanvas()` action behind the overflow banner button.
-- Auto-adopt detected media broadens to also fire on first connect with
-  an untouched canvas, even when `source !== 'detected'`.
+- Welcome family-swap on first connect when the connected family
+  doesn't match the current welcome template (untouched canvas
+  only, see §8.3). Reuses the `!canUndo` predicate that the polling
+  sibling introduces; the auto-adopt-gate change itself ships
+  there, not here.
 - Print button guard — if a printer is connected, the print flow
   assumes the printer's detected media instead of erroring.
 - Two welcome templates (tape vs die-cut) selected by printer family
@@ -107,70 +118,26 @@ Out (parked):
 
 ## 3. Auto-Adopt on Connect
 
-### 3.1 The Current Watcher
+Owned by `amendment-printer-status-polling.md §4.5`. That sibling
+ships the canUndo-based gate change in `stores/media.ts:354` and
+the adopt-confirmation banner that fires on a touched canvas.
 
-`stores/media.ts:354–369` already watches `printer.detectedMedia` and
-calls `pickDetected()` when:
-- The detected media is non-null,
-- AND `source === 'detected'`,
-- AND the dimensions actually differ from what's already on the canvas.
+This amendment composes with that change in three places:
 
-This handles the case where the user has never touched the size selector
-(`source === 'detected'` from `applyLastUsedOrDefault()` at line 327 or
-339). It does NOT fire when:
-- The user has explicitly picked a size (`source === 'manual' | 'sheet'
-  | 'custom'`) — correctly suppressed; detection is a suggestion.
-- The user landed on a non-default size via the loaded last-used value
-  with `source: 'detected'` but then started designing on it — also
-  correctly suppressed because the resulting state has them happy with
-  what they have.
+1. **Resize pipeline** (§6): when the adopt banner's [Use this size]
+   button calls `pickDetected()` on a touched canvas, the resize
+   transform runs across all objects, and the overflow banner (§5)
+   follows up if anything overflowed. The adopt banner and overflow
+   banner share the same store/component — see §5.
+2. **Welcome-template family swap** (§8.3): reuses the same
+   `!designer.canUndo && objects.length === 0` predicate to decide
+   whether to swap the welcome template silently on connect.
+3. **Print button guard** (§7): calls `pickDetected()` directly at
+   click time when `effectiveMedia` is null but `detectedMedia` is
+   non-null — independent of the watcher path, so it works even if
+   the user has dismissed the adopt banner without acting on it.
 
-The gap: a fresh user, **canvas untouched, with `source === 'manual'`
-because they picked something once before**, connects a printer. We
-suppress the auto-adopt to respect their pick — but in this case they
-haven't actually started designing, and the previous pick was probably
-not meaningful. They click Print → error.
-
-### 3.2 The Refined Rule
-
-Auto-adopt fires when *both* are true:
-
-1. `printer.detectedMedia` is non-null and differs from the canvas, AND
-2. The canvas is **untouched** — interpreted as: `designer.canUndo === false`
-   AND no objects exist that the user authored. Demo content counts as
-   untouched (it was placed by us, not by them).
-
-Rule (2) replaces "`source === 'detected'`" as the gating condition.
-The watcher in `stores/media.ts` updates accordingly.
-
-How "untouched" is detected:
-- `designer.canUndo` reflects whether any history-producing action has
-  fired since the last `clearHistory()`. The first-visit sample loads
-  via `loadFirstVisitDocument()` then calls `designer.clearHistory()`
-  in `AppShell.vue:222` — so demo content has `canUndo === false`.
-- Once the user does anything (move, edit, add), `canUndo` flips to
-  true and stays true until `clearHistory()` is called again. From
-  that point on, auto-adopt is suppressed and we surface the connect
-  banner instead (§5).
-
-### 3.3 First-Connect Banner When Touched
-
-When the user has been designing (canvas touched) and a printer connects
-with detected media that differs from the current canvas, we don't
-silently swap their work. Instead we show the **auto-adopt confirmation
-banner** (§5):
-
-```
-Detected 62mm continuous on QL-820NWB.   [Use this size]   ✕
-```
-
-Click `[Use this size]` → applies `pickDetected(media)`. Their existing
-content goes through the resize pipeline (§4) and the fit-to-label
-banner (§5) follows up if anything overflowed.
-
-Dismiss → keeps their current size, the printer is connected but the
-canvas stays. No further nag — until they hit Print, where the print
-guard (§7) prompts them.
+No watcher gate code changes here.
 
 ---
 
@@ -267,51 +234,31 @@ swap. Existing behaviour preserved.
 
 ---
 
-## 5. Canvas-Resize Banner
+## 5. Canvas-Resize Banner — Overflow Mode
 
-A single banner component slot at the top of the canvas, mode-driven.
+The polling sibling introduces `useResizeBannerStore` and
+`CanvasResizeBanner.vue` with an `adopt` mode (see polling §4.5.2).
+This amendment extends both with an `overflow` mode.
 
-### 5.1 Two Modes
+### 5.1 Overflow Mode
 
-**(a) Overflow** — fires after a resize when one or more objects
-extend beyond the new canvas edges (computed against in-canvas portion
-post-resize):
+Fires after a resize when one or more objects extend beyond the
+new canvas edges (computed against in-canvas portion post-resize):
 
 ```
 ⚠ 2 objects fall outside the label.   [Fit to label]   [Dismiss]
 ```
 
-`[Fit to label]` calls `fitContentToCanvas()` (§5.3). `[Dismiss]` hides
-the banner; the existing per-object out-of-bounds visual (striped
-overlay from `amendment-canvas-sizing.md` §7.2) remains so the user
-can still see and address it.
+`[Fit to label]` calls `fitContentToCanvas()` (§5.2). `[Dismiss]`
+hides the banner; the per-object out-of-bounds visual (striped
+overlay from `amendment-canvas-sizing.md §7.2`) remains so the
+user can still see and address it.
 
-**(b) Auto-adopt confirmation** — fires when a printer connects on a
-*touched* canvas and the detected media differs:
+Overflow takes precedence over adopt when both fire in the same
+tick (e.g. the user clicks [Use this size] on the adopt banner
+and the resulting resize overflows).
 
-```
-Detected 62mm continuous on QL-820NWB.   [Use this size]   ✕
-```
-
-`[Use this size]` calls `pickDetected(media)`. The (a) banner takes
-over after if anything overflowed.
-
-### 5.2 Banner Slot
-
-Single component, single slot. State lives in a small Pinia store
-(`useResizeBannerStore`) so the slot is a passive reader. Modes are
-mutually exclusive — overflow takes precedence over confirmation.
-
-```
-src/
-  components/
-    canvas/
-      CanvasResizeBanner.vue   the banner UI
-  stores/
-    resizeBanner.ts            mode + payload + actions
-```
-
-### 5.3 `fitContentToCanvas()`
+### 5.2 `fitContentToCanvas()`
 
 Shrinks all out-of-bounds content by a uniform factor anchored at the
 canvas top-left. Algorithm:
@@ -326,7 +273,7 @@ canvas top-left. Algorithm:
 
 One history entry per call. Reversible via undo.
 
-### 5.4 What the Banner Doesn't Do
+### 5.3 What the Banner Doesn't Do
 
 No "Resized to 62mm × 100mm. Scale content?" offer. With per-object
 behaviour driving sensible defaults and proportional repositioning,
@@ -464,8 +411,9 @@ family, swap the template:
 - Load the family-appropriate template.
 - `clearHistory()` so the new template is also "untouched".
 
-If the user has touched the canvas, no swap. The auto-adopt
-confirmation banner (§5) fires instead.
+If the user has touched the canvas, no swap. The adopt-confirmation
+banner from the polling sibling (`amendment-printer-status-polling.md
+§4.4.2`) fires instead.
 
 ### 8.4 Pre-Printer Fallback
 
@@ -500,10 +448,12 @@ modification — defaulting happens at resize time, not at load time.
 
 ```
 src/stores/
-  media.ts           extend applySize() with resize pipeline; broaden
-                     auto-adopt watcher gating from source-based to
-                     canUndo-based
-  resizeBanner.ts    new — mode + payload + actions for the banner
+  media.ts           extend applySize() with resize pipeline.
+                     (Watcher gate change ships in the polling
+                     sibling — see polling §4.5.1.)
+  resizeBanner.ts    sibling-introduced (adopt mode); this
+                     amendment adds 'overflow' to the mode union
+                     and a showOverflow(payload) action
 ```
 
 `media.ts`:
@@ -512,16 +462,11 @@ src/stores/
   and uses one combined history entry. Called inside `applySize()`
   after the canvas update.
 - New helper `fitContentToCanvas()` exported for the banner button.
-- Watcher at line 354 changes its gate from
-  `if (source.value !== 'detected') return;` to:
-  `if (designer.canUndo && designer.document.objects.length > 0) return;`
-  — so a touched canvas is suppressed (banner takes over via §5),
-  but a still-default canvas with an old `source: 'manual'` from a
-  previous session adopts the new media.
 
-`resizeBanner.ts` (new): pinia store with `mode: 'overflow' | 'adopt'
-| 'idle'`, `payload`, `show()`, `hide()`. Read by the banner
-component, written by `media.ts` resize hook and the auto-adopt path.
+`resizeBanner.ts`: extended from the polling sibling. Mode union
+gains `'overflow'`; new `showOverflow({ overflowingObjectIds })`
+action. Modes are mutually exclusive — overflow takes precedence
+over adopt when both fire in the same tick.
 
 ### 9.3 Services
 
@@ -539,7 +484,9 @@ src/services/
 ```
 src/components/
   canvas/
-    CanvasResizeBanner.vue   new — banner at top of canvas
+    CanvasResizeBanner.vue   sibling-introduced; this amendment adds
+                             overflow-mode rendering ([Fit to label] +
+                             [Dismiss], pluralised count string)
   layout/
     AppShell.vue             pass detected family to loadFirstVisitDocument;
                              on family change with untouched canvas, swap
@@ -578,12 +525,14 @@ en.json (and all other locales):
 ## 10. Affected Plan Sections
 
 - `amendment-canvas-sizing.md §2.2` — auto-resize-on-connect rule
-  refines from "fires only when `source === 'detected'`" to "fires
-  when canvas is untouched (`canUndo === false`)". The toast is
-  replaced by the banner (§5b) when canvas has content.
+  refinement (source-based → canUndo-based) ships in
+  `amendment-printer-status-polling.md §4.5.1`, not here.
 - `amendment-canvas-sizing.md §7.5` — "When canvas resize puts objects
-  out of bounds" replaces the toast with the overflow banner (§5a)
+  out of bounds" replaces the toast with the overflow banner (§5.1)
   and adds the [Fit to label] action.
+- `amendment-printer-status-polling.md §4.5.2` — introduces the
+  `useResizeBannerStore` and `CanvasResizeBanner.vue` (adopt mode);
+  this amendment extends both with the overflow mode.
 - `PROGRESS.md` Phase 4 (printer integration) — print button guard
   becomes part of the integration scope.
 - `PROGRESS.md` Phase 2 (canvas setup) — resize pipeline ships with
@@ -609,7 +558,7 @@ Resize logic (label-maker):
   per-type table from §4.2
 □ src/services/resize-behavior.ts — isCanvasSpanning() with the ≥90%
   + uniform-inset check from §4.3
-□ src/services/fit-to-canvas.ts — fitContentToCanvas() per §5.3
+□ src/services/fit-to-canvas.ts — fitContentToCanvas() per §5.2
 □ src/stores/media.ts — runResizeTransform(oldW, oldH, newW, newH)
   applying §6.1 to all objects (including group children via
   walkObjects); single history entry
@@ -620,18 +569,17 @@ Resize logic (label-maker):
   container itself uses 'scale-with-canvas' bounds
 
 Auto-adopt watcher:
-□ src/stores/media.ts:354 — gate changes from source-based to
-  canUndo-based per §3.2
-□ Untouched canvas + connect with mismatched media → silent adopt
-□ Touched canvas + connect with mismatched media → banner mode (b)
+□ Owned by polling sibling — see amendment-printer-status-polling.md
+  §4.5.1. No work in this amendment.
 
-Banner:
-□ src/stores/resizeBanner.ts — mode/payload/show/hide
-□ src/components/canvas/CanvasResizeBanner.vue — UI for both modes
-□ Slot the banner above the canvas in the editor view
-□ Overflow mode: [Fit to label] calls fitContentToCanvas()
-□ Adopt mode: [Use this size] calls media.pickDetected(payload.media)
-□ Auto-dismiss adopt mode after ~10s; overflow stays until acted on
+Banner (overflow mode only — sibling owns adopt mode):
+□ src/stores/resizeBanner.ts — extend mode union with 'overflow';
+  add showOverflow({ overflowingObjectIds }) action
+□ src/components/canvas/CanvasResizeBanner.vue — overflow-mode
+  rendering with pluralised count and [Fit to label] / [Dismiss]
+□ [Fit to label] calls fitContentToCanvas() and hides the banner
+□ Overflow takes precedence over adopt when both fire in same tick
+□ Banner stays until acted on or dismissed; no auto-dismiss
 
 Print guard:
 □ Locate the orange Print button click handler (CanvasActions.vue or
@@ -682,19 +630,16 @@ Resize behaviour (`stores/__tests__/media.test.ts`,
   `resizeBehavior`; group container scales as a wrapper
 - One history entry per resize, regardless of object count
 
-Auto-adopt gating (`stores/__tests__/media.test.ts`):
-- Untouched canvas (canUndo false, no objects or only sample objects),
-  printer connects with mismatched media → `pickDetected` fires
-- Touched canvas (canUndo true), same printer connect → no
-  `pickDetected`; `resizeBanner` enters adopt mode
-- Adopt-mode banner [Use this size] calls `pickDetected(media)`
-- Same media already on canvas → no banner, no churn
+Auto-adopt gating:
+- Owned by polling sibling — see
+  `amendment-printer-status-polling.md §8`.
 
-Banner (`components/canvas/__tests__/CanvasResizeBanner.test.ts`):
+Banner — overflow mode (`components/canvas/__tests__/CanvasResizeBanner.test.ts`):
 - Overflow mode renders pluralised string for n=1, n=2+
 - [Fit to label] calls `fitContentToCanvas()` and dismisses the banner
-- Adopt mode renders printer name and media name
 - [Dismiss] hides without state change
+- Overflow takes precedence over adopt when both modes fire in the
+  same tick (e.g. [Use this size] on adopt → resize → overflow)
 
 Fit-to-canvas (`services/__tests__/fit-to-canvas.test.ts`):
 - No-op when content fits

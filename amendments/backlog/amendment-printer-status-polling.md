@@ -12,20 +12,23 @@
 > state and lists errors in its popover; the print button is disabled
 > with a warning icon while there's an error; when the error clears,
 > everything returns to normal silently. Paper roll changes are
-> picked up automatically and routed through the existing auto-adopt
-> machinery from `amendment-canvas-resize-and-first-print.md`.
+> picked up automatically and routed through the auto-adopt gate
+> change and adopt-confirmation banner introduced in §4.5.
 >
-> **Scope is the polling loop, the UI surface, and the print
-> guard.** The driver-level status contract (`PrinterStatus`,
-> `PrinterError`) already exists in `@thermal-label/contracts`; this
-> amendment consumes it.
+> **Scope is the polling loop, the UI surface, the print guard, the
+> auto-adopt-gate change, and the adopt-confirmation banner.** The
+> driver-level status contract (`PrinterStatus`, `PrinterError`)
+> already exists in `@thermal-label/contracts`; this amendment
+> consumes it.
 >
 > Sibling amendments:
-> - `amendment-canvas-resize-and-first-print.md` — defines the
->   "canvas untouched → silent adopt; canvas touched → banner" rule
->   for media changes. This amendment reuses that rule for paper
->   roll changes mid-session and references its print-button
->   guard, layering the error-block on top.
+> - `amendment-canvas-resize-and-first-print.md` — ships alongside
+>   this one. Owns the canvas resize pipeline, the overflow banner
+>   mode, `fitContentToCanvas()`, the print-button auto-adopt path,
+>   welcome templates, and the `resizeBehavior` schema field. This
+>   amendment owns the auto-adopt-gate change (canUndo-based) and
+>   the adopt-confirmation banner (§4.5); the sibling extends the
+>   same banner store with an overflow mode.
 
 ---
 
@@ -89,10 +92,21 @@ In:
   Warning icon next to the button, tooltip / inline note shows the
   primary error message. Re-enables silently when the condition
   clears.
-- Paper roll changes: routed through the existing media auto-adopt
-  watcher in `stores/media.ts`. Untouched canvas → silent adopt;
-  touched canvas → banner offer (per
-  `amendment-canvas-resize-and-first-print.md` §3, §5).
+- Auto-adopt gate change in `stores/media.ts:354` — switches from
+  `source === 'detected'` to a `!designer.canUndo` ("untouched
+  canvas") check. Generalises the existing first-connect rule to
+  also fire mid-session when the user swaps a roll on an untouched
+  canvas, regardless of how they originally arrived at the current
+  size. (See §4.5.1.)
+- Adopt-confirmation banner — new `useResizeBannerStore` and
+  `CanvasResizeBanner.vue` for the touched-canvas case: rather
+  than silently swapping the user's work, surface "Detected
+  {media} on {printer}. [Use this size]   ✕". Sibling
+  `amendment-canvas-resize-and-first-print.md` extends the same
+  store/component with an `overflow` mode; this amendment ships
+  only the `adopt` mode. (See §4.5.2.)
+- Paper roll changes: handled end-to-end by the watcher + banner
+  above. Untouched → silent `pickDetected()`; touched → banner.
 - Auto-stop on disconnect, auto-restart on reconnect.
 
 Out:
@@ -106,7 +120,7 @@ Out:
   errors array or `ready === false` as "blocked"; finer
   classification is a future concern.
 - Driver code coverage beyond what's reported today. New codes
-  added to a driver later just need a matching i18n key (§4.5).
+  added to a driver later just need a matching i18n key (§4.4).
 - Auto-recovery actions (e.g. an "open cover, then close" prompt
   guiding the user). Future UX polish; v1 just shows the message.
 - Web Bluetooth notifications / push-style status. Polling-only.
@@ -146,7 +160,7 @@ Polling does NOT run when any of:
 - `connection.kind !== 'connected'`
 - `!FAMILIES_WITH_STATUS_POLLING.has(connection.family)`
 - `document.hidden === true` (visibilitychange listener)
-- `printJobInFlight === true` (set by the print path; see §3.5)
+- `isPrinting === true` (existing flag; see §3.5)
 
 ### 3.4 Implementation Sketch
 
@@ -162,13 +176,15 @@ let consecutiveFailures = 0;
 let burstUntil = 0;
 
 function shouldPoll(): boolean {
-  return (
-    connection.value.kind === 'connected' &&
-    connection.value.family !== undefined &&
-    FAMILIES_WITH_STATUS_POLLING.has(connection.value.family) &&
-    !document.hidden &&
-    !printJobInFlight.value
-  );
+  if (connection.value.kind !== 'connected') return false;
+  if (!FAMILIES_WITH_STATUS_POLLING.has(connection.value.family)) return false;
+  if (PER_MODEL_STATUS_POLLING_EXCLUSIONS.has(
+    `${connection.value.family}:${connection.value.model}`
+  )) return false;
+  if (document.hidden) return false;
+  if (isPrinting.value) return false;
+  if (circuitBroken.value) return false;     // see §5.1
+  return true;
 }
 
 function scheduleNextPoll(): void {
@@ -208,27 +224,60 @@ function stopPolling(): void {
 Wired up:
 - After `setAdapter()` resolves successfully → `startPolling()`.
 - Before `disconnect()` → `stopPolling()`.
-- `document.addEventListener('visibilitychange', () => visible ? scheduleNextPoll() : stopPolling())`.
-- `notifyPrintStarted()` / `notifyPrintCompleted()` exported for the
-  print path.
+- **Visibility listener is attached once at store init** (not per-connect)
+  to avoid leak/stale-handler issues across connect/disconnect cycles.
+  Handler calls `scheduleNextPoll()` when visible, `stopPolling()` when
+  hidden; both gate internally via `shouldPoll()` so they're safe at
+  any connection state.
+- A `watch(isPrinting, ...)` triggers `stopPolling()` on `true` and
+  `scheduleNextPoll()` on `false` (the latter setting `burstUntil =
+  Date.now() + POLL_BURST_DURATION_MS`). No separate notify-start/
+  notify-complete API is needed — the print path's existing
+  `try/finally` toggle on `isPrinting` is enough.
 
-### 3.5 Print-Job Hook
-
-The print flow needs to gate the loop:
+`refreshStatus()` is extended to also assign the full status:
 
 ```typescript
-// in print path
-printer.notifyPrintStarted();
-try {
-  await printer.adapter.value.print(/* … */);
-} finally {
-  printer.notifyPrintCompleted();  // sets burstUntil = now + 30s
+async function refreshStatus(): Promise<void> {
+  if (!adapter.value) return;
+  const status = await adapter.value.getStatus();   // throws on transport failure
+  lastStatus.value = status;                        // NEW — full status for UI
+  detectedMedia.value = status.detectedMedia ?? null;
+  // selectedMedia is intentionally not cleared (existing behaviour)
 }
 ```
 
-`notifyPrintStarted` sets `printJobInFlight.value = true` and stops
-the loop. `notifyPrintCompleted` clears the flag, sets
-`burstUntil = Date.now() + POLL_BURST_DURATION_MS`, and resumes.
+The `try/catch` moves into `tick()` so backoff has access to the
+exception (today's `refreshStatus` swallows errors and the polling
+loop can't tell a transport failure from a clean read).
+
+### 3.5 Print-Job Hook
+
+The store's existing `print()` already toggles `isPrinting` in a
+`try/finally`. We extend the `finally` clause to set the burst
+window, and the polling loop watches `isPrinting` directly:
+
+```typescript
+async function print(image: RawImageData, options?: PrintOptions): Promise<void> {
+  if (!adapter.value) throw new Error('No printer connected');
+  isPrinting.value = true;
+  try {
+    await adapter.value.print(image, effectiveMedia.value ?? undefined, bridgedOptions);
+  } finally {
+    isPrinting.value = false;
+    burstUntil.value = Date.now() + POLL_BURST_DURATION_MS;  // NEW
+  }
+}
+
+// elsewhere in the store
+watch(isPrinting, busy => {
+  if (busy) stopPolling();
+  else scheduleNextPoll();
+});
+```
+
+No separate notify-start/notify-complete API. Call sites that
+already wrap `printer.print()` need no change.
 
 ### 3.6 Family Support Gate
 
@@ -355,7 +404,7 @@ every 5 seconds for the duration of the cover being open.
 Suppress toasts while the printer popover is open (the user is
 already looking at the errors there).
 
-### 4.5 Error Message Localisation
+### 4.4 Error Message Localisation
 
 Drivers return both a `code` (machine-readable, mostly aligned
 across families: `no_media`, `not_ready`, `cover_open`,
@@ -416,32 +465,131 @@ This applies everywhere a `localisedErrorMessage(error, t)` was going to be
 displayed in §4.1, §4.2, and §4.3: status pill tooltip, popover
 list entries, print-button inline reason, first-occurrence toast.
 
-### 4.4 Paper Roll Change
+### 4.5 Auto-Adopt Gate & Adopt-Confirmation Banner
 
-When `status.detectedMedia` differs from the previous status's
-`detectedMedia`, the existing watcher in `stores/media.ts:354`
-already picks up the change and routes through the auto-adopt
-rule from `amendment-canvas-resize-and-first-print.md`:
+The watcher in `stores/media.ts:354` already calls `pickDetected()`
+when `printer.detectedMedia` flips to a non-null value, gated on
+`source === 'detected'`. That gate worked when first-connect was
+the only event we acted on. With periodic polling, detected media
+also changes mid-session (the user swaps a 62mm roll for a 29mm
+one), and we want auto-adopt to behave consistently regardless of
+how the user arrived at the current size.
 
-- Canvas untouched (`!designer.canUndo`) → silent `pickDetected()`.
-- Canvas touched → auto-adopt confirmation banner.
+#### 4.5.1 Gate Change — canUndo Replaces Source
 
-No new code needed in this amendment for media changes — the
-polling loop just keeps `printer.detectedMedia` fresh, and the
-existing reactivity does the rest.
+The watcher's gate switches from
+`if (source.value !== 'detected') return;` to:
+
+```typescript
+const touched =
+  designer.canUndo && designer.document.objects.length > 0;
+if (touched) {
+  resizeBanner.showAdopt({ media, family, model });
+  return;
+}
+pickDetected(media);
+```
+
+"Touched" reads as `canUndo AND non-empty objects`. The first-visit
+sample loads via `loadFirstVisitDocument()` then calls
+`designer.clearHistory()` (`AppShell.vue` ~ line 222), so demo
+content has `canUndo === false` and counts as untouched. The moment
+the user moves, edits, or adds an object, `canUndo` flips true and
+stays true. The non-empty-objects clause covers the "user nuked
+everything" case — an empty canvas with `canUndo === true` still
+adopts silently rather than throwing a banner over a blank surface.
+
+This rule supersedes the source-based gate from
+`amendment-canvas-sizing.md §2.2`. A user with a stale
+`source: 'manual'` from a previous session who hasn't started
+designing yet will now auto-adopt their newly-connected printer's
+media — the case the source-based gate missed.
+
+#### 4.5.2 Adopt-Confirmation Banner
+
+A small Pinia store + component pair, introduced here and
+extended by the sibling canvas-resize amendment:
+
+```
+src/stores/resizeBanner.ts
+  - mode: 'idle' | 'adopt'        (sibling adds 'overflow')
+  - payload: { media, printerName }
+  - showAdopt(payload), hide()
+
+src/components/canvas/CanvasResizeBanner.vue
+  - rendered as a slot at the top of the canvas
+  - adopt mode: "Detected {media} on {printerName}.
+                [Use this size]   ✕"
+  - [Use this size] → media.pickDetected(payload.media), hide()
+  - ✕ → hide(); no further nag until detectedMedia changes again
+```
+
+`printerName` is composed from `connection.family + connection.model`
+(e.g. "Brother QL-820NWB") at the call site — the store carries
+the resolved string so the component stays dumb.
+
+**No auto-dismiss.** The banner stays until the user acts on it or
+explicitly dismisses — a user who looks away should not silently
+miss that their roll differs.
+
+The sibling `amendment-canvas-resize-and-first-print.md` extends
+this same store and component with an `overflow` mode for the
+post-resize "{n} objects fall outside the label" case. The two
+modes are mutually exclusive; overflow takes precedence over adopt
+when both fire in the same tick (e.g. the user clicks [Use this
+size] and the resulting canvas resize overflows existing content).
+
+#### 4.5.3 Paper-Roll Change Path
+
+When polling delivers a new `status.detectedMedia` that differs
+from the previous one:
+
+- The existing watcher fires (no new wiring at the polling site —
+  `refreshStatus` continues to assign `detectedMedia`).
+- Untouched → silent `pickDetected()`.
+- Touched → `resizeBanner.showAdopt({ media, printerName })`.
+
+Mid-print: the polling loop is paused via `notifyPrintStarted`
+(§3.5), so detected-media changes during a print are picked up on
+the next post-print tick — see edge case §5.7.
 
 ---
 
 ## 5. Edge Cases
 
-### 5.1 Status Call Throws
+### 5.1 Status Call Throws — Backoff & Circuit Breaker
 
-Transport-level failure (USB disconnect, timeout). Existing
-`refreshStatus` already catches and logs (`stores/printer.ts:151`).
-The polling loop additionally backs off (§3.2). After three
-consecutive failures, treat the connection as lost: emit a
-disconnected event, stop the loop, let `useAutoReconnect` handle
-recovery.
+Transport-level failure (USB disconnect, timeout). Today
+`refreshStatus` swallows errors at `stores/printer.ts:152`; this
+amendment moves the `try/catch` into `tick()` so backoff and the
+circuit breaker can see them. Existing single-shot callers of
+`refreshStatus` (e.g. `useAutoReconnect`) catch their own errors
+already, so they keep working.
+
+Behaviour:
+
+1. **Backoff** (§3.2): consecutive throws push the next interval
+   to 10 s, 20 s, 60 s. First successful tick resets to 5 s.
+2. **Soft disconnect at 3 in a row**: after three consecutive
+   transport failures, `stopPolling()`, mark the adapter as lost
+   (clear it via `setAdapter(null)`), and let `useAutoReconnect`
+   pick up recovery on its own cadence. Increment a session-level
+   `pollFailCycle` counter.
+3. **Circuit breaker**: if `pollFailCycle` hits 3 — i.e. polling
+   has provoked three reconnect-then-fail-again cycles in this
+   session — flip `circuitBroken.value = true`. Polling stays
+   off for the rest of the session (`shouldPoll()` short-circuits
+   on it). Connection itself is left alone; `useAutoReconnect`
+   keeps working. A one-time toast surfaces "Status updates
+   unavailable for this printer." Reset the counter only on a
+   *manual* user reconnect (not on the auto-reconnect path), via
+   a fresh `setAdapter()` from the connect flow.
+
+Why a circuit breaker: without it, a printer whose firmware
+throws on `getStatus()` (or a flaky USB cable) would re-enter the
+polling/disconnect loop indefinitely, and `useAutoReconnect`
+would oscillate. The breaker keeps the printer usable for
+straight-print jobs even when status queries are broken.
 
 ### 5.2 Tab Goes to Background Mid-Poll
 
@@ -479,9 +627,11 @@ window after the new print completes.
 ### 5.7 Printer Reports a New `detectedMedia` Mid-Print
 
 Shouldn't happen physically (you can't swap a roll while printing),
-but the contract allows it. Defer reaction until
-`notifyPrintCompleted` fires; the next poll picks up the change
-naturally.
+but the contract allows it. Polling is paused while `isPrinting`
+is true (§3.5), so any change is observed on the first post-print
+tick rather than during the print itself. The watcher then routes
+per §4.5.3: touched canvas → adopt banner; untouched → silent
+`pickDetected`. No special handling needed.
 
 ### 5.8 Family Not in Polling List
 
@@ -519,16 +669,35 @@ same device simultaneously, so in practice only one tab has
 ```
 src/stores/printer.ts
   - shallowRef<PrinterStatus | null> lastStatus
-  - shallowRef<boolean> printJobInFlight
-  - exported notifyPrintStarted / notifyPrintCompleted
-  - polling loop (start, stop, schedule, tick)
-  - tab-visibility wiring
+  - ref<number> burstUntil
+  - ref<boolean> circuitBroken (session-scoped)
+  - refreshStatus extended: stores full PrinterStatus, throws on
+    transport failure (try/catch lives in tick() now)
+  - print() finally clause sets burstUntil
+  - polling loop (start, stop, schedule, tick) with backoff
+    (10s/20s/60s) and 3-cycle circuit breaker
+  - watch(isPrinting) gates polling (no separate notify API)
+  - visibility listener pinned at store init (single attach)
   - first-occurrence error tracking (Set<string>)
 
 src/lib/printer/registry.ts
   - FAMILIES_WITH_STATUS_POLLING set
-  - PER_MODEL_STATUS_POLLING set
+  - PER_MODEL_STATUS_POLLING_EXCLUSIONS set
   - exported model-key helper
+
+src/stores/media.ts
+  - watcher gate switch: source-based → canUndo-based (§4.5.1)
+  - showAdopt branch when canvas is touched
+
+src/stores/resizeBanner.ts                                  NEW
+  - mode: 'idle' | 'adopt' (sibling extends with 'overflow')
+  - payload: { media, printerName }
+  - showAdopt(payload), hide()
+
+src/components/canvas/CanvasResizeBanner.vue                NEW
+  - adopt-mode rendering at the top of the canvas
+  - [Use this size] → media.pickDetected; ✕ → hide
+  - sibling extends with overflow-mode rendering
 
 src/components/printer/PrinterStatus.vue
   - derived pill state (disconnected/connecting/ready/warning/error)
@@ -563,15 +732,22 @@ No designer-core changes. No schema changes.
 
 ```
 Polling loop:
-□ Add lastStatus, printJobInFlight, error-codes-seen state to
-  stores/printer.ts
+□ Add lastStatus, burstUntil, circuitBroken, error-codes-seen
+  state to stores/printer.ts
+□ Extend refreshStatus to assign lastStatus and throw on transport
+  failure (try/catch moves into tick())
 □ Implement shouldPoll, scheduleNextPoll, tick, startPolling,
   stopPolling per §3
 □ Hook startPolling into setAdapter completion path
 □ Hook stopPolling into disconnect path
-□ Tab visibility listener (mount/unmount tied to setAdapter)
+□ Visibility listener attached ONCE at store init (not per-connect),
+  internally gated via shouldPoll()
 □ Backoff on consecutive failures (10s/20s/60s); reset on success
-□ Treat 3 consecutive transport failures as disconnect
+□ At 3 consecutive transport failures: setAdapter(null) +
+  pollFailCycle++; let useAutoReconnect handle recovery
+□ Circuit breaker: pollFailCycle === 3 → circuitBroken=true,
+  one-time toast, polling stays off for the session; reset only
+  on a manual reconnect
 
 Family + model gates:
 □ FAMILIES_WITH_STATUS_POLLING in registry.ts (brother-ql,
@@ -580,9 +756,10 @@ Family + model gates:
 □ Helper to compute model key `${family}:${model}`
 
 Print-job integration:
-□ notifyPrintStarted/notifyPrintCompleted exported from store
-□ Print path calls them around adapter.print()
-□ Burst timer (Date.now() + 30_000) on print complete
+□ Set burstUntil = Date.now() + 30_000 inside print()'s finally
+  clause (before clearing isPrinting)
+□ watch(isPrinting): true → stopPolling(); false → scheduleNextPoll()
+□ No new exported notify API — call sites need no change
 
 Status pill UI:
 □ PillState computed from connection + lastStatus
@@ -605,18 +782,33 @@ First-occurrence toast:
 
 Error i18n helper:
 □ src/composables/usePrinterErrors.ts exporting
-  localisedErrorMessage(error, t) per §4.5
-□ Seed printer.error.* keys for the 8 canonical codes
+  localisedErrorMessage(error, t) per §4.4
+□ Seed printer.error.* keys for the 9 canonical codes
   (no_media, not_ready, cover_open, paper_jam, cutter_jam,
   media_end, label_too_long, wrong_media, low_media)
 □ Apply localisedErrorMessage anywhere errors are rendered:
   pill tooltip, popover list, print-button reason, toast
+
+Auto-adopt gate & adopt banner:
+□ src/stores/media.ts:354 — switch watcher gate from source-based
+  (`source !== 'detected'`) to canUndo-based per §4.5.1
+□ src/stores/resizeBanner.ts — pinia store with mode/payload,
+  showAdopt(), hide() (adopt mode only; sibling adds overflow)
+□ src/components/canvas/CanvasResizeBanner.vue — adopt-mode
+  rendering, slot at top of canvas
+□ Compose printerName from connection.family + connection.model
+  at the showAdopt call site
+□ Touched canvas + new detectedMedia → resizeBanner.showAdopt
+□ Untouched canvas + new detectedMedia → silent pickDetected
+□ [Use this size] calls media.pickDetected; ✕ hides without nag
+□ No auto-dismiss timer on the adopt banner
 
 i18n (other strings):
 □ Pill state aria-labels (Ready / Warning: {message} / Error: {message})
 □ "Last checked Ns ago" string
 □ "(+N more)" suffix
 □ Print button blocked tooltip prefix
+□ Adopt banner: "Detected {media} on {printerName}." + "Use this size"
 ```
 
 ---
@@ -631,11 +823,18 @@ Polling loop (`stores/__tests__/printer.test.ts` with fake timers):
   polling does not start (even if its family is in the polling set)
 - Tab hidden → next tick is skipped, no scheduleNext
 - Tab returns visible → polling resumes
-- notifyPrintStarted suspends polling; notifyPrintCompleted resumes
-  with burst (interval = 2000ms for 30s)
+- isPrinting=true suspends polling; isPrinting=false resumes with
+  burst (interval = 2000ms for 30s after print() finally clause)
 - 3 consecutive throws from getStatus trigger backoff (10s, 20s, 60s)
 - Successful tick after backoff resets to 5000ms
-- 3 consecutive failures emit disconnected (or trigger reconnect path)
+- 3 consecutive failures call setAdapter(null) and increment
+  pollFailCycle (auto-reconnect picks up from there)
+- Circuit breaker fires at pollFailCycle=3: circuitBroken=true,
+  shouldPoll() returns false thereafter, one-time toast surfaces
+- circuitBroken survives auto-reconnect cycles; only manual
+  reconnect (fresh setAdapter on user action) resets it
+- Visibility listener: attached once at store init; surviving
+  10 connect/disconnect cycles without duplicate handlers
 - Disconnect stops the loop and clears the timer
 
 Pill state:
@@ -682,10 +881,33 @@ Error localisation (`composables/__tests__/usePrinterErrors.test.ts`):
 - `system_error` falls back to driver message (no canonical key)
 - Empty translation in the locale file falls back to driver message
 
+Auto-adopt gate (`stores/__tests__/media.test.ts`):
+- Untouched canvas (canUndo=false) + new detectedMedia →
+  pickDetected fires silently
+- Touched canvas (canUndo=true, objects.length > 0) + new
+  detectedMedia → resizeBanner.showAdopt fires; canvas unchanged
+- Empty canvas with canUndo=true (user deleted everything) →
+  silent pickDetected (no banner over a blank surface)
+- Stale source: 'manual' from previous session, untouched canvas,
+  printer connects → silent pickDetected (case the old source-based
+  gate missed)
+- detectedMedia matches current canvas → no-op (existing behaviour
+  preserved)
+
+Adopt-confirmation banner (`stores/__tests__/resizeBanner.test.ts`,
+`components/canvas/__tests__/CanvasResizeBanner.test.ts`):
+- showAdopt sets mode='adopt' and stores payload; hide() resets
+  to mode='idle'
+- Banner renders printer name (family + model) and media name in
+  adopt mode
+- [Use this size] calls media.pickDetected(payload.media) and hides
+- ✕ hides without calling pickDetected
+- No auto-dismiss timer fires after any duration
+
 Paper roll change end-to-end:
-- Status changes detectedMedia from 62mm to 29mm
-- Untouched canvas (designer.canUndo=false) → pickDetected fires
-  silently
-- Touched canvas (designer.canUndo=true) → adopt-confirmation
-  banner fires (via existing media watcher)
-- Same wire-up as amendment-canvas-resize-and-first-print.md §3
+- Status changes detectedMedia from 62mm to 29mm mid-session
+- Untouched canvas → pickDetected fires silently
+- Touched canvas → adopt banner shows printer + media, [Use this
+  size] applies via pickDetected
+- Polling pause during print: detectedMedia change observed
+  during print is picked up on first post-print tick, not lost
