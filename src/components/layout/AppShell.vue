@@ -45,10 +45,10 @@
       :open="confirmer.open.value"
       :title="confirmer.options.value?.title ?? ''"
       :message="confirmer.options.value?.message ?? ''"
-      :confirm-label="confirmer.options.value?.confirmLabel ?? ''"
       :cancel-label="confirmer.options.value?.cancelLabel ?? ''"
-      :tone="confirmer.options.value?.tone ?? 'primary'"
+      v-bind="confirmDialogProps"
       @confirm="confirmer.resolve"
+      @secondary="confirmer.resolveSecondary"
       @cancel="confirmer.cancel"
     />
   </div>
@@ -94,7 +94,7 @@ import { useCanvasViewport, CANVAS_VIEWPORT_KEY } from '@/composables/useCanvasV
 import { readDocumentFromHash } from '@/services/share-encoder';
 import { useLabelImport } from '@/composables/useLabelImport';
 import { useToast } from '@/composables/useToast';
-import { useConfirm } from '@/composables/useConfirm';
+import { useConfirm, isChoiceOptions } from '@/composables/useConfirm';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import { useUiDialogs } from '@/composables/useUiDialogs';
 import { SUPPORTED_LOCALES } from '@/i18n';
@@ -151,6 +151,27 @@ const shareOpen = ref(false);
 const resetOpen = ref(false);
 
 let bootstrapped = false;
+
+// Pass the right subset of fields to <ConfirmDialog> based on whether
+// the active prompt is a binary confirm or a three-way choose. The
+// dialog itself decides how many buttons to render based on which
+// labels are present.
+const confirmDialogProps = computed(() => {
+  const opts = confirmer.options.value;
+  if (!opts) return {};
+  if (isChoiceOptions(opts)) {
+    return {
+      primaryLabel: opts.primaryLabel,
+      secondaryLabel: opts.secondaryLabel,
+      primaryTone: opts.primaryTone ?? 'primary',
+      secondaryTone: opts.secondaryTone ?? 'primary',
+    };
+  }
+  return {
+    confirmLabel: opts.confirmLabel,
+    tone: opts.tone ?? 'primary',
+  };
+});
 
 const canvasSummary = computed(() => {
   const count = designer.document.objects.length;

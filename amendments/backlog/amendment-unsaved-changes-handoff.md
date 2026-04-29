@@ -11,14 +11,17 @@
 > binary prompt (Replace / Cancel) with a three-way one
 > (Save & open / Discard & open / Cancel) so users with unsaved work
 > have a non-destructive path. Once it lands, every "swap canvas
-> content" entry point — drag-drop, toolbar Import, share-link,
-> library open — converges on the same three-way prompt and the same
-> mental model.
+> content" entry point — drag-drop (single file), toolbar Import,
+> share-link, library open — converges on the same three-way prompt
+> and the same mental model.
 >
-> **Scope is the prompt rework and the migration of every swap
-> caller from the binary helper to the new ternary one.** No changes
-> to the share encoder, library service, or import service
+> **Scope is the prompt rework and the migration of every single-file
+> swap caller from the binary helper to the new ternary one.** No
+> changes to the share encoder, library service, or import service
 > themselves.
+>
+> **Multi-file drop is split out** into
+> `amendment-multi-file-drop.md`. That amendment depends on this one.
 
 ---
 
@@ -47,7 +50,8 @@ first, then loads the incoming.
 
 In:
 - New `confirmSwapWithSave()` helper on the document lifecycle
-  composable. Returns `'save' | 'discard' | 'cancel'`. Used by every
+  composable. Returns `'proceed' | 'save' | 'discard' | 'cancel'`
+  (see §4.2 for why the fourth value). Used by every single-file
   code path that swaps the canvas content while there might be
   unsaved work.
 - A three-action confirm modal — extend `useConfirm` to support a
@@ -73,6 +77,9 @@ In:
 Out:
 - The singleton fix and hashchange listener — covered by the
   precondition amendment.
+- **Multi-file drop** — covered by `amendment-multi-file-drop.md`.
+- **Library-modal-open drop routing** — covered by
+  `amendment-multi-file-drop.md`.
 - Auto-saving to library without prompting. This amendment makes
   saving an explicit user choice in the prompt. Implicit autosave to
   library would be a separate, broader policy decision.
@@ -142,10 +149,11 @@ empty).
 ### 3.3 When the Prompt Doesn't Fire
 
 The same `!designer.canUndo` short-circuit from
-`confirmDestructiveSwap` applies to the new helper — if there's no
-work to lose, swap silently. Same heuristic, same trust in `canUndo`
-as the "is there real work" signal. Demo content (loaded with
-`clearHistory()` after) doesn't fire the prompt.
+`confirmDestructiveSwap` applies — if there's no work to lose, swap
+silently. The helper returns `'proceed'` in that case (see §4.2);
+callers treat `'proceed'` the same as `'discard'` for the "load
+without saving" branch, but no modal is shown. Demo content (loaded
+with `clearHistory()` after) doesn't fire the prompt.
 
 ---
 
@@ -199,18 +207,27 @@ callers see no change.
 
 ### 4.2 Lifecycle Helper
 
+The helper returns one of four values. The `'proceed'` value is the
+honest answer for "no work to lose, no prompt was shown" — it's
+distinct from `'discard'` (user actively chose to throw work away)
+even though callers treat both the same way (load without saving).
+Keeping them distinct prevents the leaky abstraction of returning a
+synthetic user-choice value when no user was asked.
+
 ```typescript
 // useDocumentLifecycle.ts
+export type SwapChoice = 'proceed' | 'save' | 'discard' | 'cancel';
+
 export interface DocumentLifecycle {
   // ... existing fields ...
   confirmSwapWithSave(opts?: { incomingName?: string }):
-    Promise<'save' | 'discard' | 'cancel'>;
+    Promise<SwapChoice>;
 }
 
 async function confirmSwapWithSave(
   opts: { incomingName?: string } = {},
-): Promise<'save' | 'discard' | 'cancel'> {
-  if (!designer.canUndo) return 'discard';   // no work to lose; "discard" is fine
+): Promise<SwapChoice> {
+  if (!designer.canUndo) return 'proceed';   // no work to lose, no prompt
   const result = await confirmer.choose({
     title: t('lifecycle.swapTitle'),
     message: t('lifecycle.swapMessage', {
@@ -227,10 +244,22 @@ async function confirmSwapWithSave(
 }
 ```
 
+Callers branch:
+
+```typescript
+const choice = await lifecycle.confirmSwapWithSave({ incomingName });
+if (choice === 'cancel') return;
+if (choice === 'save') {
+  const ok = await saveCurrentToLibrary();
+  if (!ok) return;
+}
+// 'proceed' and 'discard' both fall through to the load step
+```
+
 The `isSwapping` race guard from the precondition amendment wraps
 this helper too — same try/finally pattern.
 
-### 4.3 Drag-Drop Wiring
+### 4.3 Drag-Drop Wiring (Single File)
 
 ```typescript
 // useLabelImport.ts (sketch)
@@ -253,6 +282,10 @@ async function saveCurrentToLibrary(): Promise<boolean> {
     await library.save(designer.document, { thumbnail });
     return true;
   } catch (err) {
+    if (err instanceof LibraryFullError) {
+      show(t('library.fullOnSaveAndOpen', { count: library.maxSlots }), 'error');
+      return false;
+    }
     show(t('library.saveError'), 'error');
     return false;
   }
@@ -262,6 +295,28 @@ async function saveCurrentToLibrary(): Promise<boolean> {
 `captureCanvasThumbnail()` is the same helper the toolbar's Save
 button already uses (`CanvasActions.vue:285` area). Factor out once
 if not already; reuse here.
+
+**Slot routing** is handled by `library.save()`'s existing
+behaviour — it uses `document.id` as the slot key:
+
+- Document loaded from a library slot (existing `id`) → updates
+  that slot.
+- Fresh / imported / share-link document (`id` not in library)
+  → creates a new slot.
+
+No special branching in this amendment; the existing save path
+already disambiguates correctly. Worth confirming during
+implementation that the doc's `id` survives the
+`confirmSwapWithSave` flow without being mutated (it should —
+nothing in the new code touches `document.id`).
+
+**Library-full case:** `library.save()` throws
+`LibraryFullError` when the user is at capacity and the doc isn't
+already in a slot. The save helper catches it specifically and
+shows a distinct error toast pointing the user at library
+management. The swap aborts; current canvas state preserved. See
+§5 for the full behaviour and the future upgrade path when
+`amendment-burnmark-package-format.md` lands.
 
 ### 4.4 Share-Link Wiring
 
@@ -299,7 +354,7 @@ function onHashChange() {
 ```
 
 The boot-time read continues to work for cold starts (where canUndo
-is false at load and the prompt is a no-op).
+is false at load and the helper returns `'proceed'` silently).
 
 ### 4.5 Library-Open Migration
 
@@ -313,56 +368,114 @@ After this migration, no callers of the binary
 
 ---
 
-## 5. Edge Cases
+## 5. Library Capacity
 
-### 5.1 Save Fails
+The library has a hard slot limit. `library.save()` throws
+`LibraryFullError` when the user is at capacity and the doc
+isn't already in a slot. Three cases the new flow has to handle:
+
+### 5.1 Save & Open With Library Full
+
+User picks "Save & open"; library is full; their document isn't
+already a slot. The save helper catches `LibraryFullError`
+specifically and surfaces a distinct toast:
+
+> **Library is full ({N}/{N}).**
+> Free a slot in the library to save this. [Open library]
+
+The toast includes a link/button that opens the library modal
+so the user can delete an entry. The swap itself aborts —
+current canvas state preserved, incoming file/share not loaded.
+The user can retry the drop / share-link / library-open after
+making space.
+
+We do NOT auto-evict. Silently destroying a library entry to
+make room for a new one is too easy to get wrong. Strict block
+with a clear path is the safer default.
+
+### 5.2 Save & Open When Doc Already Has a Slot
+
+If `document.id` matches an existing library slot, the save is
+an *update*, not a new slot — capacity isn't relevant.
+`library.save()` succeeds even when the library is full because
+no new slot is allocated. The swap proceeds normally.
+
+This is the common case for users who load from library, edit,
+then drop in a new file: their current doc updates in place,
+the new one loads.
+
+### 5.3 Future Upgrade — Save to File Fallback
+
+When `designer-core-amendment-burnmark-package-format.md` ships
+the `.bnmk` package format, the library-full toast grows a
+second action:
+
+> **Library is full ({N}/{N}).**
+> [Open library]   [Save as file instead…]
+
+"Save as file instead" exports the current document as `.bnmk`
+(self-contained, includes images), prompts a download, then
+continues the swap. Decouples "save my work" from "save in *this*
+place." Out of scope for this amendment — flagged here so the
+toast copy and component don't need restructuring when it
+lands.
+
+For today's amendment, the toast is the simpler one-action
+version with just `[Open library]`.
+
+---
+
+## 6. Edge Cases
+
+### 6.1 Save Fails
 
 `library.save(...)` throws (IndexedDB quota, disk full, etc.).
 Catch, show error toast, return `false` from `saveCurrentToLibrary`,
 and abort the swap. The user keeps the current canvas state; the
 incoming file/share is not loaded. No data lost.
 
-### 5.2 Save Succeeds But Load Fails
+### 6.2 Save Succeeds But Load Fails
 
 Save lands in the library, then the import parser throws. The
 user's work is safely in the library; the failed import shows its
 existing error toast. No regression — the library entry is real.
 Canvas remains on the pre-swap document.
 
-### 5.3 User Drops Multiple Files
+### 6.3 Multi-File Drop
 
-Existing behaviour: `onDrop` reads `files[0]` only. Unchanged. The
-prompt fires once for the first file; subsequent files are ignored.
+Out of scope — covered by `amendment-multi-file-drop.md`. For this
+amendment, the existing single-file behaviour (`files[0]` only) is
+preserved; the multi-file amendment fixes the silent-drop bug.
 
-### 5.4 User Cancels Mid-Save
+### 6.4 User Cancels Mid-Save
 
 The save step is asynchronous and not user-cancellable today (it's
 a quick IndexedDB put). Out of scope to change.
 
-### 5.5 Save & Open When Library Is at Capacity
+### 6.5 Save & Open When Library Is at Capacity
 
-If the library has size limits (it does: see existing IndexedDB
-quota handling), `library.save(...)` may fail. §5.1 handles it —
-error toast, abort.
+See §5 (the dedicated Library Capacity section above) for the
+full behaviour — strict block, distinct toast with [Open library]
+action, swap aborts, current canvas state preserved.
 
-### 5.6 Demo Content — `canUndo === false`
+### 6.6 Demo Content — `canUndo === false`
 
-Short-circuit: prompt doesn't fire. Demo content gets replaced
-silently. Intentional.
+Helper returns `'proceed'`; no prompt fires. Demo content gets
+replaced silently. Intentional.
 
-### 5.7 `canUndo === false` After Undo-Back-To-Zero
+### 6.7 `canUndo === false` After Undo-Back-To-Zero
 
 User makes one change, then undoes it. `canUndo` is now false but
 the user may still feel they have work in flight (redo stack
-exists). With the short-circuit, the swap happens silently and the
-redo stack is gone. Mild regression risk but matches today's
+exists). Helper returns `'proceed'` and the swap happens silently;
+the redo stack is gone. Mild regression risk but matches today's
 behaviour with `confirmDestructiveSwap`. Not worth changing the
 heuristic just for this amendment; if it surfaces in feedback, swap
 to `canUndo || canRedo` as a follow-up.
 
 ---
 
-## 6. Files Affected
+## 7. Files Affected
 
 ```
 src/composables/
@@ -370,10 +483,14 @@ src/composables/
                             'primary' | 'secondary' | 'cancel';
                             modal renders three buttons when
                             secondaryLabel is provided
-  useDocumentLifecycle.ts   add confirmSwapWithSave; remove
-                            confirmDestructiveSwap after migration
+  useDocumentLifecycle.ts   add confirmSwapWithSave returning
+                            'proceed' | 'save' | 'discard' | 'cancel';
+                            remove confirmDestructiveSwap after
+                            migration
   useLabelImport.ts         switch to confirmSwapWithSave; add
                             saveCurrentToLibrary helper
+                            (single-file only — multi-file routing
+                            lives in the multi-file amendment)
 
 src/components/common/
   ConfirmDialog.vue         third button slot, conditional on
@@ -395,17 +512,23 @@ src/components/toolbar/
                             out of the existing inline use) so
                             useLabelImport can call it
 
+src/stores/
+  library.ts                ensure LibraryFullError is exported;
+                            confirm maxSlots is exposed for the
+                            error-toast count display
+
 i18n:
   lifecycle.swapTitle, swapMessage, swapSaveAndOpen,
   swapDiscardAndOpen, swapIncomingFallback
-  library.saveError
+  library.saveError, library.fullOnSaveAndOpen,
+  library.openLibraryAction
 ```
 
 No designer-core changes. No schema changes.
 
 ---
 
-## 7. Implementation Checklist
+## 8. Implementation Checklist
 
 ```
 Precondition:
@@ -417,18 +540,24 @@ useConfirm three-way:
 □ Tone classes for primary, secondary, danger
 
 Lifecycle helper:
-□ confirmSwapWithSave returns 'save' | 'discard' | 'cancel'
-□ Short-circuits to 'discard' when !designer.canUndo
+□ confirmSwapWithSave returns 'proceed' | 'save' | 'discard' | 'cancel'
+□ Returns 'proceed' when !designer.canUndo (no prompt shown)
 □ Wraps in the existing isSwapping guard (try/finally)
 
 Save helper:
 □ captureCanvasThumbnail factored out of CanvasActions if not
   already
 □ saveCurrentToLibrary uses captureCanvasThumbnail and library.save
-□ Catches and surfaces errors; returns boolean
+□ Catches generic save errors; returns boolean
+□ Catches LibraryFullError specifically with distinct toast
+  ("Library is full ({N}/{N})") + [Open library] action
+□ Slot routing relies on existing library.save behaviour
+  (existing id → updates slot; new id → creates slot)
+□ Verify document.id survives confirmSwapWithSave flow unchanged
 
-Drag-drop:
-□ useLabelImport.runImport handles all three branches
+Drag-drop (single file):
+□ useLabelImport.runImport handles all four branches
+  ('proceed' and 'discard' both fall through to load)
 □ 'save' branch saves before loading; aborts on save failure
 □ Combined toast on save+open success ("Saved X, opened Y")
 
@@ -443,14 +572,16 @@ Cleanup:
 □ Remove confirmDestructiveSwap once no callers remain
 
 i18n:
-□ Three new lifecycle.swap* keys
-□ library.saveError key
+□ lifecycle.swapTitle, swapMessage, swapSaveAndOpen,
+  swapDiscardAndOpen, swapIncomingFallback
+□ library.saveError, library.fullOnSaveAndOpen,
+  library.openLibraryAction
 □ Apply to en + every other locale
 ```
 
 ---
 
-## 8. Tests
+## 9. Tests
 
 useConfirm `choose` (`composables/__tests__/useConfirm.test.ts`):
 - Renders three buttons when secondaryLabel provided
@@ -460,7 +591,7 @@ useConfirm `choose` (`composables/__tests__/useConfirm.test.ts`):
 
 confirmSwapWithSave
 (`composables/__tests__/useDocumentLifecycle.test.ts`):
-- Returns 'discard' immediately when !canUndo (no prompt shown)
+- Returns 'proceed' immediately when !canUndo (no prompt shown)
 - With canUndo, choose returns 'primary' → returns 'save'
 - 'secondary' → 'discard'
 - 'cancel' → 'cancel'
@@ -469,7 +600,7 @@ confirmSwapWithSave
   without prompting)
 
 Drag-drop wiring:
-- Drop with !canUndo → import runs without prompt
+- Drop with !canUndo → import runs without prompt ('proceed')
 - Drop with canUndo + 'save' → library.save called, then import
   runs, both toasts appear
 - Drop with canUndo + 'discard' → import runs, no library.save
@@ -482,10 +613,25 @@ Share-link wiring:
   + load + hash cleared
 - hashchange + 'discard' → load + hash cleared, no save
 - hashchange + 'cancel' → no load; hash cleared
-- hashchange while !canUndo → silent load (existing short-circuit)
+- hashchange while !canUndo → silent load ('proceed' branch)
 
 Library-open migration:
 - Opening a design from library with canUndo prompts via
   confirmSwapWithSave
 - 'save' branch saves current to library, then opens chosen
 - 'cancel' keeps current; library remains at last entry
+
+Slot routing
+(`composables/__tests__/useLabelImport.test.ts`):
+- 'save' on a new (never-saved) document → library.save creates
+  a new slot
+- 'save' on a document loaded from a library slot → library.save
+  updates that slot (no new slot created)
+- document.id is unchanged across the confirmSwapWithSave call
+
+Library capacity (single-file save):
+- 'save' when library is full + new document → LibraryFullError
+  thrown; saveCurrentToLibrary returns false; canvas state
+  preserved; distinct toast shown with [Open library] action
+- 'save' when library is full + existing slot doc → save
+  succeeds (update path); swap proceeds normally

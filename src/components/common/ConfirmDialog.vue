@@ -7,39 +7,66 @@
         {{ cancelLabel }}
       </button>
       <button
+        v-if="secondaryLabel"
         type="button"
         class="confirm__btn"
-        :class="`confirm__btn--${tone}`"
+        :class="`confirm__btn--${secondaryTone ?? 'primary'}`"
+        @click="onSecondary"
+      >
+        {{ secondaryLabel }}
+      </button>
+      <button
+        type="button"
+        class="confirm__btn"
+        :class="`confirm__btn--${primaryButtonTone}`"
         @click="onConfirm"
       >
-        {{ confirmLabel }}
+        {{ primaryButtonLabel }}
       </button>
     </template>
   </Modal>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import Modal from './Modal.vue';
+import type { DialogTone } from '@/composables/useConfirm';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     open: boolean;
     title: string;
     message?: string;
-    confirmLabel: string;
     cancelLabel: string;
-    tone?: 'primary' | 'danger';
+    // Binary confirm shape:
+    confirmLabel?: string;
+    tone?: DialogTone;
+    // Ternary choose shape:
+    primaryLabel?: string;
+    secondaryLabel?: string;
+    primaryTone?: DialogTone;
+    secondaryTone?: DialogTone;
   }>(),
   { message: '', tone: 'primary' },
 );
 
 const emit = defineEmits<{
   (e: 'confirm'): void;
+  (e: 'secondary'): void;
   (e: 'cancel'): void;
 }>();
 
+const primaryButtonLabel = computed(() => props.primaryLabel ?? props.confirmLabel ?? '');
+const primaryButtonTone = computed<DialogTone>(
+  () => props.primaryTone ?? props.tone ?? 'primary',
+);
+
 function onConfirm(): void {
   emit('confirm');
+}
+
+function onSecondary(): void {
+  emit('secondary');
 }
 
 function onCancel(): void {

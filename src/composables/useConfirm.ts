@@ -1,19 +1,40 @@
 import { ref, type Ref } from 'vue';
 
-export interface ConfirmOptions {
+export type DialogTone = 'primary' | 'danger';
+
+export interface ConfirmOptionsBase {
   title: string;
   message?: string;
-  confirmLabel: string;
   cancelLabel: string;
-  tone?: 'primary' | 'danger';
 }
+
+export interface ConfirmOptions extends ConfirmOptionsBase {
+  confirmLabel: string;
+  tone?: DialogTone;
+}
+
+export interface ChoiceOptions extends ConfirmOptionsBase {
+  primaryLabel: string;
+  secondaryLabel: string;
+  primaryTone?: DialogTone;
+  secondaryTone?: DialogTone;
+}
+
+export type DialogOptions = ConfirmOptions | ChoiceOptions;
+export type ChoiceResult = 'primary' | 'secondary' | 'cancel';
 
 export interface ConfirmController {
   open: Ref<boolean>;
-  options: Ref<ConfirmOptions | null>;
+  options: Ref<DialogOptions | null>;
   confirm(opts: ConfirmOptions): Promise<boolean>;
+  choose(opts: ChoiceOptions): Promise<ChoiceResult>;
   resolve(): void;
+  resolveSecondary(): void;
   cancel(): void;
+}
+
+export function isChoiceOptions(opts: DialogOptions): opts is ChoiceOptions {
+  return 'secondaryLabel' in opts;
 }
 
 // Singleton state — every `useConfirm()` caller sees the same refs and
@@ -21,28 +42,62 @@ export interface ConfirmController {
 // these and renders for every prompt across the app, regardless of which
 // component or composable initiated the confirm.
 const open = ref(false);
-const options = ref<ConfirmOptions | null>(null);
-let resolver: ((ok: boolean) => void) | null = null;
+const options = ref<DialogOptions | null>(null);
+let confirmResolver: ((ok: boolean) => void) | null = null;
+let chooseResolver: ((result: ChoiceResult) => void) | null = null;
+
+function clearResolvers(): void {
+  confirmResolver = null;
+  chooseResolver = null;
+}
+
+function preempt(): void {
+  // A new prompt overwrites any in-flight one. Resolve the previous
+  // resolver to a benign cancel-equivalent so awaiters don't hang.
+  confirmResolver?.(false);
+  chooseResolver?.('cancel');
+  clearResolvers();
+}
 
 function confirm(opts: ConfirmOptions): Promise<boolean> {
-  if (resolver) resolver(false);
+  preempt();
   options.value = opts;
   open.value = true;
   return new Promise<boolean>(resolve => {
-    resolver = resolve;
+    confirmResolver = resolve;
+  });
+}
+
+function choose(opts: ChoiceOptions): Promise<ChoiceResult> {
+  preempt();
+  options.value = opts;
+  open.value = true;
+  return new Promise<ChoiceResult>(resolve => {
+    chooseResolver = resolve;
   });
 }
 
 function resolve(): void {
   open.value = false;
-  resolver?.(true);
-  resolver = null;
+  confirmResolver?.(true);
+  chooseResolver?.('primary');
+  clearResolvers();
+}
+
+function resolveSecondary(): void {
+  open.value = false;
+  // Secondary only exists in choose-mode. If a binary confirm somehow
+  // received this call, fall through to cancel — safer than confirming.
+  chooseResolver?.('secondary');
+  confirmResolver?.(false);
+  clearResolvers();
 }
 
 function cancel(): void {
   open.value = false;
-  resolver?.(false);
-  resolver = null;
+  confirmResolver?.(false);
+  chooseResolver?.('cancel');
+  clearResolvers();
 }
 
 /**
@@ -54,23 +109,26 @@ function cancel(): void {
  *   :open="confirmer.open.value"
  *   v-bind="confirmer.options.value ?? {}"
  *   @confirm="confirmer.resolve"
+ *   @secondary="confirmer.resolveSecondary"
  *   @cancel="confirmer.cancel"
  * />
  * ```
  *
- * Then await `confirmer.confirm({ ... })` from any handler. Returns
- * `true` if the user confirms, `false` for cancel / Escape / backdrop.
+ * Two shapes:
+ * - `confirm({...})` returns `Promise<boolean>` — binary OK/Cancel.
+ * - `choose({...})` returns `Promise<'primary' | 'secondary' | 'cancel'>`
+ *   — three-button modal for save / discard / cancel style decisions.
  *
  * Concurrent calls are queued by overwriting — the previous resolver
- * resolves to `false` so a stuck handler doesn't hang.
+ * resolves to its cancel-equivalent so a stuck handler doesn't hang.
  */
 export function useConfirm(): ConfirmController {
-  return { open, options, confirm, resolve, cancel };
+  return { open, options, confirm, choose, resolve, resolveSecondary, cancel };
 }
 
 /** Test-only helper: clear shared state between unit tests. */
 export function __resetConfirmForTests(): void {
   open.value = false;
   options.value = null;
-  resolver = null;
+  clearResolvers();
 }
