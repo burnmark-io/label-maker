@@ -49,7 +49,7 @@
     >
       <ObjectsPanel v-if="prefs.sidePanelTab === 'objects'" />
       <PropertiesPanel v-else-if="prefs.sidePanelTab === 'properties'" />
-      <DataPanel v-else-if="prefs.sidePanelTab === 'data'" @open-batch="emit('open-batch')" />
+      <DataPanel v-else-if="prefs.sidePanelTab === 'data'" />
       <OutputPanel
         v-else-if="prefs.sidePanelTab === 'output'"
         @open-sheet-picker="emit('open-sheet-picker')"
@@ -71,7 +71,6 @@ import DataPanel from '@/components/panels/DataPanel.vue';
 import OutputPanel from '@/components/panels/OutputPanel.vue';
 
 const emit = defineEmits<{
-  (e: 'open-batch'): void;
   (e: 'open-sheet-picker'): void;
 }>();
 

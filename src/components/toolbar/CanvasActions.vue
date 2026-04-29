@@ -78,14 +78,6 @@
           </select>
         </label>
         <p v-if="config.count > 1" class="actions__summary">{{ summaryText }}</p>
-        <button
-          v-if="data.hasData"
-          class="actions__btn actions__btn--full"
-          type="button"
-          @click="onPrintBatch"
-        >
-          {{ t('actions.printBatch', { count: data.rows.length }) }}
-        </button>
         <button class="actions__btn actions__btn--full" type="button" @click="optionsOpen = false">
           {{ t('common.close') }}
         </button>
@@ -213,7 +205,6 @@ const printProgress = usePrintProgress();
 const thresholdConfirm = useThresholdConfirm();
 
 const emit = defineEmits<{
-  (e: 'open-batch'): void;
   (e: 'open-sheet'): void;
   (e: 'open-library'): void;
 }>();
@@ -470,11 +461,6 @@ async function onPrintToSheet(): Promise<void> {
     }
     show(err instanceof Error ? err.message : String(err), 'error');
   }
-}
-
-function onPrintBatch(): void {
-  optionsOpen.value = false;
-  emit('open-batch');
 }
 
 async function persistCurrentDoc(successKey: string): Promise<void> {

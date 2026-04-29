@@ -13,7 +13,6 @@
           <span class="visually-hidden" aria-live="polite">{{ canvasSummary }}</span>
           <MainToolbar data-tour="toolbar" />
           <CanvasActions
-            @open-batch="batchOpen = true"
             @open-sheet="sheetOpen = true"
             @open-share="shareOpen = true"
             @open-library="libraryOpen = true"
@@ -21,13 +20,11 @@
         </section>
         <SidePanel
           data-tour="side-panel"
-          @open-batch="batchOpen = true"
           @open-sheet-picker="sheetOpen = true"
         />
       </main>
       <InstallPrompt />
       <ImportDropOverlay />
-      <BatchPanel :open="batchOpen" @close="batchOpen = false" />
       <SheetDialog :open="sheetOpen" @close="sheetOpen = false" />
       <SheetViewer
         :open="sheetViewer.open.value"
@@ -81,7 +78,6 @@ import ToastStack from '@/components/common/ToastStack.vue';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import InstallPrompt from '@/components/common/InstallPrompt.vue';
 import ImportDropOverlay from './ImportDropOverlay.vue';
-import BatchPanel from '@/components/batch/BatchPanel.vue';
 import SheetDialog from '@/components/sheets/SheetDialog.vue';
 import SheetViewer from '@/components/sheets/SheetViewer.vue';
 import PrintProgressToast from '@/components/feedback/PrintProgressToast.vue';
@@ -162,7 +158,6 @@ const confirmer = useConfirm();
 const { aboutOpen, helpOpen, privacyOpen, tourActive, openHelp, startTour, closeTour } =
   useUiDialogs();
 
-const batchOpen = ref(false);
 const sheetOpen = ref(false);
 const sheetViewer = useSheetViewer();
 const libraryOpen = ref(false);

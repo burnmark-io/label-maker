@@ -431,3 +431,69 @@ circuit, over-threshold prompt, cancel returns false, don't-ask-again
 skips subsequent prompts, reset clears the flag.
 
 Full suite (636 tests) green; typecheck clean.
+
+### 3.3 Remove BatchPanel + toolbar entry — DONE
+
+Deleted:
+- `src/components/batch/BatchPanel.vue`.
+- "Print Batch (count)" button in `CanvasActions.vue` popup; the
+  `onPrintBatch` handler and `open-batch` emit declaration.
+- "Open batch preview" button in `DataPanel.vue`; the `open-batch`
+  emit declaration.
+- `open-batch` event chain through `SidePanel.vue` → `AppShell.vue`.
+- `BatchPanel` import + `<BatchPanel>` render in `AppShell.vue`;
+  `batchOpen` ref.
+- i18n keys: `actions.printBatch`, `data.batch.open`, top-level
+  `batch.*` block (en + nl).
+
+Routes that previously opened BatchPanel now land users on the
+central Print flow — the Output tab and the central Print popup
+both run multi-row prints through the new progress-toast path.
+
+`src/stores/__tests__/batch.test.ts` is retained — it tests
+AsyncGenerator iteration semantics (used by `runThermalBatch`), not
+the deleted UI.
+
+### Phase 3 gate — PASSED
+
+- 636/636 vitest cases green.
+- `vue-tsc --noEmit`: no errors.
+- ESLint on every touched surface: no warnings.
+
+---
+
+## Final summary
+
+The bulk-output amendment shipped across three phases. End-to-end:
+
+- A single `OutputSelection` (Active | All | Range) drives every
+  output surface — Print popup, Output tab Print section, Save-as-file
+  row. Imports default to "all", labels are honest about the count.
+- A `PrintDestination` toggle (Thermal | Sheet) makes thermal and
+  sheet peer destinations. Sheet template is a persistent global
+  setting, not a per-print interruption.
+- Multi-row Print flows through an inline progress toast with cancel
+  + resume; the BatchPanel modal is gone. Threshold confirmation
+  guards counts > 20 with a per-session don't-ask-again.
+- Multi-row Save → PDF / PNG honours the same selection; PDF is N
+  pages, PNG is a JSZip bundle (single file when count = 1).
+- Sheet output renders directly through the regular Print button into
+  an inline viewer — one click, output appears (ADR-001).
+
+Out-of-scope items per §6 stayed out: per-row copies override, per-
+row skip / disable in the selector, sheet "repeat to fill", strip-
+image PNG variant, filename templating, cut-mode override, copy-major
+print order, re-print "the last batch" affordances, persistent
+"never ask" for threshold, and dataset-cap lifting.
+
+Open follow-ups (small UX polish, not blockers):
+- Per-row error click in the progress toast doesn't yet open the
+  dataset table at that row.
+- Compact 4-digit count label (`Print 1.2k labels`) is unimplemented;
+  moot at the current 30-row cap, will need attention if the cap
+  rises.
+- Cutter capability is delegated to the printer driver's default
+  behaviour rather than checked explicitly. Brother QL drivers cut
+  after every `print()` call by default; if a future printer family
+  doesn't, the fix is a query on `printer.adapter.capabilities` in
+  `runThermalBatch`.

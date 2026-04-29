@@ -136,10 +136,6 @@
       </div>
 
       <ColumnMapper v-if="data.placeholders.length > 0 && data.headers.length > 0" />
-
-      <button type="button" class="data-panel__primary" @click="emit('open-batch')">
-        {{ t('data.batch.open') }}
-      </button>
     </section>
 
     <ImportChoiceDialog
@@ -175,10 +171,6 @@ import ImportChoiceDialog from './ImportChoiceDialog.vue';
 import DataEditorDialog from './DataEditorDialog.vue';
 import LimitBanner from '@/components/common/LimitBanner.vue';
 import { useConfirm } from '@/composables/useConfirm';
-
-const emit = defineEmits<{
-  (e: 'open-batch'): void;
-}>();
 
 const { t } = useI18n();
 const data = useDataStore();

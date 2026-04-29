@@ -31,8 +31,7 @@
     "printNoMedia": "Kies eerst een labelmaat",
     "printingTo": "Printen naar {model}…",
     "printSuccess": "Geprint",
-    "printFailed": "Printen mislukt: {error}",
-    "printBatch": "Batch printen ({count})"
+    "printFailed": "Printen mislukt: {error}"
   },
   "printer": {
     "disconnected": "Geen printer — klik om te verbinden",
@@ -568,9 +567,6 @@
       "unmapped": "— niet gekoppeld —",
       "unusedColumns": "Niet-gebruikte kolommen"
     },
-    "batch": {
-      "open": "Open batchpreview"
-    },
     "switcher": {
       "active": "{name} · {count} rijen",
       "activeOne": "{name} · 1 rij",
@@ -629,17 +625,6 @@
       "download": "Voorbeeld-CSV downloaden",
       "disabledTooltip": "Voeg eerst een {token} toe aan je ontwerp."
     }
-  },
-  "batch": {
-    "title": "Batch printen",
-    "summary": "{count} labels klaar voor preview en printen.",
-    "printAll": "Alles printen",
-    "cancel": "Annuleren",
-    "cantPrint": "Verbind een printer en importeer data om een batch te printen.",
-    "progress": "Print {current} van {total}…",
-    "success": "{count} labels geprint",
-    "error": "Batch mislukt: {message}",
-    "thumbnailAlt": "Voorbeeld van rij {row}"
   },
   "library": {
     "title": "Ontwerpbibliotheek",

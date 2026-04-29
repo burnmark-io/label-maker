@@ -31,8 +31,7 @@
     "printNoMedia": "Pick a label size first",
     "printingTo": "Printing to {model}…",
     "printSuccess": "Printed",
-    "printFailed": "Print failed: {error}",
-    "printBatch": "Print batch ({count})"
+    "printFailed": "Print failed: {error}"
   },
   "printer": {
     "disconnected": "No printer — click to connect",
@@ -568,9 +567,6 @@
       "unmapped": "— not mapped —",
       "unusedColumns": "Columns not used"
     },
-    "batch": {
-      "open": "Open batch preview"
-    },
     "switcher": {
       "active": "{name} · {count} rows",
       "activeOne": "{name} · 1 row",
@@ -629,17 +625,6 @@
       "download": "Download template",
       "disabledTooltip": "Add a {token} to your design first."
     }
-  },
-  "batch": {
-    "title": "Batch print",
-    "summary": "{count} labels ready to preview and print.",
-    "printAll": "Print all",
-    "cancel": "Cancel",
-    "cantPrint": "Connect a printer and import data to print a batch.",
-    "progress": "Printing {current} of {total}…",
-    "success": "Printed {count} labels",
-    "error": "Batch failed: {message}",
-    "thumbnailAlt": "Preview of row {row}"
   },
   "library": {
     "title": "Design library",
