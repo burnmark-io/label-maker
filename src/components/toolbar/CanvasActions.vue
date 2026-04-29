@@ -118,12 +118,6 @@
       </button>
       <ul v-if="dropdownOpen" class="actions__dropdown" role="menu" @click="dropdownOpen = false">
         <li>
-          <button type="button" role="menuitem" @click="onNewLabel">
-            {{ t('actions.newLabel') }}
-          </button>
-        </li>
-        <li class="actions__divider" aria-hidden="true" />
-        <li>
           <button type="button" role="menuitem" @click="onSave">
             {{ t('actions.saveCurrent') }}
           </button>
@@ -139,47 +133,15 @@
             {{ t('actions.saveAsNew') }}
           </button>
         </li>
+        <li class="actions__divider" aria-hidden="true" />
+        <li>
+          <button type="button" role="menuitem" @click="onNewLabel">
+            {{ t('actions.newLabel') }}
+          </button>
+        </li>
         <li>
           <button type="button" role="menuitem" @click="emit('open-library')">
             {{ t('topbar.library') }}
-          </button>
-        </li>
-        <li class="actions__divider" aria-hidden="true" />
-        <li>
-          <button type="button" role="menuitem" @click="onImport">
-            {{ t('actions.import') }}
-          </button>
-        </li>
-        <li class="actions__divider" aria-hidden="true" />
-        <li>
-          <button type="button" role="menuitem" @click="onExportPdf">
-            {{ t('actions.exportPdf') }}
-          </button>
-        </li>
-        <li>
-          <button type="button" role="menuitem" @click="onExportPng">
-            {{ t('actions.exportPng') }}
-          </button>
-        </li>
-        <li>
-          <button type="button" role="menuitem" @click="onExportLabel">
-            {{ t('actions.exportLabel') }}
-          </button>
-        </li>
-        <li>
-          <button type="button" role="menuitem" @click="onExportZip">
-            {{ t('actions.exportZip') }}
-          </button>
-        </li>
-        <li class="actions__divider" aria-hidden="true" />
-        <li>
-          <button type="button" role="menuitem" @click="emit('open-sheet')">
-            {{ t('actions.printSheet') }}
-          </button>
-        </li>
-        <li>
-          <button type="button" role="menuitem" @click="emit('open-share')">
-            {{ t('topbar.share') }}
           </button>
         </li>
       </ul>
@@ -215,15 +177,6 @@
       </button>
     </div>
 
-    <input
-      ref="fileInputRef"
-      type="file"
-      accept=".label,.zip,application/json,application/zip"
-      class="actions__file-input"
-      aria-hidden="true"
-      tabindex="-1"
-      @change="onFilePicked"
-    />
   </div>
 </template>
 
@@ -241,14 +194,11 @@ import { useLabelImport } from '@/composables/useLabelImport';
 import { localisedErrorMessage } from '@/composables/usePrinterErrors';
 import { FAMILIES_WITH_STATUS_POLLING } from '@/lib/printer/registry';
 import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
-import { downloadBlob, safeFileName } from '@/services/file-download';
-import { applyMappingToRow } from '@/services/column-mapper';
 import { captureCanvasThumbnail } from '@/services/thumbnail';
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;
   (e: 'open-sheet'): void;
-  (e: 'open-share'): void;
   (e: 'open-library'): void;
 }>();
 
@@ -269,7 +219,6 @@ const dropdownOpen = ref(false);
 const optionsOpen = ref(false);
 const printRootRef = ref<HTMLElement | null>(null);
 const saveRootRef = ref<HTMLElement | null>(null);
-const fileInputRef = ref<HTMLInputElement | null>(null);
 
 /**
  * Print button is blocked by a polled error when the printer is
@@ -373,18 +322,6 @@ async function onSave(): Promise<void> {
   await persistCurrentDoc('library.saved');
 }
 
-function onImport(): void {
-  fileInputRef.value?.click();
-}
-
-async function onFilePicked(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  if (!file) return;
-  await labelImport.runImport(file);
-}
-
 async function onNewLabel(): Promise<void> {
   const choice = await lifecycle.confirmSwapWithSave();
   if (choice === 'cancel') return;
@@ -404,53 +341,6 @@ async function onSaveAsNew(): Promise<void> {
   }
   lifecycle.assignNewId();
   await persistCurrentDoc('library.savedAsNew');
-}
-
-async function onExportPng(): Promise<void> {
-  try {
-    const blob = await designer.exportPng();
-    downloadBlob(blob, `${safeFileName(designer.document.name)}.png`);
-    show(t('export.pngDownloaded'), 'success');
-  } catch (err) {
-    show(err instanceof Error ? err.message : String(err), 'error');
-  }
-}
-
-async function onExportPdf(): Promise<void> {
-  try {
-    const rows =
-      data.rows.length > 0 ? data.rows.map(row => applyMappingToRow(row, data.mapping)) : undefined;
-    const blob = await designer.exportPdf(rows);
-    downloadBlob(blob, `${safeFileName(designer.document.name)}.pdf`);
-    show(t('export.pdfDownloaded'), 'success');
-  } catch (err) {
-    show(err instanceof Error ? err.message : String(err), 'error');
-  }
-}
-
-function onExportLabel(): void {
-  try {
-    const json = designer.toJSON();
-    const blob = new Blob([json], { type: 'application/json' });
-    downloadBlob(blob, `${safeFileName(designer.document.name)}.label`);
-    show(t('export.labelDownloaded'), 'success');
-  } catch (err) {
-    show(err instanceof Error ? err.message : String(err), 'error');
-  }
-}
-
-async function onExportZip(): Promise<void> {
-  try {
-    const result = await designer.exportBundled();
-    downloadBlob(result.blob, `${safeFileName(designer.document.name)}.zip`);
-    if (result.missing.length > 0) {
-      show(t('export.zipMissing', { count: result.missing.length }), 'info');
-    } else {
-      show(t('export.zipDownloaded'), 'success');
-    }
-  } catch (err) {
-    show(err instanceof Error ? err.message : String(err), 'error');
-  }
 }
 
 function onDocumentClick(event: MouseEvent): void {
