@@ -299,6 +299,16 @@ round-trip carefully — compression ratio varies with label complexity.
 `vite-plugin-pwa` handles most of the work. The install prompt timing
 (after 2nd visit) needs manual tracking in localStorage.
 
+**Link capture (Chromium).** The manifest declares `launch_handler`
+with `client_mode: ['navigate-existing', 'auto']`. Once installed,
+Chromium-based browsers (Chrome, Edge desktop; Chrome Android) will
+offer to open `https://burnmark.app/#…` share links in the PWA window
+instead of a new browser tab. Captured navigations are delivered to
+`window.launchQueue` as `targetURL` and routed through the existing
+share-decode + swap-with-save flow. Safari and Firefox ignore the
+field; links open in a browser tab as before. Users can disable the
+behaviour from the installed app's "open supported links" toggle.
+
 The Docker build is a two-stage Dockerfile — Node for building, nginx
 for serving. The compose.yaml includes the print proxy sidecar.
 

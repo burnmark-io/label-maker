@@ -106,6 +106,7 @@ import { useAutoReconnect } from '@/composables/useAutoReconnect';
 import { usePageTitle } from '@/composables/usePageTitle';
 import { useCanvasViewport, CANVAS_VIEWPORT_KEY } from '@/composables/useCanvasViewport';
 import { readDocumentFromHash } from '@/services/share-encoder';
+import { handleLaunchTargetURL } from '@/services/pwa-launch';
 import { useLabelImport } from '@/composables/useLabelImport';
 import { useToast } from '@/composables/useToast';
 import { useConfirm, isChoiceOptions } from '@/composables/useConfirm';
@@ -276,27 +277,43 @@ async function bootstrapAfterUnlock(): Promise<void> {
   await useDataStore().hydrate();
   await library.load();
 
-  // 0. PWA file_handlers — if the OS routed a file open at us via launchQueue
-  //    (Chromium-only), drain the queue and import the first file. Wins over
-  //    the share-URL hash because it's an explicit OS-level user action.
+  // 0. PWA launchQueue — Chromium routes file_handlers and link-capture
+  //    navigations through this same queue. Files always win over a
+  //    targetURL: an OS file open is the more explicit user action.
   if (typeof window !== 'undefined' && 'launchQueue' in window) {
-    type LaunchParams = { files?: FileSystemFileHandle[] };
+    type LaunchParams = { files?: FileSystemFileHandle[]; targetURL?: string };
     const queue = (
       window as unknown as {
         launchQueue: { setConsumer(cb: (p: LaunchParams) => void): void };
       }
     ).launchQueue;
     queue.setConsumer(async (params: LaunchParams) => {
-      const files = params.files;
-      if (!files || files.length === 0) return;
-      try {
-        const file = await files[0].getFile();
-        await labelImport.runImport(file);
-        if (window.location.pathname === '/open') {
-          window.history.replaceState(null, '', '/');
+      // 0a. file_handlers branch.
+      if (params.files && params.files.length > 0) {
+        try {
+          const file = await params.files[0].getFile();
+          await labelImport.runImport(file);
+          if (window.location.pathname === '/open') {
+            window.history.replaceState(null, '', '/');
+          }
+        } catch {
+          // Swallow — the runImport flow handles its own error surfacing.
         }
-      } catch {
-        // Swallow — the runImport flow handles its own error surfacing.
+        return;
+      }
+
+      // 0b. Link-capture branch — share URLs clicked from outside the
+      //     PWA arrive here. Sync the address bar then route through
+      //     the existing hashchange flow (swap-with-save prompt etc.).
+      if (params.targetURL) {
+        await handleLaunchTargetURL(params.targetURL, {
+          currentOrigin: window.location.origin,
+          currentPathname: window.location.pathname,
+          currentSearch: window.location.search,
+          currentHash: window.location.hash,
+          replaceState: (path: string) => window.history.replaceState(null, '', path),
+          onHashChange,
+        });
       }
     });
   }
