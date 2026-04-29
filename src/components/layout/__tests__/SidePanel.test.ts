@@ -21,8 +21,8 @@ vi.mock('@/components/panels/PropertiesPanel.vue', () => ({
 vi.mock('@/components/panels/DataPanel.vue', () => ({
   default: { name: 'DataPanel', template: '<div data-testid="data-panel" />' },
 }));
-vi.mock('@/components/printer/PrintPreview.vue', () => ({
-  default: { name: 'PrintPreview', template: '<div data-testid="preview-panel" />' },
+vi.mock('@/components/panels/OutputPanel.vue', () => ({
+  default: { name: 'OutputPanel', template: '<div data-testid="output-panel" />' },
 }));
 
 // Stub the auto-switch composable — it touches the designer store with
