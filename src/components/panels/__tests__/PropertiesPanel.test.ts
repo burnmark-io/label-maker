@@ -147,13 +147,15 @@ describe('PropertiesPanel', () => {
     expect(deselectSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('hides type-specific component when multi-selecting (Appearance + Position remain)', () => {
+  it('multi-select: shows Appearance, hides type-specific and Position & size', () => {
     documentRef.value = makeDoc([makeText('obj-1', 'A'), makeText('obj-2', 'B')]);
     selectionRef.value = ['obj-1', 'obj-2'];
     const wrapper = mountPanel();
-    // Appearance section is always shown; type-specific Content is hidden.
+    // Appearance applies to all selected (opacity/visible/locked); Position
+    // & Size is hidden because forcing two objects to the same X/Y/W/H
+    // rarely matches intent.
     expect(wrapper.text()).toContain('Appearance');
-    expect(wrapper.text()).toContain('Position & size');
+    expect(wrapper.text()).not.toContain('Position & size');
     expect(wrapper.text()).not.toContain('Content');
   });
 

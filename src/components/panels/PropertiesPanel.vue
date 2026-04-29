@@ -36,11 +36,15 @@
             <ShapeProperties v-else-if="firstObject.type === 'shape'" :object="firstObject" />
           </template>
 
-          <!-- Appearance: opacity, visible, locked. Frequently adjusted. -->
+          <!-- Appearance: opacity, visible, locked. Apply-to-all makes
+               sense for these (e.g. "set all to 50% opacity"). -->
           <AppearanceProperties :object="firstObject" />
 
-          <!-- Position & Size: collapsed by default; most users drag on canvas. -->
+          <!-- Position & Size: per-object only. Forcing two objects to the
+               same X/Y stacks them; same W/H rarely matches intent. Hide
+               on multi-select. -->
           <CollapsibleSection
+            v-if="selectedObjects.length === 1"
             :title="t('properties.positionAndSize')"
             :storage-key="positionStorageKey"
           >
