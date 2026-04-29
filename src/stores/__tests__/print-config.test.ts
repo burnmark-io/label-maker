@@ -19,6 +19,12 @@ vi.mock('@/stores/designer', () => ({
   useDesignerStore: () => designerState,
 }));
 
+const printerState = reactive<{ isConnected: boolean }>({ isConnected: false });
+
+vi.mock('@/stores/printer', () => ({
+  usePrinterStore: () => printerState,
+}));
+
 import { usePrintConfigStore } from '../print-config';
 
 function makeRows(n: number): Record<string, string>[] {
@@ -30,6 +36,7 @@ beforeEach(() => {
   dataState.rows = [];
   dataState.currentIndex = 0;
   designerState.document = { id: 'doc-1' };
+  printerState.isConnected = false;
 });
 
 describe('print-config store — defaults', () => {
@@ -135,6 +142,53 @@ describe('print-config store — rowsForSelection', () => {
 describe('print-config store — destination and sheet template', () => {
   beforeEach(() => {
     window.localStorage.clear();
+  });
+
+  it('thermalPossible mirrors printer.isConnected', () => {
+    const store = usePrintConfigStore();
+    expect(store.thermalPossible).toBe(false);
+    printerState.isConnected = true;
+    expect(store.thermalPossible).toBe(true);
+  });
+
+  it('showDestinationToggle requires both destinations', () => {
+    const store = usePrintConfigStore();
+    expect(store.showDestinationToggle).toBe(false);
+    printerState.isConnected = true;
+    expect(store.showDestinationToggle).toBe(false);
+    store.setSheetTemplate('avery-l7160');
+    expect(store.showDestinationToggle).toBe(true);
+  });
+
+  it('effectiveDestination coerces thermal → sheet when thermal disconnects', () => {
+    const store = usePrintConfigStore();
+    printerState.isConnected = true;
+    store.setSheetTemplate('avery-l7160');
+    store.destination = 'thermal';
+    expect(store.effectiveDestination).toBe('thermal');
+    printerState.isConnected = false;
+    expect(store.effectiveDestination).toBe('sheet');
+  });
+
+  it('effectiveDestination coerces sheet → thermal when sheet template cleared', () => {
+    const store = usePrintConfigStore();
+    printerState.isConnected = true;
+    store.setSheetTemplate('avery-l7160');
+    store.destination = 'sheet';
+    expect(store.effectiveDestination).toBe('sheet');
+    store.setSheetTemplate(null);
+    expect(store.effectiveDestination).toBe('thermal');
+  });
+
+  it("user's last explicit pick stands when thermal reconnects", () => {
+    const store = usePrintConfigStore();
+    store.setSheetTemplate('avery-l7160');
+    printerState.isConnected = true;
+    store.destination = 'sheet';
+    printerState.isConnected = false;
+    expect(store.effectiveDestination).toBe('sheet');
+    printerState.isConnected = true;
+    expect(store.effectiveDestination).toBe('sheet'); // user picked sheet, no auto-flip
   });
 
   it('starts with destination = thermal', () => {

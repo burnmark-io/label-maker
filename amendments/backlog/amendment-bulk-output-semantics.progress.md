@@ -315,3 +315,19 @@ Full suite (626 tests) green; typecheck clean.
 **Open follow-up (Phase 3 territory):** the sheet print path doesn't
 yet show a "Generating sheet PDF…" toast for renders that exceed
 ~250ms (§10). Will be added with PrintProgressToast in Phase 3.1.
+
+### Phase 2 gate — PASSED
+
+Connection-state coercion (§3.6) verified by 5 new test cases on the
+store (printer disconnect / reconnect, sheet template cleared,
+explicit pick stands across reconnect). All transitions are pure
+derivations of `effectiveDestination`, no watchers needed.
+
+- 631/631 vitest cases green.
+- `vue-tsc --noEmit`: no errors.
+- ESLint on touched surfaces: no warnings.
+
+Phase 2 ships an end-to-end Thermal | Sheet output toggle. Sheet
+template is now a persistent setting, not a per-print interruption.
+Sheet output renders directly from the regular Print button into the
+inline viewer — one click, output appears (ADR-001 satisfied).
