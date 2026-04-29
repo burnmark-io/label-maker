@@ -22,6 +22,7 @@
 import { computed, ref, watch } from 'vue';
 import type { ImageObject } from '@burnmark-io/designer-core';
 import { useDesignerStore } from '@/stores/designer';
+import { computeFit } from '@/lib/image/fit';
 
 const props = defineProps<{
   object: ImageObject;
@@ -75,22 +76,35 @@ watch(
   { immediate: true },
 );
 
-const config = computed(() => ({
-  id: props.object.id,
-  name: 'object',
-  x: props.object.x + props.object.width / 2,
-  y: props.object.y + props.object.height / 2,
-  offsetX: props.object.width / 2,
-  offsetY: props.object.height / 2,
-  width: props.object.width,
-  height: props.object.height,
-  rotation: props.object.rotation,
-  opacity: props.object.opacity,
-  visible: props.object.visible,
-  listening: !props.object.locked,
-  draggable: props.draggable && !props.object.locked,
-  image: image.value,
-}));
+const config = computed(() => {
+  const img = image.value;
+  const source = img ? { width: img.naturalWidth, height: img.naturalHeight } : null;
+  const fit = computeFit({
+    fit: props.object.fit,
+    bbox: { width: props.object.width, height: props.object.height },
+    source,
+  });
+  return {
+    id: props.object.id,
+    name: 'object',
+    x: props.object.x + props.object.width / 2,
+    y: props.object.y + props.object.height / 2,
+    rotation: props.object.rotation,
+    opacity: props.object.opacity,
+    visible: props.object.visible,
+    listening: !props.object.locked,
+    draggable: props.draggable && !props.object.locked,
+    image: img,
+    width: fit.width,
+    height: fit.height,
+    offsetX: fit.offsetX,
+    offsetY: fit.offsetY,
+    cropX: fit.cropX,
+    cropY: fit.cropY,
+    cropWidth: fit.cropWidth,
+    cropHeight: fit.cropHeight,
+  };
+});
 
 const placeholderConfig = computed(() => ({
   id: props.object.id,
@@ -129,8 +143,12 @@ function onTransformEnd(): void {
   if (!node) return;
   const sx = node.scaleX();
   const sy = node.scaleY();
-  const newWidth = Math.max(8, node.width() * sx);
-  const newHeight = Math.max(8, node.height() * sy);
+  // Multiply against the stored bbox dims, not node.width()/height():
+  // for non-fill fit modes the Konva node renders at the inner-image
+  // size, not the bbox. The user-facing transform is "scale the bbox";
+  // the image then re-fits inside.
+  const newWidth = Math.max(8, props.object.width * sx);
+  const newHeight = Math.max(8, props.object.height * sy);
   node.scaleX(1);
   node.scaleY(1);
   emit('transformend', {
