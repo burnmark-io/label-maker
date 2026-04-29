@@ -220,6 +220,7 @@ import { useLabelImport } from '@/composables/useLabelImport';
 import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { downloadBlob, safeFileName } from '@/services/file-download';
 import { applyMappingToRow } from '@/services/column-mapper';
+import { captureCanvasThumbnail } from '@/services/thumbnail';
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;
@@ -296,15 +297,9 @@ function onPrintBatch(): void {
 }
 
 async function persistCurrentDoc(successKey: string): Promise<void> {
-  let dataUrl: string | undefined;
+  const thumbnail = await captureCanvasThumbnail(designer);
   try {
-    const blob = await designer.exportPng(undefined, 0.25);
-    dataUrl = await blobToDataUrl(blob);
-  } catch {
-    // Render failures shouldn't block saving — fall through with no thumbnail.
-  }
-  try {
-    await library.save(designer.document, { thumbnail: dataUrl });
+    await library.save(designer.document, { thumbnail });
     show(t(successKey), 'success');
   } catch (err) {
     if (err instanceof LibraryFullError) {
@@ -314,15 +309,6 @@ async function persistCurrentDoc(successKey: string): Promise<void> {
       show(err instanceof Error ? err.message : String(err), 'error');
     }
   }
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
 }
 
 async function onSave(): Promise<void> {

@@ -108,6 +108,7 @@ import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useDesignerStore } from '@/stores/designer';
 import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
+import { captureCanvasThumbnail } from '@/services/thumbnail';
 import LimitBanner from '@/components/common/LimitBanner.vue';
 import Modal from '@/components/common/Modal.vue';
 
@@ -138,26 +139,8 @@ function formatDate(iso: string): string {
   }
 }
 
-async function buildThumbnail(): Promise<string | undefined> {
-  try {
-    const blob = await designer.exportPng(undefined, 0.25);
-    return await blobToDataUrl(blob);
-  } catch {
-    return undefined;
-  }
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
-
 async function persistCurrentDoc(toastKey: string, withThumbnail = true): Promise<void> {
-  const thumbnail = withThumbnail ? await buildThumbnail() : undefined;
+  const thumbnail = withThumbnail ? await captureCanvasThumbnail(designer) : undefined;
   try {
     await library.save(designer.document, { thumbnail });
     show(t(toastKey), 'success');
