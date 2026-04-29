@@ -90,7 +90,25 @@
             :title="deleteTitle"
             @click="onDeleteClick"
           >
-            {{ deleteLabel }}
+            <svg
+              class="properties-panel__delete-icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+            </svg>
+            <span class="properties-panel__delete-label">{{ deleteLabel }}</span>
           </button>
         </template>
       </div>
@@ -365,31 +383,44 @@ function onDeleteClick(): void {
   align-self: stretch;
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-4);
-  border: 0;
-  border-top: 1px solid var(--color-border);
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  background: var(--color-error);
+  color: #fff;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   text-align: center;
   cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   transition:
     background var(--duration-fast) var(--easing),
-    color var(--duration-fast) var(--easing);
+    border-color var(--duration-fast) var(--easing),
+    box-shadow var(--duration-fast) var(--easing);
+}
+
+.properties-panel__delete-icon {
+  flex: 0 0 auto;
+}
+
+.properties-panel__delete-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .properties-panel__delete:hover {
-  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+  background: color-mix(in srgb, var(--color-error) 88%, black);
+  border-color: color-mix(in srgb, var(--color-error) 88%, black);
 }
 
 .properties-panel__delete:focus-visible {
   outline: 2px solid var(--color-error);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 
 @media (pointer: coarse) {
