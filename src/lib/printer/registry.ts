@@ -45,6 +45,37 @@ export function identifyByVidPid(vid: number, pid: number): RegistryEntry | unde
 export const FAMILIES_WITH_DETECTION: ReadonlySet<PrinterFamily> = new Set(['brother-ql']);
 
 /**
+ * Driver families that support periodic status polling. All three
+ * supported families implement getStatus() with structured errors;
+ * Brother QL and LabelWriter 550 also report detectedMedia.
+ *
+ * See `amendment-printer-status-polling.md §3.6` for the per-protocol
+ * breakdown.
+ */
+export const FAMILIES_WITH_STATUS_POLLING: ReadonlySet<PrinterFamily> = new Set([
+  'brother-ql',
+  'labelwriter',
+  'labelmanager',
+]);
+
+/**
+ * Per-model exclusions from periodic polling. A model whose key is in
+ * this set does NOT poll even if its family is in
+ * `FAMILIES_WITH_STATUS_POLLING`.
+ *
+ * Empty in v1 — architectural seam for the future case where a specific
+ * model within a polling family turns out to misbehave on status
+ * queries (e.g. firmware that hangs the bulk pipe under repeated
+ * `getStatus()` calls).
+ */
+export const PER_MODEL_STATUS_POLLING_EXCLUSIONS: ReadonlySet<string> = new Set<string>();
+
+/** Compose the model key used by `PER_MODEL_STATUS_POLLING_EXCLUSIONS`. */
+export function modelKey(family: PrinterFamily, model: string): string {
+  return `${family}:${model}`;
+}
+
+/**
  * Whether a family supports Web Serial in the browser. Brother's
  * QL-820NWB(c) speak Bluetooth SPP, listed by the OS-paired serial
  * picker; the others are USB-only.
