@@ -130,3 +130,105 @@ describe('designer store — selection model with document sentinel', () => {
     expect(designer.document.updatedAt).not.toBe(before);
   });
 });
+
+describe('designer store — auto-naming on addObject', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  function addText(designer: ReturnType<typeof useDesignerStore>, name?: string): string {
+    return designer.addObject({
+      type: 'text',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 30,
+      rotation: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      content: 'Hello',
+      fontFamily: 'Arial',
+      fontSize: 16,
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textAlign: 'left',
+      color: '#000',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      invert: false,
+      wrap: false,
+      autoHeight: false,
+      ...(name !== undefined ? { name } : {}),
+    } as never);
+  }
+
+  function nameOf(designer: ReturnType<typeof useDesignerStore>, id: string): string | undefined {
+    return designer.document.objects.find(o => o.id === id)?.name;
+  }
+
+  it('auto-names sequential text adds Text 1 / Text 2 / Text 3', () => {
+    const designer = useDesignerStore();
+    const id1 = addText(designer);
+    const id2 = addText(designer);
+    const id3 = addText(designer);
+    expect(nameOf(designer, id1)).toBe('Text 1');
+    expect(nameOf(designer, id2)).toBe('Text 2');
+    expect(nameOf(designer, id3)).toBe('Text 3');
+  });
+
+  it('rename then add → next text uses max+1 (Text 4 after renaming Text 2)', () => {
+    const designer = useDesignerStore();
+    const id1 = addText(designer);
+    const id2 = addText(designer);
+    const id3 = addText(designer);
+    designer.updateObject(id2, { name: 'Greeting' });
+    const id4 = addText(designer);
+    expect(nameOf(designer, id1)).toBe('Text 1');
+    expect(nameOf(designer, id2)).toBe('Greeting');
+    expect(nameOf(designer, id3)).toBe('Text 3');
+    expect(nameOf(designer, id4)).toBe('Text 4');
+  });
+
+  it('reuses freed numbers after deletion of the highest-numbered object', () => {
+    const designer = useDesignerStore();
+    const id1 = addText(designer);
+    const id2 = addText(designer);
+    designer.removeObject(id2);
+    const id3 = addText(designer);
+    expect(nameOf(designer, id1)).toBe('Text 1');
+    // id2 is gone — pool is {Text 1}, max+1 = 2
+    expect(nameOf(designer, id3)).toBe('Text 2');
+  });
+
+  it('does not override an explicitly provided name', () => {
+    const designer = useDesignerStore();
+    const id = addText(designer, 'Greeting');
+    expect(nameOf(designer, id)).toBe('Greeting');
+  });
+
+  it('per-pool counters are independent (text vs rectangle)', () => {
+    const designer = useDesignerStore();
+    const t1 = addText(designer);
+    const r1 = designer.addObject({
+      type: 'shape',
+      shape: 'rectangle',
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 50,
+      rotation: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      fill: true,
+      strokeWidth: 1,
+      color: '#000',
+      invert: false,
+    } as never);
+    const t2 = addText(designer);
+    expect(nameOf(designer, t1)).toBe('Text 1');
+    expect(nameOf(designer, r1)).toBe('Rectangle 1');
+    expect(nameOf(designer, t2)).toBe('Text 2');
+  });
+});

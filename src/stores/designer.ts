@@ -28,6 +28,8 @@ import {
   type SheetTemplate,
 } from '@burnmark-io/designer-core';
 import { BurnmarkAssetLoader } from '@/services/asset-loader';
+import { autoNameFor, type TypeLabelKey } from '@/lib/naming/auto-name';
+import { i18n } from '@/i18n';
 
 /**
  * Designer store — wraps `useLabelDesigner` from `@burnmark-io/designer-vue`
@@ -84,9 +86,30 @@ export const useDesignerStore = defineStore('designer', () => {
    * union `LabelObjectInput`, but the union version of `Omit<U, 'id'>` is
    * the intersection of common keys — which loses subtype-specific fields.
    * Using a generic constraint keeps the call site fully typed.
+   *
+   * Auto-names new objects when the caller doesn't supply a `name`.
+   * `<TypeLabel> <N>` where N is `max(parsed N for that pool) + 1` from
+   * the document's current objects. Callers that pass a name (e.g. paste
+   * preserving the source's name) keep theirs.
    */
   function addObject<T extends LabelObject>(input: Omit<T, 'id'>): string {
-    return composable.add(input as LabelObjectInput);
+    const withName = ensureAutoName(input);
+    return composable.add(withName as LabelObjectInput);
+  }
+
+  function autoNamePrefix(key: TypeLabelKey): string {
+    return i18n.global.t(`objectTypes.${key}`);
+  }
+
+  function ensureAutoName<T extends LabelObject>(input: Omit<T, 'id'>): Omit<T, 'id'> {
+    const objects = composable.designer.document.objects;
+    const name = autoNameFor(
+      input as Parameters<typeof autoNameFor>[0],
+      objects,
+      autoNamePrefix,
+    );
+    if (name === undefined) return input;
+    return { ...input, name } as Omit<T, 'id'>;
   }
 
   function updateObject(id: string, patch: Partial<LabelObject>): void {

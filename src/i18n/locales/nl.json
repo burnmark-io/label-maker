@@ -141,7 +141,18 @@
     "deselect": "Deselecteren",
     "headerSingle": "{name}",
     "headerMulti": "{count} items geselecteerd",
-    "headerDocument": "Document"
+    "headerDocument": "Document",
+    "rename": "Hernoemen"
+  },
+  "objectTypes": {
+    "text": "Tekst",
+    "image": "Afbeelding",
+    "rectangle": "Rechthoek",
+    "ellipse": "Ellips",
+    "line": "Lijn",
+    "qrcode": "QR",
+    "barcode": "Barcode",
+    "group": "Groep"
   },
   "document": {
     "label": "Document",

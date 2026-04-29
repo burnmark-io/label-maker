@@ -141,7 +141,18 @@
     "deselect": "Deselect",
     "headerSingle": "{name}",
     "headerMulti": "{count} items selected",
-    "headerDocument": "Document"
+    "headerDocument": "Document",
+    "rename": "Rename"
+  },
+  "objectTypes": {
+    "text": "Text",
+    "image": "Image",
+    "rectangle": "Rectangle",
+    "ellipse": "Ellipse",
+    "line": "Line",
+    "qrcode": "QR",
+    "barcode": "Barcode",
+    "group": "Group"
   },
   "document": {
     "label": "Document",
