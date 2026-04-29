@@ -97,6 +97,24 @@
     "media": "Media: {media}",
     "assumedBanner": "Voorbeeld op basis van aangenomen media ({media}). Verbind of kies een media voor een nauwkeurig resultaat."
   },
+  "output": {
+    "previewFootnote": {
+      "disconnected": "Verbind een printer voor een apparaat-nauwkeurig voorbeeld",
+      "noPreviewSupport": "Voorbeeld niet beschikbaar voor {family}; benadering getoond"
+    },
+    "print": {
+      "heading": "Printen",
+      "copies": "Aantal",
+      "density": "Intensiteit",
+      "action": "Printen"
+    },
+    "saveAsFile": {
+      "heading": "Opslaan als bestand",
+      "png": "PNG",
+      "pdf": "PDF",
+      "label": ".label"
+    }
+  },
   "toolbar": {
     "addText": "Tekst toevoegen",
     "addImage": "Afbeelding toevoegen",
@@ -106,6 +124,13 @@
     "shapeRectangle": "Rechthoek",
     "shapeCircle": "Cirkel",
     "shapeLine": "Lijn"
+  },
+  "banner": {
+    "adopt": {
+      "title": "{media} gedetecteerd op {printer}.",
+      "useThisSize": "Gebruik deze maat"
+    },
+    "dismiss": "Sluiten"
   },
   "shapes": {
     "categories": {

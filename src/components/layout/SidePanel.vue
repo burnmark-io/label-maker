@@ -50,7 +50,7 @@
       <ObjectsPanel v-if="prefs.sidePanelTab === 'objects'" />
       <PropertiesPanel v-else-if="prefs.sidePanelTab === 'properties'" />
       <DataPanel v-else-if="prefs.sidePanelTab === 'data'" @open-batch="emit('open-batch')" />
-      <PrintPreview v-else-if="prefs.sidePanelTab === 'output'" />
+      <OutputPanel v-else-if="prefs.sidePanelTab === 'output'" />
     </div>
   </aside>
 </template>
@@ -65,7 +65,7 @@ import { useTabAutoSwitch } from '@/composables/useTabAutoSwitch';
 import ObjectsPanel from '@/components/panels/ObjectsPanel.vue';
 import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
 import DataPanel from '@/components/panels/DataPanel.vue';
-import PrintPreview from '@/components/printer/PrintPreview.vue';
+import OutputPanel from '@/components/panels/OutputPanel.vue';
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;

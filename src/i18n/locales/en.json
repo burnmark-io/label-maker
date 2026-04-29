@@ -97,6 +97,24 @@
     "media": "Media: {media}",
     "assumedBanner": "Preview based on assumed media ({media}). Connect or pick a media for an accurate result."
   },
+  "output": {
+    "previewFootnote": {
+      "disconnected": "Connect a printer for device-accurate preview",
+      "noPreviewSupport": "Preview not available for {family}; showing approximate render"
+    },
+    "print": {
+      "heading": "Print",
+      "copies": "Copies",
+      "density": "Density",
+      "action": "Print"
+    },
+    "saveAsFile": {
+      "heading": "Save as file",
+      "png": "PNG",
+      "pdf": "PDF",
+      "label": ".label"
+    }
+  },
   "toolbar": {
     "addText": "Add text",
     "addImage": "Add image",
@@ -106,6 +124,13 @@
     "shapeRectangle": "Rectangle",
     "shapeCircle": "Circle",
     "shapeLine": "Line"
+  },
+  "banner": {
+    "adopt": {
+      "title": "Detected {media} on {printer}.",
+      "useThisSize": "Use this size"
+    },
+    "dismiss": "Dismiss"
   },
   "shapes": {
     "categories": {

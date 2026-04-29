@@ -1,8 +1,8 @@
 <template>
-  <div class="preview">
-    <header v-if="printer.isConnected" class="preview__header">
+  <section class="output-preview">
+    <header v-if="printer.isConnected" class="output-preview__header">
       <button
-        class="preview__refresh"
+        class="output-preview__refresh"
         type="button"
         :aria-label="t('preview.refresh')"
         :disabled="rendering"
@@ -27,66 +27,81 @@
       </button>
     </header>
 
-    <p v-if="!printer.isConnected" class="preview__empty">{{ t('preview.notConnected') }}</p>
-
-    <template v-else>
-      <p v-if="!preview && rendering" class="preview__empty">{{ t('preview.rendering') }}</p>
-      <p v-else-if="!preview" class="preview__empty">{{ t('preview.noPreview') }}</p>
-
+    <template v-if="printer.isConnected">
+      <p v-if="!preview && rendering" class="output-preview__empty">{{ t('preview.rendering') }}</p>
+      <p v-else-if="!preview" class="output-preview__empty">{{ t('preview.noPreview') }}</p>
       <template v-else>
-        <p v-if="preview.assumed" class="preview__banner" role="status">
+        <p v-if="preview.assumed" class="output-preview__banner" role="status">
           {{ t('preview.assumedBanner', { media: preview.media.name }) }}
         </p>
-        <p v-else class="preview__media">
+        <p v-else class="output-preview__media">
           {{ t('preview.media', { media: preview.media.name }) }}
         </p>
-
-        <div class="preview__canvas-wrap">
-          <canvas ref="canvasRef" class="preview__canvas" />
+        <div class="output-preview__canvas-wrap">
+          <canvas ref="canvasRef" class="output-preview__canvas" />
         </div>
-
-        <ul v-if="preview.planes.length > 1" class="preview__legend">
+        <ul v-if="preview.planes.length > 1" class="output-preview__legend">
           <li v-for="plane in preview.planes" :key="plane.name">
-            <span class="preview__swatch" :style="{ background: plane.displayColor }" />
+            <span class="output-preview__swatch" :style="{ background: plane.displayColor }" />
             {{ plane.name }}
           </li>
         </ul>
       </template>
     </template>
-  </div>
+
+    <template v-else>
+      <div class="output-preview__canvas-wrap">
+        <canvas ref="canvasRef" class="output-preview__canvas" />
+      </div>
+      <p class="output-preview__footnote">{{ t('output.previewFootnote.disconnected') }}</p>
+    </template>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, shallowRef, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
 import { useDesignerStore } from '@/stores/designer';
+import { useDataStore } from '@/stores/data';
 import { bitmapToRgba } from '@/lib/printer/preview';
+import type { RawImageData } from '@burnmark-io/designer-core';
 
 const { t } = useI18n();
 const printer = usePrinterStore();
 const designer = useDesignerStore();
+const data = useDataStore();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const rendering = ref(false);
 const preview = computed(() => printer.lastPreview);
+const genericRender = shallowRef<RawImageData | null>(null);
 
 let renderToken = 0;
 let scheduled: number | null = null;
 
+function variablesIfAny(): Record<string, string> | undefined {
+  const variables = data.currentVariables;
+  return Object.keys(variables).length > 0 ? variables : undefined;
+}
+
 async function refreshNow(): Promise<void> {
-  if (!printer.isConnected) return;
   const myToken = ++renderToken;
   rendering.value = true;
   try {
-    const image = await designer.renderToRGBA();
+    const image = await designer.renderToRGBA(variablesIfAny());
     if (myToken !== renderToken) return;
-    const imageForDriver = {
-      width: image.width,
-      height: image.height,
-      data: new Uint8Array(image.data.buffer, image.data.byteOffset, image.data.byteLength),
-    };
-    await printer.refreshPreview(imageForDriver);
+    if (printer.isConnected) {
+      const imageForDriver = {
+        width: image.width,
+        height: image.height,
+        data: new Uint8Array(image.data.buffer, image.data.byteOffset, image.data.byteLength),
+      };
+      await printer.refreshPreview(imageForDriver);
+      genericRender.value = null;
+    } else {
+      genericRender.value = image;
+    }
   } finally {
     if (renderToken === myToken) rendering.value = false;
   }
@@ -100,7 +115,7 @@ function scheduleRefresh(): void {
   }, 200);
 }
 
-function paint(): void {
+function paintConnected(): void {
   const canvas = canvasRef.value;
   const result = preview.value;
   if (!canvas || !result || result.planes.length === 0) return;
@@ -113,16 +128,12 @@ function paint(): void {
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Paint the page white before compositing planes so the preview reads
-  // as ink on paper.
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (const plane of result.planes) {
     const rgba = bitmapToRgba(plane.bitmap, plane.displayColor);
     const imageData = new ImageData(rgba.data, rgba.width, rgba.height);
-    // Composite by drawing through an offscreen canvas — putImageData
-    // overwrites alpha, which would erase earlier planes.
     const off = document.createElement('canvas');
     off.width = imageData.width;
     off.height = imageData.height;
@@ -131,23 +142,49 @@ function paint(): void {
   }
 }
 
+function paintDisconnected(): void {
+  const canvas = canvasRef.value;
+  const image = genericRender.value;
+  if (!canvas || !image) return;
+
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const imageData = new ImageData(
+    new Uint8ClampedArray(image.data.buffer, image.data.byteOffset, image.data.byteLength),
+    image.width,
+    image.height,
+  );
+  ctx.putImageData(imageData, 0, 0);
+}
+
 watch(preview, () => {
-  // Painting must happen after the canvas element has dimensions
-  // updated by the v-if/template.
-  void Promise.resolve().then(paint);
+  void Promise.resolve().then(paintConnected);
 });
 
+watch(genericRender, () => {
+  void Promise.resolve().then(paintDisconnected);
+});
+
+// Lazy-render triggers (§3.1):
+// - tab active (handled by mount, since SidePanel uses v-if)
+// - document changes while tab active
+// - currentIndex changes while tab active
+// - connection state changes
 watch(
-  () => [printer.isConnected, printer.effectiveMedia, designer.document] as const,
-  () => {
-    if (printer.isConnected) scheduleRefresh();
-  },
+  () =>
+    [printer.isConnected, printer.effectiveMedia, designer.document, data.currentIndex] as const,
+  () => scheduleRefresh(),
   { deep: true },
 );
 
-onMounted(() => {
-  if (printer.isConnected) scheduleRefresh();
-});
+onMounted(() => scheduleRefresh());
 
 onBeforeUnmount(() => {
   if (scheduled !== null) {
@@ -158,25 +195,19 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.preview {
+.output-preview {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
-.preview__header {
+.output-preview__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
-.preview__title {
-  margin: 0;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-}
-
-.preview__refresh {
+.output-preview__refresh {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -188,24 +219,25 @@ onBeforeUnmount(() => {
   border: 1px solid transparent;
 }
 
-.preview__refresh:hover:not(:disabled) {
+.output-preview__refresh:hover:not(:disabled) {
   background: var(--color-bg-canvas);
   border-color: var(--color-border);
   color: var(--color-text);
 }
 
-.preview__refresh:disabled {
+.output-preview__refresh:disabled {
   opacity: 0.5;
   cursor: progress;
 }
 
-.preview__empty {
+.output-preview__empty,
+.output-preview__footnote {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
-.preview__banner {
+.output-preview__banner {
   margin: 0;
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
@@ -215,13 +247,13 @@ onBeforeUnmount(() => {
   color: var(--color-text);
 }
 
-.preview__media {
+.output-preview__media {
   margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
 
-.preview__canvas-wrap {
+.output-preview__canvas-wrap {
   background: var(--color-bg-canvas);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -232,14 +264,14 @@ onBeforeUnmount(() => {
   overflow: auto;
 }
 
-.preview__canvas {
+.output-preview__canvas {
   max-width: 100%;
   height: auto;
   image-rendering: pixelated;
   background: white;
 }
 
-.preview__legend {
+.output-preview__legend {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -249,14 +281,14 @@ onBeforeUnmount(() => {
   color: var(--color-text-secondary);
 }
 
-.preview__legend li {
+.output-preview__legend li {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   text-transform: capitalize;
 }
 
-.preview__swatch {
+.output-preview__swatch {
   display: inline-block;
   width: 10px;
   height: 10px;
