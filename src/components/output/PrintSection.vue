@@ -51,9 +51,11 @@ import { runThermalBatch } from '@/services/print/thermal-batch';
 import { applyMappingToRow } from '@/services/column-mapper';
 import { useSheetViewer } from '@/composables/useSheetViewer';
 import { usePrintProgress } from '@/composables/usePrintProgress';
+import { useThresholdConfirm } from '@/composables/useThresholdConfirm';
 
 const sheetViewer = useSheetViewer();
 const printProgress = usePrintProgress();
+const thresholdConfirm = useThresholdConfirm();
 
 const emit = defineEmits<{
   (e: 'open-sheet-picker'): void;
@@ -123,6 +125,12 @@ async function onPrint(): Promise<void> {
     return;
   }
   if (config.count > 1) {
+    const ok = await thresholdConfirm.confirmIfNeeded({
+      count: config.count,
+      destination: 'thermal',
+      printerModel: printer.model,
+    });
+    if (!ok) return;
     await runBatchPrint();
     return;
   }
@@ -158,7 +166,7 @@ async function runSinglePrint(): Promise<void> {
   }
 }
 
-async function runBatchPrint(): Promise<void> {
+async function runBatchPrint(resumeFrom = 0): Promise<void> {
   const indices = config.rowsForSelection;
   const rowsForBatch =
     indices.length > 0
@@ -169,16 +177,20 @@ async function runBatchPrint(): Promise<void> {
   const total = rowsTotal * copiesPerRow;
 
   printProgress.start(total, rowsTotal, copiesPerRow);
+  if (resumeFrom > 0) {
+    printProgress.update({ completed: resumeFrom * copiesPerRow });
+  }
   try {
     const summary = await runThermalBatch(designer, printer, {
       rows: rowsForBatch,
       copies: copiesPerRow,
       density: config.density,
+      resumeFrom,
       onProgress(p) {
         printProgress.update({
           rowIndex: p.rowIndex,
           copy: p.copy,
-          completed: p.completed,
+          completed: resumeFrom * copiesPerRow + p.completed,
         });
       },
       shouldCancel: () => printProgress.isCancelRequested(),
@@ -188,7 +200,9 @@ async function runBatchPrint(): Promise<void> {
     } else if (summary.errors.size > 0) {
       const firstRow = summary.errors.keys().next().value as number;
       const message = summary.errors.get(firstRow) ?? '';
-      printProgress.fail(firstRow, message);
+      printProgress.fail(firstRow, message, () => {
+        void runBatchPrint(firstRow);
+      });
     } else {
       printProgress.succeed(summary.printed);
     }
@@ -204,6 +218,13 @@ async function onPrintToSheet(): Promise<void> {
     emit('open-sheet-picker');
     return;
   }
+  const ok = await thresholdConfirm.confirmIfNeeded({
+    count: config.count,
+    destination: 'sheet',
+    sheetLabel: `${sheet.brand} ${sheet.part}`,
+    pageCount: config.pageCount,
+  });
+  if (!ok) return;
   const slowToastTimer = window.setTimeout(() => {
     printProgress.startSheetGeneration();
   }, 250);

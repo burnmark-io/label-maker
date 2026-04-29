@@ -138,6 +138,15 @@
       "resume": "Resume from row {row}",
       "dismiss": "Dismiss"
     },
+    "threshold": {
+      "title": "Print {count} labels?",
+      "bodyThermal": "This will send {count} print jobs to {model}.",
+      "bodyThermalNoModel": "This will send {count} print jobs to the connected printer.",
+      "bodySheet": "This will print {labels} labels across {pages} pages of {sheet}.",
+      "confirm": "Print {count} labels",
+      "cancel": "Cancel",
+      "dontAskAgain": "Don't ask again this session"
+    },
     "button": {
       "print": "Print",
       "printNLabels": "Print {n} labels",

@@ -395,3 +395,39 @@ a single `printer.print(_, { copies: 3 })` call). The existing
 single-print contract is preserved — verified by the updated case.
 
 Full suite (631 tests) green; typecheck clean.
+
+### 3.2 Threshold confirmation + resume — DONE
+
+**Threshold dialog (`useThresholdConfirm.ts` + `ThresholdConfirmDialog.vue`)**:
+- Default threshold = 20 labels (§8). Calls below the threshold
+  short-circuit `Promise.resolve(true)`.
+- Per-session don't-ask-again checkbox; the session-only flag lives in
+  the composable's module-level ref (no localStorage — re-arms next
+  session per §8).
+- Dialog body adapts to destination: thermal includes printer model
+  ("This will send 60 print jobs to {model}"); sheet includes page
+  count ("This will print 30 labels across 2 pages of Avery L7160").
+
+**Wired into print paths** — both `CanvasActions.vue` and
+`PrintSection.vue` `await thresholdConfirm.confirmIfNeeded(…)` before
+`runBatchPrint()` (thermal) or `renderSheet()` (sheet). Cancel
+short-circuits without firing the print.
+
+**Resume from row N** — `runBatchPrint(resumeFrom = 0)` accepts a
+starting row index. On mid-batch error, the caller passes a closure
+into `printProgress.fail(rowIndex, msg, () => runBatchPrint(rowIndex))`
+so the toast's Resume button reruns the batch from that row. The
+progress UI accounts for the already-printed labels (`completed =
+resumeFrom * copiesPerRow + perRowProgress`) so the bar resumes mid-
+fill instead of resetting to zero.
+
+`thermal-batch.ts` already had `resumeFrom` support (slices the row
+array; designer-core's renderBatch starts from index 0 of the trimmed
+slice); the `lastRowIndex` returned in the batch summary is the
+1-indexed row that the user can read in the toast's Resume label.
+
+5 cases in `useThresholdConfirm.test.ts` cover: at-threshold short-
+circuit, over-threshold prompt, cancel returns false, don't-ask-again
+skips subsequent prompts, reset clears the flag.
+
+Full suite (636 tests) green; typecheck clean.

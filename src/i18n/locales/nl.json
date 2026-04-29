@@ -138,6 +138,15 @@
       "resume": "Hervatten vanaf rij {row}",
       "dismiss": "Sluiten"
     },
+    "threshold": {
+      "title": "{count} labels printen?",
+      "bodyThermal": "Hiermee worden {count} printopdrachten naar {model} gestuurd.",
+      "bodyThermalNoModel": "Hiermee worden {count} printopdrachten naar de aangesloten printer gestuurd.",
+      "bodySheet": "Dit print {labels} labels over {pages} pagina's van {sheet}.",
+      "confirm": "{count} labels printen",
+      "cancel": "Annuleren",
+      "dontAskAgain": "Niet meer vragen tijdens deze sessie"
+    },
     "button": {
       "print": "Printen",
       "printNLabels": "{n} labels printen",
