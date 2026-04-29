@@ -30,7 +30,14 @@
         @keydown.right.prevent="cycle(1)"
         @keydown.left.prevent="cycle(-1)"
       >
-        {{ tab.label }}
+        <span class="side-panel__tab-label">{{ tab.label }}</span>
+        <span
+          v-if="tab.id === 'properties' && selectionBadgeCount > 0"
+          class="side-panel__tab-badge"
+          :aria-label="t('panel.selectionBadge', { count: selectionBadgeCount })"
+        >
+          {{ selectionBadgeCount }}
+        </span>
       </button>
     </div>
 
@@ -41,6 +48,7 @@
       class="side-panel__body"
     >
       <ObjectsPanel v-if="prefs.sidePanelTab === 'objects'" />
+      <PropertiesPanel v-else-if="prefs.sidePanelTab === 'properties'" />
       <DataPanel v-else-if="prefs.sidePanelTab === 'data'" @open-batch="emit('open-batch')" />
       <PrintPreview v-else-if="prefs.sidePanelTab === 'preview'" />
     </div>
@@ -51,7 +59,10 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePreferencesStore, type SidePanelTab } from '@/stores/preferences';
+import { useDesignerStore, isDocumentSelected } from '@/stores/designer';
+import { useTabAutoSwitch } from '@/composables/useTabAutoSwitch';
 import ObjectsPanel from '@/components/panels/ObjectsPanel.vue';
+import PropertiesPanel from '@/components/panels/PropertiesPanel.vue';
 import DataPanel from '@/components/panels/DataPanel.vue';
 import PrintPreview from '@/components/printer/PrintPreview.vue';
 
@@ -61,12 +72,24 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const prefs = usePreferencesStore();
+const designer = useDesignerStore();
+
+useTabAutoSwitch();
 
 const tabs = computed<{ id: SidePanelTab; label: string }[]>(() => [
   { id: 'objects', label: t('panel.objects') },
+  { id: 'properties', label: t('panel.properties') },
   { id: 'data', label: t('panel.data') },
   { id: 'preview', label: t('panel.preview') },
 ]);
+
+// Document selection contributes 0 to the badge count — it's a single
+// "you're editing the document" state, not a count of selected items.
+// Multi-object selections show their length.
+const selectionBadgeCount = computed<number>(() => {
+  if (isDocumentSelected(designer.selection)) return 0;
+  return designer.selectedObjectIds.length;
+});
 
 function cycle(delta: number): void {
   const ids = tabs.value.map(tab => tab.id);
@@ -102,6 +125,10 @@ function cycle(delta: number): void {
   font-weight: var(--weight-medium);
   color: var(--color-text-secondary);
   border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
   transition:
     color var(--duration-fast) var(--easing),
     border-color var(--duration-fast) var(--easing);
@@ -114,6 +141,26 @@ function cycle(delta: number): void {
 .side-panel__tab--active {
   color: var(--color-primary-text);
   border-bottom-color: var(--color-primary);
+}
+
+.side-panel__tab-label {
+  white-space: nowrap;
+}
+
+.side-panel__tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .side-panel__body {

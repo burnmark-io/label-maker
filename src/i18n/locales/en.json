@@ -134,9 +134,29 @@
     "sendBackward": "Send backward",
     "untitled": "Untitled",
     "collapse": "Collapse panel",
-    "expand": "Expand panel"
+    "expand": "Expand panel",
+    "selectionBadge": "{count} selected"
+  },
+  "selection": {
+    "deselect": "Deselect",
+    "headerSingle": "{name}",
+    "headerMulti": "{count} items selected",
+    "headerDocument": "Document"
+  },
+  "document": {
+    "label": "Document",
+    "name": "Name",
+    "description": "Description",
+    "background": "Background",
+    "canvasSize": "Canvas size",
+    "canvasSizeChange": "Change via the size picker in the toolbar",
+    "created": "Created",
+    "updated": "Updated",
+    "objectCount": "Objects",
+    "untitled": "Untitled label"
   },
   "properties": {
+    "empty": "Pick an object to edit it.",
     "name": "Name",
     "position": "Position",
     "size": "Size",

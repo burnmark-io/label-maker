@@ -134,9 +134,29 @@
     "sendBackward": "Naar achter brengen",
     "untitled": "Naamloos",
     "collapse": "Paneel inklappen",
-    "expand": "Paneel uitklappen"
+    "expand": "Paneel uitklappen",
+    "selectionBadge": "{count} geselecteerd"
+  },
+  "selection": {
+    "deselect": "Deselecteren",
+    "headerSingle": "{name}",
+    "headerMulti": "{count} items geselecteerd",
+    "headerDocument": "Document"
+  },
+  "document": {
+    "label": "Document",
+    "name": "Naam",
+    "description": "Beschrijving",
+    "background": "Achtergrond",
+    "canvasSize": "Canvasgrootte",
+    "canvasSizeChange": "Wijzig via de maatkiezer in de werkbalk",
+    "created": "Aangemaakt",
+    "updated": "Bijgewerkt",
+    "objectCount": "Objecten",
+    "untitled": "Naamloos label"
   },
   "properties": {
+    "empty": "Kies een object om het te bewerken.",
     "name": "Naam",
     "position": "Positie",
     "size": "Grootte",

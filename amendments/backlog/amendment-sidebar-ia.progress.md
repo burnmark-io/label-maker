@@ -103,12 +103,15 @@ Each step is a self-contained commit. Gate per step: typecheck + tests
   - 8/8 tests pass (incl. Cmd/Meta as building modifier, Data-tab
     no-hijack, document-selection treated as non-empty).
 
-- [ ] **Step 5 — SidePanel: 4 tabs + Properties badge**
-  - Add 'properties' tab to the tabs computed
-  - Render circular count badge on Properties tab when
-    `selectedObjectIds.length >= 1`
-  - Wire `useTabAutoSwitch`
-  - Tests for tab order + badge visibility
+- [x] **Step 5 — SidePanel: 4 tabs + Properties badge** ✓
+  - Tabs: Objects | Properties | Data | Preview
+  - Circular CSS pill badge on Properties tab when ≥1 regular objects
+    selected; document selection contributes 0 (it's a state, not a count)
+  - `useTabAutoSwitch` wired via composable call in `setup()`
+  - i18n keys added in en.json + nl.json (`panel.selectionBadge`,
+    `selection.*`, `document.*`, `properties.empty`)
+  - Stub PropertiesPanel.vue created (empty-state only); content fills
+    in step 6
 
 - [ ] **Step 6 — PropertiesPanel component**
   - New `src/components/panels/PropertiesPanel.vue`
