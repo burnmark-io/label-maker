@@ -109,6 +109,18 @@
       "rangeTo": "To",
       "rangeAdjusted": "Range adjusted to {from}–{to}"
     },
+    "button": {
+      "print": "Print",
+      "printNLabels": "Print {n} labels",
+      "pdf": "PDF",
+      "pdfNPages": "PDF ({n} pages)",
+      "png": "PNG",
+      "pngNFiles": "PNG ({n} files)"
+    },
+    "summary": {
+      "rowsAndCopies": "{rows} rows × {copies} copies = {count} labels",
+      "copiesOnly": "{count} labels"
+    },
     "saveAsFile": {
       "heading": "Save as file",
       "png": "PNG",

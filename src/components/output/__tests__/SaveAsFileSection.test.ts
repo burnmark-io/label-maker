@@ -117,9 +117,10 @@ describe('SaveAsFileSection', () => {
     dataState.rows = makeRows(10);
     const wrapper = mountSection();
     await nextTick();
-    // dataset loaded → default selection is "all" → .label hides
+    // dataset loaded → default selection is "all" → .label hides;
+    // PNG / PDF labels carry the file / page count.
     const btns = wrapper.findAll('.output-save-as-file__btn').map(b => b.text());
-    expect(btns).toEqual(['PNG', 'PDF']);
+    expect(btns).toEqual(['PNG (10 files)', 'PDF (10 pages)']);
   });
 
   it('shows .label button again after switching Source = Active', async () => {

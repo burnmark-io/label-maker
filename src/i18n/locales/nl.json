@@ -109,6 +109,18 @@
       "rangeTo": "Tot",
       "rangeAdjusted": "Bereik aangepast naar {from}–{to}"
     },
+    "button": {
+      "print": "Printen",
+      "printNLabels": "{n} labels printen",
+      "pdf": "PDF",
+      "pdfNPages": "PDF ({n} pagina's)",
+      "png": "PNG",
+      "pngNFiles": "PNG ({n} bestanden)"
+    },
+    "summary": {
+      "rowsAndCopies": "{rows} rijen × {copies} exemplaren = {count} labels",
+      "copiesOnly": "{count} labels"
+    },
     "saveAsFile": {
       "heading": "Opslaan als bestand",
       "png": "PNG",

@@ -116,4 +116,23 @@ describe('PrintSection', () => {
       density: 'light',
     });
   });
+
+  it('button label and summary line reflect count when count > 1', async () => {
+    const wrapper = mountSection();
+    const config = usePrintConfigStore();
+    config.copies = 5;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.output-print__action').text()).toBe('Print 5 labels');
+    expect(wrapper.find('.output-print__summary').exists()).toBe(true);
+    expect(wrapper.find('.output-print__summary').text()).toContain('5 labels');
+  });
+
+  it('button reads "Print" with no summary when count = 1', async () => {
+    const wrapper = mountSection();
+    const config = usePrintConfigStore();
+    config.copies = 1;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.output-print__action').text()).toBe('Print');
+    expect(wrapper.find('.output-print__summary').exists()).toBe(false);
+  });
 });

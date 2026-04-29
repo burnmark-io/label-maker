@@ -142,3 +142,45 @@ PNG-zip test loops `flushPromises` + a 5ms timer five times to let it
 resolve. Documented inline.
 
 Typecheck clean. Full suite (612 tests) green.
+
+### 1.4 Button labels + size indicator — DONE
+
+Per §7.1 / §7.2:
+
+- Central toolbar Print button (`CanvasActions.vue`): label is
+  `Print` when count = 1, `Print N labels` when count > 1.
+- Print options popup: gains a centred summary line above the action
+  area when count > 1 — `30 rows × 2 copies = 60 labels` with a
+  dataset, `60 labels` without.
+- Output tab `PrintSection.vue`: action button + summary line follow
+  the same rule, identical wording.
+- `SaveAsFileSection.vue`: PNG button reads `PNG` / `PNG (N files)`,
+  PDF reads `PDF` / `PDF (N pages)`. Save-as-file ignores the
+  `copies` slice (it's a print-only multiplier), so its page-count
+  is just the number of selected rows.
+
+i18n keys added: `output.button.*` (print / printNLabels / pdf /
+pdfNPages / png / pngNFiles), `output.summary.*` (rowsAndCopies /
+copiesOnly), in both locales.
+
+**Decision — Save-as-file ignores `copies`.** The plan's §7.1 table
+isn't explicit about copies-on-export semantics; the natural reading
+is that `copies` belongs to *Print* (you don't export 5 identical
+PNG files for the same row), so the PNG / PDF labels reflect *row
+count* only, not row × copies. The Print path applies copies
+separately. Documented in the SaveAsFileSection computed.
+
+Tests extended: PrintSection has two new cases for the count-aware
+label and summary line. SaveAsFileSection's "Source = All" case
+asserts the new `PNG (10 files)` / `PDF (10 pages)` labels.
+
+### Phase 1 gate — PASSED
+
+- 614/614 vitest cases green.
+- `vue-tsc --noEmit`: no errors.
+- ESLint on touched files: no warnings.
+
+Phase 1 ships an end-to-end Source row + multi-row export experience.
+The 30-row "silent ignore" surprise is gone: imports default to
+"all", labels are honest about the count, and Save → PDF / PNG
+honour the same selection.

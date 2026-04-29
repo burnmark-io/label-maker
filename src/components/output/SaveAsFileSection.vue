@@ -16,10 +16,10 @@
     </header>
     <div class="output-save-as-file__buttons">
       <button class="output-save-as-file__btn" type="button" @click="onExportPng">
-        {{ t('output.saveAsFile.png') }}
+        {{ pngLabel }}
       </button>
       <button class="output-save-as-file__btn" type="button" @click="onExportPdf">
-        {{ t('output.saveAsFile.pdf') }}
+        {{ pdfLabel }}
       </button>
       <button
         v-if="showLabelButton"
@@ -55,6 +55,22 @@ const { show } = useToast();
 // other than Active.
 const showLabelButton = computed(
   () => data.rows.length === 0 || config.outputSelection.kind === 'active',
+);
+
+// Save-as-file ignores `copies` (a multi-output multiplier that only
+// makes sense for Print). Page / file count = number of selected rows.
+const pageCount = computed(() => Math.max(1, config.rowsForSelection.length));
+
+const pdfLabel = computed(() =>
+  pageCount.value > 1
+    ? t('output.button.pdfNPages', { n: pageCount.value })
+    : t('output.button.pdf'),
+);
+
+const pngLabel = computed(() =>
+  pageCount.value > 1
+    ? t('output.button.pngNFiles', { n: pageCount.value })
+    : t('output.button.png'),
 );
 
 const selectionValue = computed(() => config.outputSelection.kind);

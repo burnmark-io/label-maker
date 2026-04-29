@@ -22,6 +22,7 @@
         </select>
       </label>
     </div>
+    <p v-if="showSummary" class="output-print__summary">{{ summaryText }}</p>
     <button
       class="output-print__action"
       type="button"
@@ -29,7 +30,7 @@
       :title="canPrint ? '' : disabledReason"
       @click="onPrint"
     >
-      {{ t('output.print.action') }}
+      {{ buttonLabel }}
     </button>
   </section>
 </template>
@@ -54,6 +55,26 @@ const { show, update, dismiss } = useToast();
 const canPrint = computed<boolean>(
   () => printer.isConnected && Boolean(printer.effectiveMedia) && !printer.isPrinting,
 );
+
+const buttonLabel = computed(() =>
+  config.count > 1
+    ? t('output.button.printNLabels', { n: config.count })
+    : t('output.button.print'),
+);
+
+const showSummary = computed(() => config.count > 1);
+
+const summaryText = computed(() => {
+  const rows = data.rows.length;
+  if (rows === 0) {
+    return t('output.summary.copiesOnly', { count: config.count });
+  }
+  return t('output.summary.rowsAndCopies', {
+    rows: config.rowsForSelection.length,
+    copies: config.copies,
+    count: config.count,
+  });
+});
 
 const disabledReason = computed<string>(() => {
   if (!printer.isConnected) return t('actions.printNoPrinter');
@@ -133,6 +154,15 @@ async function onPrint(): Promise<void> {
   border: 1px solid var(--color-border);
   background: var(--color-bg-panel);
   color: var(--color-text);
+}
+
+.output-print__summary {
+  margin: 0;
+  padding: var(--space-1) 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
 }
 
 .output-print__action {

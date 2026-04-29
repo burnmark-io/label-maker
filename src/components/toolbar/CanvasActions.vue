@@ -44,7 +44,7 @@
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
           <rect x="6" y="14" width="12" height="8" />
         </svg>
-        {{ t('topbar.print') }}
+        {{ printButtonLabel }}
       </button>
       <button
         class="actions__btn actions__btn--primary actions__btn--caret-primary"
@@ -76,6 +76,7 @@
             <option value="dark">{{ t('actions.densityDark') }}</option>
           </select>
         </label>
+        <p v-if="config.count > 1" class="actions__summary">{{ summaryText }}</p>
         <button
           v-if="data.hasData"
           class="actions__btn actions__btn--full"
@@ -241,6 +242,23 @@ const blockedByError = computed(() => {
 });
 
 const canPrint = computed(() => !printer.isPrinting && !blockedByError.value);
+
+const printButtonLabel = computed(() =>
+  config.count > 1
+    ? t('output.button.printNLabels', { n: config.count })
+    : t('topbar.print'),
+);
+
+const summaryText = computed(() => {
+  if (data.rows.length === 0) {
+    return t('output.summary.copiesOnly', { count: config.count });
+  }
+  return t('output.summary.rowsAndCopies', {
+    rows: config.rowsForSelection.length,
+    copies: config.copies,
+    count: config.count,
+  });
+});
 
 const printButtonTitle = computed(() => {
   if (blockedByError.value) {
@@ -477,6 +495,15 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
   font-size: var(--text-sm);
   background: var(--color-bg-canvas);
   color: var(--color-text);
+}
+
+.actions__summary {
+  margin: var(--space-1) 0 0;
+  padding-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
 }
 
 .actions__save {
