@@ -73,10 +73,10 @@
       <button
         type="button"
         class="sheet-dialog__btn sheet-dialog__btn--primary"
-        :disabled="!selected || exporting"
-        @click="onExport"
+        :disabled="!selected"
+        @click="onConfirm"
       >
-        {{ exporting ? t('sheet.exporting') : t('sheet.download') }}
+        {{ t('output.sheetSetup.useThis') }}
       </button>
     </template>
   </Modal>
@@ -86,11 +86,9 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { SheetTemplate } from '@burnmark-io/sheet-templates';
-import { useDesignerStore } from '@/stores/designer';
 import { useDataStore } from '@/stores/data';
+import { usePrintConfigStore } from '@/stores/print-config';
 import { useToast } from '@/composables/useToast';
-import { applyMappingToRow } from '@/services/column-mapper';
-import { downloadBlob } from '@/services/file-download';
 import LimitBanner from '@/components/common/LimitBanner.vue';
 import Modal from '@/components/common/Modal.vue';
 import SheetPreview from './SheetPreview.vue';
@@ -99,8 +97,8 @@ const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 const { t } = useI18n();
-const designer = useDesignerStore();
 const data = useDataStore();
+const config = usePrintConfigStore();
 const { show } = useToast();
 
 const loading = ref(false);
@@ -109,12 +107,15 @@ const brands = ref<string[]>([]);
 const query = ref('');
 const brandFilter = ref('');
 const selected = ref<SheetTemplate | null>(null);
-const exporting = ref(false);
 
 watch(
   () => props.open,
   async isOpen => {
-    if (!isOpen || sheets.value.length > 0) return;
+    if (!isOpen) return;
+    // Pre-select the currently configured template so re-opening lands
+    // on the user's last choice.
+    if (config.sheetTemplate) selected.value = config.sheetTemplate;
+    if (sheets.value.length > 0) return;
     loading.value = true;
     try {
       const mod = await import('@burnmark-io/sheet-templates');
@@ -142,24 +143,10 @@ const filteredSheets = computed(() => {
   });
 });
 
-async function onExport(): Promise<void> {
+function onConfirm(): void {
   if (!selected.value) return;
-  exporting.value = true;
-  try {
-    const rows =
-      data.rows.length > 0 ? data.rows.map(row => applyMappingToRow(row, data.mapping)) : undefined;
-    const blob = await designer.exportSheet(selected.value, rows);
-    const fileName = `${designer.document.name}-${selected.value.brand}-${selected.value.part}.pdf`
-      .toLowerCase()
-      .replace(/[^a-z0-9.-]+/g, '-');
-    downloadBlob(blob, fileName);
-    show(t('sheet.exportSuccess'), 'success');
-    emit('close');
-  } catch (err) {
-    show(err instanceof Error ? err.message : String(err), 'error');
-  } finally {
-    exporting.value = false;
-  }
+  config.setSheetTemplate(selected.value);
+  emit('close');
 }
 </script>
 

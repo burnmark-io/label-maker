@@ -256,3 +256,62 @@ trigger.** AppShell already opens the SheetDialog on
 (rather than introducing a parallel one) means no AppShell handler
 expansion in this step; Phase 2.3 changes what the dialog *does* on
 confirm (sets the template instead of immediate one-shot export).
+
+### 2.3 SheetDialog repurpose + sheet output flow — DONE
+
+**SheetDialog (`src/components/sheets/SheetDialog.vue`)** — internals
+unchanged per plan §4. Behaviour change: primary button reads "Use
+this sheet"; on click, calls `config.setSheetTemplate(selected)` and
+closes. The immediate one-shot export is gone — sheet output now
+flows through the regular Print flow, not this dialog.
+
+The dialog pre-selects the currently configured template on open, so
+re-entry lands on the user's last choice.
+
+**Inline PDF viewer (`src/components/sheets/SheetViewer.vue`, new)** —
+Modal with an `<iframe>` showing the sheet PDF (via blob URL) plus a
+summary line per §3.3. Footer buttons: Close, Download PDF, and Print
+(triggers `iframe.contentWindow.print()` for the system print dialog).
+Singleton state lives in
+`src/composables/useSheetViewer.ts` so any output surface can pop the
+viewer without prop drilling.
+
+**Sheet print path** — `onPrintToSheet` in both `CanvasActions.vue`
+and `PrintSection.vue`:
+- Uses `renderSheet()` from `src/services/export/sheet-render.ts`
+  (new) to expand `rowsForSelection × copies` row-major into a flat
+  list and call `designer.exportSheet()`. Pack-tight, empty slots on
+  the last page (no repeat-to-fill).
+- Surfaces a payload (blob, file name, sheet label, totals) to the
+  shared `useSheetViewer()` state; the viewer modal in `AppShell`
+  picks it up.
+
+**Print button label** — sheet-aware per §7.1: `Print to sheet` (when
+count = 1), `Print to sheet (N labels, P pages)` otherwise.
+`config.pageCount` and `config.labelsPerPage` computeds added to the
+store for this.
+
+**Legacy fallback removed** — `CanvasActions.onPrint` no longer
+emits `open-sheet` from the no-thermal branch (§3.4). When neither
+destination is possible, the DestinationRow's first-run CTA already
+walks the user into setup before they can click Print. The
+`emit('open-sheet')` declaration is retained because
+`onPrintToSheet` calls it as a fallback when destination = sheet but
+no template is configured (a state the toggle visibility table
+shouldn't allow, but worth a defensive recovery path).
+
+**Disabled-button rule** — `canPrint` is now destination-aware:
+thermal needs `printer.effectiveMedia`, sheet needs
+`config.sheetPossible`. The thermal status-poll guard
+(`blockedByError`) is gated on
+`config.effectiveDestination === 'thermal'` so a thermal printer
+error can't disable a sheet print.
+
+i18n keys: `output.sheetViewer.*`, `output.sheetSetup.*`,
+`output.button.printToSheet*` in both locales.
+
+Full suite (626 tests) green; typecheck clean.
+
+**Open follow-up (Phase 3 territory):** the sheet print path doesn't
+yet show a "Generating sheet PDF…" toast for renders that exceed
+~250ms (§10). Will be added with PrintProgressToast in Phase 3.1.

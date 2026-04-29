@@ -190,6 +190,25 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     return rowMultiplier * Math.max(1, copies.value);
   });
 
+  /**
+   * Labels-per-page on the configured sheet template (sum across
+   * multi-layout sheets). Returns 1 when no template is set so consumers
+   * can safely divide.
+   */
+  const labelsPerPage = computed<number>(() => {
+    const sheet = sheetTemplate.value;
+    if (!sheet) return 1;
+    return Math.max(
+      1,
+      sheet.layouts.reduce((sum, layout) => sum + layout.columns * layout.rows, 0),
+    );
+  });
+
+  /** Page count for sheet destination — `ceil(count / labelsPerPage)`. */
+  const pageCount = computed<number>(() =>
+    Math.max(1, Math.ceil(count.value / labelsPerPage.value)),
+  );
+
   return {
     copies,
     density,
@@ -206,6 +225,8 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     reconcileForRowCount,
     rowsForSelection,
     count,
+    labelsPerPage,
+    pageCount,
   };
 });
 

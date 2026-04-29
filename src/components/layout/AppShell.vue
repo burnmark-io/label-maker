@@ -29,6 +29,11 @@
       <ImportDropOverlay />
       <BatchPanel :open="batchOpen" @close="batchOpen = false" />
       <SheetDialog :open="sheetOpen" @close="sheetOpen = false" />
+      <SheetViewer
+        :open="sheetViewer.open.value"
+        :payload="sheetViewer.payload.value"
+        @close="sheetViewer.close"
+      />
       <DesignLibrary :open="libraryOpen" @close="libraryOpen = false" />
       <ShareDialog :open="shareOpen" @close="shareOpen = false" />
       <OnboardingTour :active="tourActive" @close="closeTour" />
@@ -76,6 +81,8 @@ import InstallPrompt from '@/components/common/InstallPrompt.vue';
 import ImportDropOverlay from './ImportDropOverlay.vue';
 import BatchPanel from '@/components/batch/BatchPanel.vue';
 import SheetDialog from '@/components/sheets/SheetDialog.vue';
+import SheetViewer from '@/components/sheets/SheetViewer.vue';
+import { useSheetViewer } from '@/composables/useSheetViewer';
 import DesignLibrary from '@/components/library/DesignLibrary.vue';
 import ShareDialog from '@/components/share/ShareDialog.vue';
 import AboutDialog from '@/components/common/AboutDialog.vue';
@@ -153,6 +160,7 @@ const { aboutOpen, helpOpen, privacyOpen, tourActive, openHelp, startTour, close
 
 const batchOpen = ref(false);
 const sheetOpen = ref(false);
+const sheetViewer = useSheetViewer();
 const libraryOpen = ref(false);
 const shareOpen = ref(false);
 const resetOpen = ref(false);

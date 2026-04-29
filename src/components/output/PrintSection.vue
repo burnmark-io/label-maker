@@ -46,6 +46,10 @@ import { usePrintConfigStore } from '@/stores/print-config';
 import { useToast } from '@/composables/useToast';
 import SourceRow from './SourceRow.vue';
 import DestinationRow from './DestinationRow.vue';
+import { renderSheet } from '@/services/export/sheet-render';
+import { useSheetViewer } from '@/composables/useSheetViewer';
+
+const sheetViewer = useSheetViewer();
 
 const emit = defineEmits<{
   (e: 'open-sheet-picker'): void;
@@ -75,11 +79,18 @@ const canPrint = computed<boolean>(() => {
   return config.sheetPossible;
 });
 
-const buttonLabel = computed(() =>
-  config.count > 1
+const buttonLabel = computed(() => {
+  if (config.effectiveDestination === 'sheet') {
+    if (config.count <= 1) return t('output.button.printToSheet');
+    return t('output.button.printToSheetWithCounts', {
+      labels: config.count,
+      pages: config.pageCount,
+    });
+  }
+  return config.count > 1
     ? t('output.button.printNLabels', { n: config.count })
-    : t('output.button.print'),
-);
+    : t('output.button.print');
+});
 
 const showSummary = computed(() => config.count > 1);
 
@@ -103,6 +114,10 @@ const disabledReason = computed<string>(() => {
 
 async function onPrint(): Promise<void> {
   if (!canPrint.value) return;
+  if (config.effectiveDestination === 'sheet') {
+    await onPrintToSheet();
+    return;
+  }
   const toastId = show(t('actions.printingTo', { model: printer.model ?? '' }), 'info', {
     sticky: true,
   });
@@ -128,6 +143,38 @@ async function onPrint(): Promise<void> {
       sticky: false,
     });
     window.setTimeout(() => dismiss(toastId), 6000);
+  }
+}
+
+async function onPrintToSheet(): Promise<void> {
+  const sheet = config.sheetTemplate;
+  if (!sheet) {
+    emit('open-sheet-picker');
+    return;
+  }
+  try {
+    const indices = config.rowsForSelection;
+    const rows = indices.map(i => data.rows[i]!).filter(Boolean);
+    const result = await renderSheet(designer, {
+      sheet,
+      rows,
+      mapping: data.mapping,
+      copies: Math.max(1, config.copies || 1),
+    });
+    const fileName = `${designer.document.name}-${sheet.brand}-${sheet.part}.pdf`
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]+/g, '-');
+    sheetViewer.show({
+      blob: result.blob,
+      fileName,
+      sheetLabel: `${sheet.brand} ${sheet.part}`,
+      totalLabels: result.totalLabels,
+      pageCount: result.pageCount,
+      labelsPerPage: result.labelsPerPage,
+      emptyOnLastPage: result.emptyOnLastPage,
+    });
+  } catch (err) {
+    show(err instanceof Error ? err.message : String(err), 'error');
   }
 }
 </script>

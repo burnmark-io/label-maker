@@ -201,6 +201,10 @@ import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvas
 import { captureCanvasThumbnail } from '@/services/thumbnail';
 import SourceRow from '@/components/output/SourceRow.vue';
 import DestinationRow from '@/components/output/DestinationRow.vue';
+import { renderSheet } from '@/services/export/sheet-render';
+import { useSheetViewer } from '@/composables/useSheetViewer';
+
+const sheetViewer = useSheetViewer();
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;
@@ -235,6 +239,8 @@ const saveRootRef = ref<HTMLElement | null>(null);
  * locking on "waiting for status".
  */
 const blockedByError = computed(() => {
+  // Thermal status guard only applies when output is going to thermal.
+  if (config.effectiveDestination !== 'thermal') return false;
   const c = printer.connection;
   if (c.kind !== 'connected') return false;
   if (!FAMILIES_WITH_STATUS_POLLING.has(c.family)) return false;
@@ -243,13 +249,29 @@ const blockedByError = computed(() => {
   return !status.ready || status.errors.length > 0;
 });
 
-const canPrint = computed(() => !printer.isPrinting && !blockedByError.value);
+const canPrint = computed(() => {
+  if (printer.isPrinting || blockedByError.value) return false;
+  if (config.effectiveDestination === 'sheet') {
+    return config.sheetPossible;
+  }
+  // Thermal: matches the historical "always enabled when not printing,
+  // not blocked" behaviour — connection failure is communicated via the
+  // toast on click, not button-disabled.
+  return true;
+});
 
-const printButtonLabel = computed(() =>
-  config.count > 1
+const printButtonLabel = computed(() => {
+  if (config.effectiveDestination === 'sheet') {
+    if (config.count <= 1) return t('output.button.printToSheet');
+    return t('output.button.printToSheetWithCounts', {
+      labels: config.count,
+      pages: config.pageCount,
+    });
+  }
+  return config.count > 1
     ? t('output.button.printNLabels', { n: config.count })
-    : t('topbar.print'),
-);
+    : t('topbar.print');
+});
 
 const summaryText = computed(() => {
   if (data.rows.length === 0) {
@@ -278,9 +300,15 @@ const printButtonTitle = computed(() => {
 });
 
 async function onPrint(): Promise<void> {
+  if (config.effectiveDestination === 'sheet') {
+    await onPrintToSheet();
+    return;
+  }
   if (!printer.isConnected) {
+    // Per §3.4 the legacy no-thermal-fallback emit('open-sheet') is gone:
+    // when neither thermal nor sheet is possible, the DestinationRow CTA
+    // already drives the user into setup before they reach this button.
     show(t('actions.printNoPrinter'), 'info');
-    emit('open-sheet');
     return;
   }
   if (!printer.effectiveMedia) {
@@ -316,6 +344,39 @@ async function onPrint(): Promise<void> {
       sticky: false,
     });
     window.setTimeout(() => dismiss(toastId), 6000);
+  }
+}
+
+async function onPrintToSheet(): Promise<void> {
+  const sheet = config.sheetTemplate;
+  if (!sheet) {
+    emit('open-sheet');
+    return;
+  }
+  optionsOpen.value = false;
+  try {
+    const indices = config.rowsForSelection;
+    const rows = indices.map(i => data.rows[i]!).filter(Boolean);
+    const result = await renderSheet(designer, {
+      sheet,
+      rows,
+      mapping: data.mapping,
+      copies: Math.max(1, config.copies || 1),
+    });
+    const fileName = `${designer.document.name}-${sheet.brand}-${sheet.part}.pdf`
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]+/g, '-');
+    sheetViewer.show({
+      blob: result.blob,
+      fileName,
+      sheetLabel: `${sheet.brand} ${sheet.part}`,
+      totalLabels: result.totalLabels,
+      pageCount: result.pageCount,
+      labelsPerPage: result.labelsPerPage,
+      emptyOnLastPage: result.emptyOnLastPage,
+    });
+  } catch (err) {
+    show(err instanceof Error ? err.message : String(err), 'error');
   }
 }
 

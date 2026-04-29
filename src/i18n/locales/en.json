@@ -116,9 +116,22 @@
       "sheetCurrent": "Sheet: {brand} {part} — change",
       "setupSheet": "Set up sheet template →"
     },
+    "sheetViewer": {
+      "title": "Print to sheet",
+      "summary": "{labels} labels × {sheet} ({perPage}/page) = {pages} pages",
+      "summaryEmptySlots": "{labels} labels × {sheet} ({perPage}/page) = {pages} pages, {empty} empty slots on page {lastPage}",
+      "print": "Print",
+      "download": "Download PDF",
+      "close": "Close"
+    },
+    "sheetSetup": {
+      "useThis": "Use this sheet"
+    },
     "button": {
       "print": "Print",
       "printNLabels": "Print {n} labels",
+      "printToSheet": "Print to sheet",
+      "printToSheetWithCounts": "Print to sheet ({labels} labels, {pages} pages)",
       "pdf": "PDF",
       "pdfNPages": "PDF ({n} pages)",
       "png": "PNG",

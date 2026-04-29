@@ -116,9 +116,22 @@
       "sheetCurrent": "Vel: {brand} {part} — wijzigen",
       "setupSheet": "Vel-sjabloon instellen →"
     },
+    "sheetViewer": {
+      "title": "Naar vel printen",
+      "summary": "{labels} labels × {sheet} ({perPage}/pagina) = {pages} pagina's",
+      "summaryEmptySlots": "{labels} labels × {sheet} ({perPage}/pagina) = {pages} pagina's, {empty} lege plekken op pagina {lastPage}",
+      "print": "Printen",
+      "download": "PDF downloaden",
+      "close": "Sluiten"
+    },
+    "sheetSetup": {
+      "useThis": "Dit vel gebruiken"
+    },
     "button": {
       "print": "Printen",
       "printNLabels": "{n} labels printen",
+      "printToSheet": "Naar vel printen",
+      "printToSheetWithCounts": "Naar vel printen ({labels} labels, {pages} pagina's)",
       "pdf": "PDF",
       "pdfNPages": "PDF ({n} pagina's)",
       "png": "PNG",
