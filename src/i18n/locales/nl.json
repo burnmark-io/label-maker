@@ -546,7 +546,18 @@
     "untitled": "Naamloos",
     "nameLabel": "Naam ontwerp",
     "descriptionLabel": "Omschrijving",
-    "descriptionPlaceholder": "Omschrijving (optioneel)"
+    "descriptionPlaceholder": "Omschrijving (optioneel)",
+    "saveError": "Kon het huidige ontwerp niet opslaan.",
+    "fullOnSaveAndOpen": "Bibliotheek is vol ({count}/{count}). Maak eerst een plek vrij om dit op te slaan."
+  },
+  "lifecycle": {
+    "swapTitle": "Huidig label vervangen?",
+    "swapMessage": "Je hebt niet-opgeslagen wijzigingen in \"{current}\". \"{incoming}\" laden vervangt wat op de canvas staat.",
+    "swapMessageNoIncoming": "Je hebt niet-opgeslagen wijzigingen in \"{current}\". Doorgaan vervangt wat op de canvas staat.",
+    "swapSaveAndOpen": "Opslaan & openen",
+    "swapDiscardAndOpen": "Negeren & openen",
+    "swapIncomingFallback": "gedeeld ontwerp",
+    "savedThenOpening": "\"{saved}\" opgeslagen — \"{incoming}\" wordt geopend…"
   },
   "sheet": {
     "title": "Print op stickervel",

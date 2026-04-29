@@ -546,7 +546,18 @@
     "untitled": "Untitled",
     "nameLabel": "Design name",
     "descriptionLabel": "Description",
-    "descriptionPlaceholder": "Description (optional)"
+    "descriptionPlaceholder": "Description (optional)",
+    "saveError": "Could not save the current design.",
+    "fullOnSaveAndOpen": "Library is full ({count}/{count}). Free a slot to save this first."
+  },
+  "lifecycle": {
+    "swapTitle": "Replace the current label?",
+    "swapMessage": "You have unsaved changes to \"{current}\". Loading \"{incoming}\" will replace what's on the canvas.",
+    "swapMessageNoIncoming": "You have unsaved changes to \"{current}\". Continuing will replace what's on the canvas.",
+    "swapSaveAndOpen": "Save & open",
+    "swapDiscardAndOpen": "Discard & open",
+    "swapIncomingFallback": "shared design",
+    "savedThenOpening": "Saved \"{saved}\" — opening \"{incoming}\"…"
   },
   "sheet": {
     "title": "Print to sticker sheet",
