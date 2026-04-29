@@ -32,6 +32,8 @@
     "densityDark": "Dark",
     "printConnected": "Print to {model}",
     "printNoPrinter": "No printer — pick a sticker sheet instead",
+    "printBlockedGeneric": "Cannot print right now",
+    "printBlockedWithMore": "{reason} (+{count} more)",
     "printNoMedia": "Pick a label size first",
     "printingTo": "Printing to {model}…",
     "printSuccess": "Printed",

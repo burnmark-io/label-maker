@@ -32,6 +32,8 @@
     "densityDark": "Donker",
     "printConnected": "Printen naar {model}",
     "printNoPrinter": "Geen printer — kies een stickervel",
+    "printBlockedGeneric": "Kan nu niet printen",
+    "printBlockedWithMore": "{reason} (+{count} meer)",
     "printNoMedia": "Kies eerst een labelmaat",
     "printingTo": "Printen naar {model}…",
     "printSuccess": "Geprint",

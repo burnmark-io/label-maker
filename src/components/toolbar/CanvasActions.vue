@@ -3,17 +3,31 @@
     <div ref="printRootRef" class="actions__print">
       <button
         class="actions__btn actions__btn--primary"
+        :class="{ 'actions__btn--blocked': blockedByError }"
         type="button"
-        :disabled="printer.isPrinting"
-        :title="
-          printer.isConnected
-            ? t('actions.printConnected', { model: printer.model ?? '' })
-            : t('actions.printNoPrinter')
-        "
+        :disabled="!canPrint"
+        :title="printButtonTitle"
         @click="onPrint"
         @contextmenu.prevent="optionsOpen = true"
       >
         <svg
+          v-if="blockedByError"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <svg
+          v-else
           viewBox="0 0 24 24"
           width="16"
           height="16"
@@ -217,6 +231,8 @@ import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import { useLabelImport } from '@/composables/useLabelImport';
+import { localisedErrorMessage } from '@/composables/usePrinterErrors';
+import { FAMILIES_WITH_STATUS_POLLING } from '@/lib/printer/registry';
 import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { downloadBlob, safeFileName } from '@/services/file-download';
 import { applyMappingToRow } from '@/services/column-mapper';
@@ -248,6 +264,42 @@ const density = ref<'light' | 'normal' | 'dark'>('normal');
 const printRootRef = ref<HTMLElement | null>(null);
 const saveRootRef = ref<HTMLElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+
+/**
+ * Print button is blocked by a polled error when the printer is
+ * connected, its family supports status polling, and the most recent
+ * status reports `ready: false` or any errors. Pre-first-tick (no
+ * lastStatus yet) does NOT block — letting the user fire a
+ * speculative print with the existing media is better UX than dead-
+ * locking on "waiting for status".
+ */
+const blockedByError = computed(() => {
+  const c = printer.connection;
+  if (c.kind !== 'connected') return false;
+  if (!FAMILIES_WITH_STATUS_POLLING.has(c.family)) return false;
+  const status = printer.lastStatus;
+  if (!status) return false;
+  return !status.ready || status.errors.length > 0;
+});
+
+const canPrint = computed(() => !printer.isPrinting && !blockedByError.value);
+
+const printButtonTitle = computed(() => {
+  if (blockedByError.value) {
+    const errors = printer.lastStatus?.errors ?? [];
+    const first = errors[0];
+    const reason = first
+      ? localisedErrorMessage(first, t)
+      : t('actions.printBlockedGeneric');
+    if (errors.length > 1) {
+      return t('actions.printBlockedWithMore', { reason, count: errors.length - 1 });
+    }
+    return reason;
+  }
+  return printer.isConnected
+    ? t('actions.printConnected', { model: printer.model ?? '' })
+    : t('actions.printNoPrinter');
+});
 
 async function onPrint(): Promise<void> {
   if (!printer.isConnected) {
@@ -460,6 +512,18 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick));
 .actions__btn--primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
   border-color: transparent;
+}
+
+/* Print button while a polled error blocks printing. The triangle
+ * icon already conveys the warning shape; the colour shift cues that
+ * "this disabled state is informational, not just busy". */
+.actions__btn--primary.actions__btn--blocked {
+  background: var(--color-error);
+  color: white;
+}
+
+.actions__btn--primary.actions__btn--blocked:disabled {
+  opacity: 0.85;
 }
 
 .actions__btn--full {
