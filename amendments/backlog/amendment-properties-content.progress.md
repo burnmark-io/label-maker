@@ -70,7 +70,7 @@ decisions made during implementation, and any blockers discovered.
 - [x] Step 3 — CollapsibleSection component
 - [x] Step 4 — Swap range sliders → HybridNumberInput
 - [x] Step 5 — Section reorder + Appearance + drop name input
-- [ ] Step 6 — TextProperties WYSIWYG + Style sub-section
+- [x] Step 6 — TextProperties WYSIWYG + Style sub-section
 - [ ] Step 7 — ImageProperties thumbnail + Thermal sub-section
 - [ ] Step 8 — BarcodeProperties data prominent + Encoding sub-section
 - [ ] Step 9 — ShapeProperties visual picker + conditional fields

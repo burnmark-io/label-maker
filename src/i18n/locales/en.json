@@ -195,7 +195,8 @@
       "lineHeight": "Line height",
       "invert": "Invert",
       "wrap": "Wrap",
-      "autoHeight": "Auto height"
+      "autoHeight": "Auto height",
+      "style": "Style"
     },
     "image": {
       "fit": "Fit",

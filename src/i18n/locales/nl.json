@@ -195,7 +195,8 @@
       "lineHeight": "Regelhoogte",
       "invert": "Inverteren",
       "wrap": "Afbreken",
-      "autoHeight": "Automatische hoogte"
+      "autoHeight": "Automatische hoogte",
+      "style": "Stijl"
     },
     "image": {
       "fit": "Passen",

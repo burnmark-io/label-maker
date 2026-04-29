@@ -1,15 +1,6 @@
 <template>
   <div class="props">
-    <label class="props__field">
-      <span>{{ t('properties.text.content') }}</span>
-      <textarea
-        :value="object.content"
-        rows="3"
-        class="props__textarea"
-        @input="update('content', ($event.target as HTMLTextAreaElement).value)"
-      />
-    </label>
-
+    <!-- Font + size, on one line. -->
     <div class="props__row">
       <label class="props__field">
         <span>{{ t('properties.text.fontFamily') }}</span>
@@ -34,6 +25,8 @@
       </label>
     </div>
 
+    <!-- Formatting toolbar — sits adjacent to the textarea so the user
+         sees "what's about to change" right above the content. -->
     <div class="props__group" role="group">
       <button
         type="button"
@@ -88,27 +81,71 @@
       </button>
     </div>
 
-    <ColorPicker
-      :label="t('properties.color')"
-      :value="object.color"
-      @update:value="update('color', $event)"
-    />
+    <!-- Colour + invert on one line, between the toolbar and content. -->
+    <div class="props__inline-row">
+      <ColorPicker
+        :label="t('properties.color')"
+        :value="object.color"
+        @update:value="update('color', $event)"
+      />
+      <ToggleField
+        :label="t('properties.text.invert')"
+        :model-value="object.invert"
+        @update:model-value="update('invert', $event)"
+      />
+    </div>
 
-    <ToggleField
-      :label="t('properties.text.invert')"
-      :model-value="object.invert"
-      @update:model-value="update('invert', $event)"
-    />
-    <ToggleField
-      :label="t('properties.text.autoHeight')"
-      :model-value="object.autoHeight"
-      @update:model-value="update('autoHeight', $event)"
-    />
-    <ToggleField
-      :label="t('properties.text.wrap')"
-      :model-value="object.wrap"
-      @update:model-value="update('wrap', $event)"
-    />
+    <!-- The thing the user is here to edit. -->
+    <label class="props__field">
+      <span class="props__sr-only">{{ t('properties.text.content') }}</span>
+      <textarea
+        :value="object.content"
+        rows="3"
+        class="props__textarea"
+        :placeholder="t('properties.text.content')"
+        @input="update('content', ($event.target as HTMLTextAreaElement).value)"
+      />
+    </label>
+
+    <CollapsibleSection
+      :title="t('properties.text.style')"
+      :storage-key="`properties.collapsible.text.style`"
+    >
+      <label class="props__field">
+        <span>{{ t('properties.text.letterSpacing') }}</span>
+        <HybridNumberInput
+          :model-value="object.letterSpacing ?? 0"
+          :min="-10"
+          :max="50"
+          :step="0.5"
+          :ariaLabel="t('properties.text.letterSpacing')"
+          @update:model-value="update('letterSpacing', $event)"
+        />
+      </label>
+
+      <label class="props__field">
+        <span>{{ t('properties.text.lineHeight') }}</span>
+        <HybridNumberInput
+          :model-value="object.lineHeight ?? 1.2"
+          :min="0.8"
+          :max="3"
+          :step="0.05"
+          :ariaLabel="t('properties.text.lineHeight')"
+          @update:model-value="update('lineHeight', $event)"
+        />
+      </label>
+
+      <ToggleField
+        :label="t('properties.text.wrap')"
+        :model-value="object.wrap"
+        @update:model-value="update('wrap', $event)"
+      />
+      <ToggleField
+        :label="t('properties.text.autoHeight')"
+        :model-value="object.autoHeight"
+        @update:model-value="update('autoHeight', $event)"
+      />
+    </CollapsibleSection>
   </div>
 </template>
 
@@ -118,6 +155,8 @@ import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
 import ColorPicker from './ColorPicker.vue';
 import ToggleField from './ToggleField.vue';
+import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
+import CollapsibleSection from '@/components/common/CollapsibleSection.vue';
 
 const props = defineProps<{ object: TextObject }>();
 const { t } = useI18n();
@@ -140,4 +179,22 @@ function update<K extends keyof TextObject>(key: K, value: TextObject[K]): void 
 
 <style scoped>
 @import './properties-panel.css';
+
+.props__inline-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.props__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 </style>
