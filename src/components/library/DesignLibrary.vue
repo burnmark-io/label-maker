@@ -108,6 +108,7 @@ import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useDesignerStore } from '@/stores/designer';
 import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
+import { useLabelImport } from '@/composables/useLabelImport';
 import { captureCanvasThumbnail } from '@/services/thumbnail';
 import LimitBanner from '@/components/common/LimitBanner.vue';
 import Modal from '@/components/common/Modal.vue';
@@ -120,6 +121,7 @@ const library = useLibraryStore();
 const designer = useDesignerStore();
 const { show } = useToast();
 const lifecycle = useDocumentLifecycle();
+const labelImport = useLabelImport();
 
 const emptySlots = computed(() => Math.max(0, library.MAX_SLOTS - library.entries.length));
 
@@ -167,7 +169,12 @@ async function onSaveAsNew(): Promise<void> {
 }
 
 async function onNewBlankSlot(): Promise<void> {
-  if (!(await lifecycle.confirmDestructiveSwap())) return;
+  const choice = await lifecycle.confirmSwapWithSave();
+  if (choice === 'cancel') return;
+  if (choice === 'save') {
+    const ok = await labelImport.saveCurrentToLibrary();
+    if (!ok) return;
+  }
   lifecycle.newBlankDocument();
   // Skip the thumbnail — a blank canvas is an empty white rectangle.
   // The next save (after the user adds anything) renders one.
@@ -175,6 +182,25 @@ async function onNewBlankSlot(): Promise<void> {
 }
 
 async function onOpen(id: string): Promise<void> {
+  // Skip the prompt when re-opening the design that's already on the
+  // canvas — there's no swap to confirm.
+  if (id !== designer.document.id) {
+    const incomingName = library.entries.find(e => e.id === id)?.name;
+    const choice = await lifecycle.confirmSwapWithSave({ incomingName });
+    if (choice === 'cancel') return;
+    if (choice === 'save') {
+      const savedName = designer.document.name;
+      const ok = await labelImport.saveCurrentToLibrary();
+      if (!ok) return;
+      const incomingDisplay = incomingName ?? t('lifecycle.swapIncomingFallback');
+      show(
+        t('lifecycle.savedThenOpening', { saved: savedName, incoming: incomingDisplay }),
+        'info',
+        { ttlMs: 4000 },
+      );
+    }
+  }
+
   const doc = await library.loadDesign(id);
   if (!doc) {
     show(t('library.openFailed'), 'error');
