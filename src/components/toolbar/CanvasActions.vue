@@ -57,11 +57,17 @@
       <div v-if="optionsOpen" class="actions__options" role="dialog">
         <label class="actions__field">
           {{ t('actions.copies') }}
-          <input v-model.number="copies" type="number" min="1" max="30" class="actions__input" />
+          <input
+            v-model.number="config.copies"
+            type="number"
+            min="1"
+            max="30"
+            class="actions__input"
+          />
         </label>
         <label class="actions__field">
           {{ t('actions.density') }}
-          <select v-model="density" class="actions__input">
+          <select v-model="config.density" class="actions__input">
             <option value="light">{{ t('actions.densityLight') }}</option>
             <option value="normal">{{ t('actions.densityNormal') }}</option>
             <option value="dark">{{ t('actions.densityDark') }}</option>
@@ -227,6 +233,7 @@ import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
 import { useDesignerStore } from '@/stores/designer';
 import { useDataStore } from '@/stores/data';
+import { usePrintConfigStore } from '@/stores/print-config';
 import { useLibraryStore, LibraryFullError } from '@/stores/library';
 import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
@@ -249,6 +256,7 @@ const { t } = useI18n();
 const printer = usePrinterStore();
 const designer = useDesignerStore();
 const data = useDataStore();
+const config = usePrintConfigStore();
 const library = useLibraryStore();
 const { show, update, dismiss } = useToast();
 const lifecycle = useDocumentLifecycle();
@@ -259,8 +267,6 @@ const zoomPercent = computed(() => Math.round(viewport.zoom.value * 100));
 
 const dropdownOpen = ref(false);
 const optionsOpen = ref(false);
-const copies = ref(1);
-const density = ref<'light' | 'normal' | 'dark'>('normal');
 const printRootRef = ref<HTMLElement | null>(null);
 const saveRootRef = ref<HTMLElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -324,8 +330,8 @@ async function onPrint(): Promise<void> {
       height: rgba.height,
       data: new Uint8Array(rgba.data.buffer, rgba.data.byteOffset, rgba.data.byteLength),
     };
-    const cps = Math.max(1, Math.min(30, copies.value || 1));
-    await printer.print(image, { copies: cps, density: density.value });
+    const cps = Math.max(1, Math.min(30, config.copies || 1));
+    await printer.print(image, { copies: cps, density: config.density });
     update(toastId, {
       message: t('actions.printSuccess'),
       kind: 'success',
