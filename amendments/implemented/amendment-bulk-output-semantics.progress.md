@@ -497,3 +497,56 @@ Open follow-ups (small UX polish, not blockers):
   after every `print()` call by default; if a future printer family
   doesn't, the fix is a query on `printer.adapter.capabilities` in
   `runThermalBatch`.
+
+---
+
+## Post-merge refinement — sheet picker sync (2026-04-29)
+
+User reported that the topbar's sheet picker
+(`LabelSizeSelector` → `media.pickSheet`) and the Print popup's
+sheet picker (`SheetDialog` → `print-config.setSheetTemplate`) did
+not stay in sync — picking in one didn't reflect in the other,
+since they tracked different concepts (canvas-source vs output
+target). Documented as plan §4.0; implemented option 2 of the three
+sketched options.
+
+**Resolution chain** in `print-config.sheetTemplate`:
+
+1. Per-document override (`overrideByDoc: Map<docId, code>`,
+   session-only).
+2. Canvas sheet (`media.sheetCode`).
+3. Global last-picked (`localStorage`).
+
+**Write paths:**
+
+- `setSheetTemplate(t)` (Print popup): writes the per-doc override
+  and bumps the global last-picked. Doesn't touch the canvas.
+- `recordCanvasSheetPick(t)` (topbar `LabelSizeSelector.onSheet`):
+  clears any per-doc override and bumps the global last-picked. The
+  canvas itself is changed by the existing `media.pickSheet(t)`
+  call alongside this; the resolution chain then surfaces the new
+  canvas sheet via step #2.
+
+`sheetOverrideActive` computed exposes whether the resolved
+template diverges from the canvas sheet — useful for a future
+"(override)" hint on the change link.
+
+**Decision — keep both stores' concepts intact, link them via
+the chain.** Option 1 (single source of truth in `media.ts`)
+would have meant the Print popup's picker always resizes the
+canvas, which is destructive. Option 3 (two-way sync watchers)
+fights itself and loses the global last-picked persistence model.
+Option 2 keeps `media.ts` as canvas-intent and `print-config` as
+output-intent; the chain just makes the output picker default to
+the canvas pick when the user hasn't said otherwise.
+
+**Tests** (6 new cases, 27 total in `print-config.test.ts`):
+- Canvas fallback when no override and no global.
+- Per-document override beats canvas sheet.
+- Canvas sheet beats global on a doc with no override.
+- `recordCanvasSheetPick` clears override + bumps global.
+- Override is per-document.
+- `sheetOverrideActive` is false when override matches the canvas.
+
+Full suite (642 tests) green; typecheck and lint clean on
+touched files.

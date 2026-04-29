@@ -133,6 +133,7 @@ import type { MediaDescriptor } from '@thermal-label/contracts';
 
 import { useMediaStore } from '@/stores/media';
 import { usePrinterStore } from '@/stores/printer';
+import { usePrintConfigStore } from '@/stores/print-config';
 import { COMMON_SIZES, type CommonSize } from '@/lib/media/common-sizes';
 import { getMediaForFamily } from '@/lib/printer/registry';
 import { useToast } from '@/composables/useToast';
@@ -142,6 +143,7 @@ import SheetPickerDialog from './SheetPickerDialog.vue';
 const { t } = useI18n();
 const media = useMediaStore();
 const printer = usePrinterStore();
+const printConfig = usePrintConfigStore();
 const { detectedMedia } = storeToRefs(printer);
 const { show } = useToast();
 
@@ -230,6 +232,10 @@ function onCommon(size: CommonSize): void {
 
 function onSheet(sheet: SheetTemplate): void {
   media.pickSheet(sheet);
+  // Keep the Print popup's sheet pick in sync — clear any per-document
+  // override and bump the global last-picked. The user designed for
+  // this sheet; the natural output target is the same sheet.
+  printConfig.recordCanvasSheetPick(sheet);
   show(t('media.toast.appliedSheet', { name: `${sheet.brand} ${sheet.part}` }), 'info', {
     ttlMs: 3000,
   });

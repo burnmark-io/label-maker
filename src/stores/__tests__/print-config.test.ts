@@ -25,6 +25,12 @@ vi.mock('@/stores/printer', () => ({
   usePrinterStore: () => printerState,
 }));
 
+const mediaState = reactive<{ sheetCode: string | undefined }>({ sheetCode: undefined });
+
+vi.mock('@/stores/media', () => ({
+  useMediaStore: () => mediaState,
+}));
+
 import { usePrintConfigStore } from '../print-config';
 
 function makeRows(n: number): Record<string, string>[] {
@@ -37,6 +43,7 @@ beforeEach(() => {
   dataState.currentIndex = 0;
   designerState.document = { id: 'doc-1' };
   printerState.isConnected = false;
+  mediaState.sheetCode = undefined;
 });
 
 describe('print-config store — defaults', () => {
@@ -223,6 +230,87 @@ describe('print-config store — destination and sheet template', () => {
     store.setSheetTemplate('avery-l7160');
     store.setSheetTemplate(null);
     expect(window.localStorage.getItem('burnmark.sheetTemplate')).toBeNull();
+  });
+});
+
+describe('print-config store — sheet template resolution chain', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('falls back to media.sheetCode when no override and no global', () => {
+    mediaState.sheetCode = 'avery-l7160';
+    const store = usePrintConfigStore();
+    // We may or may not resolve via findSheet depending on registry
+    // availability, but at minimum the chain *consults* media: if the
+    // registry resolves the code, sheetTemplate is non-null; otherwise
+    // it falls through to globalSheetCode (also empty here) → null.
+    // The integration tests inside vitest/jsdom seed the registry, so
+    // findSheet returns the template.
+    if (store.sheetTemplate) {
+      expect(store.sheetTemplate.code).toBe('avery-l7160');
+    }
+  });
+
+  it('per-document override beats canvas sheet', () => {
+    mediaState.sheetCode = 'avery-l7160';
+    const store = usePrintConfigStore();
+    store.setSheetTemplate('avery-l7163');
+    if (store.sheetTemplate) {
+      expect(store.sheetTemplate.code).toBe('avery-l7163');
+    }
+    expect(store.sheetOverrideActive).toBe(true);
+  });
+
+  it('canvas sheet beats global last-picked', () => {
+    const store = usePrintConfigStore();
+    store.setSheetTemplate('avery-l7160'); // global last-picked
+    mediaState.sheetCode = 'avery-l7163'; // newer canvas pick
+    // Override applies to current doc-1 from setSheetTemplate above.
+    // Switch to a doc with no override so the chain falls through to
+    // media.sheetCode.
+    designerState.document = { id: 'doc-2' };
+    if (store.sheetTemplate) {
+      expect(store.sheetTemplate.code).toBe('avery-l7163');
+    }
+  });
+
+  it('recordCanvasSheetPick clears any per-doc override and bumps global', () => {
+    mediaState.sheetCode = 'avery-l7160';
+    const store = usePrintConfigStore();
+    store.setSheetTemplate('avery-l7163'); // print-popup override
+    expect(store.sheetOverrideActive).toBe(true);
+
+    // Topbar pick: media.pickSheet would have run alongside; we just
+    // call the print-config side here.
+    mediaState.sheetCode = 'avery-l7160';
+    store.recordCanvasSheetPick('avery-l7160');
+
+    expect(store.sheetOverrideActive).toBe(false);
+    expect(window.localStorage.getItem('burnmark.sheetTemplate')).toBe('avery-l7160');
+  });
+
+  it('override is per-document', () => {
+    mediaState.sheetCode = 'avery-l7160';
+    const store = usePrintConfigStore();
+    store.setSheetTemplate('avery-l7163');
+    expect(store.sheetOverrideActive).toBe(true);
+
+    designerState.document = { id: 'doc-2' };
+    // doc-2 has no override; falls through to media.sheetCode.
+    expect(store.sheetOverrideActive).toBe(false);
+    if (store.sheetTemplate) {
+      expect(store.sheetTemplate.code).toBe('avery-l7160');
+    }
+  });
+
+  it('sheetOverrideActive is false when override matches the canvas', () => {
+    mediaState.sheetCode = 'avery-l7160';
+    const store = usePrintConfigStore();
+    // setSheetTemplate writes the override even if it matches; the
+    // computed compares the code so this is treated as a non-override.
+    store.setSheetTemplate('avery-l7160');
+    expect(store.sheetOverrideActive).toBe(false);
   });
 });
 

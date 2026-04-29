@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { findSheet, type SheetTemplate } from '@burnmark-io/sheet-templates';
 import { useDataStore } from './data';
 import { useDesignerStore } from './designer';
+import { useMediaStore } from './media';
 import { usePrinterStore } from './printer';
 
 export type PrintDensity = 'light' | 'normal' | 'dark';
@@ -38,6 +39,7 @@ export const usePrintConfigStore = defineStore('print-config', () => {
   const data = useDataStore();
   const designer = useDesignerStore();
   const printer = usePrinterStore();
+  const media = useMediaStore();
 
   const copies = ref<number>(1);
   const density = ref<PrintDensity>('normal');
@@ -47,16 +49,55 @@ export const usePrintConfigStore = defineStore('print-config', () => {
   // just hold the user's explicit choice here.
   const destination = ref<PrintDestination>('thermal');
 
-  // Sheet template code — persisted globally to localStorage. Last-picked
-  // wins, same model as the connected thermal printer ("the printer"
-  // until explicitly changed). Stored as the `code`; the resolved
-  // `SheetTemplate` is exposed via `sheetTemplate`.
-  const sheetTemplateCode = ref<string | null>(loadSheetTemplateCode());
+  // Sheet template resolution is a three-step chain:
+  //   1. Per-document override — set when the user explicitly picks a
+  //      sheet via the Print popup that diverges from the canvas sheet.
+  //      Session-only, keyed by document id.
+  //   2. The document's canvas sheet (`media.sheetCode`) — when the user
+  //      designed the label *for* a specific sheet, that's the natural
+  //      output target.
+  //   3. Global last-picked, persisted to localStorage. Acts as the
+  //      seed for fresh documents that have no canvas sheet (custom or
+  //      detected canvas source).
+  // The topbar's sheet picker writes #2 (and clears #1 + bumps #3); the
+  // Print popup's "change" link writes #1 + #3, leaving the canvas
+  // alone. Either way the user can pick once and both surfaces stay in
+  // sync.
+  const overrideByDoc = ref<Map<string, string>>(new Map());
+  const globalSheetCode = ref<string | null>(loadSheetTemplateCode());
 
   const sheetTemplate = computed<SheetTemplate | null>(() => {
-    const code = sheetTemplateCode.value;
-    if (!code) return null;
-    return findSheet(code) ?? null;
+    const docId = designer.document?.id ?? null;
+    if (docId) {
+      const override = overrideByDoc.value.get(docId);
+      if (override) {
+        const resolved = findSheet(override);
+        if (resolved) return resolved;
+      }
+    }
+    const canvasCode = media.sheetCode;
+    if (canvasCode) {
+      const resolved = findSheet(canvasCode);
+      if (resolved) return resolved;
+    }
+    if (globalSheetCode.value) {
+      return findSheet(globalSheetCode.value) ?? null;
+    }
+    return null;
+  });
+
+  /**
+   * True when the resolved sheet template diverges from the canvas
+   * sheet — i.e., the user has explicitly overridden output to a
+   * different sheet than the one the canvas is sized for. Useful for
+   * surfacing a "(override)" hint near the change link.
+   */
+  const sheetOverrideActive = computed<boolean>(() => {
+    const docId = designer.document?.id ?? null;
+    if (!docId) return false;
+    const override = overrideByDoc.value.get(docId);
+    if (!override) return false;
+    return override !== media.sheetCode;
   });
 
   // §3.2 destination capability + visibility.
@@ -84,14 +125,40 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     return d;
   });
 
+  /**
+   * Print-popup picker. Writes the per-document override and bumps the
+   * global last-picked. Does NOT touch the canvas — the user wants to
+   * print onto a different sheet than the one they designed for.
+   */
   function setSheetTemplate(template: SheetTemplate | string | null): void {
-    if (template == null) {
-      sheetTemplateCode.value = null;
-      saveSheetTemplateCode(null);
-      return;
+    const code = template == null ? null : typeof template === 'string' ? template : template.code;
+    const docId = designer.document?.id ?? null;
+    if (docId) {
+      const next = new Map(overrideByDoc.value);
+      if (code) next.set(docId, code);
+      else next.delete(docId);
+      overrideByDoc.value = next;
     }
+    globalSheetCode.value = code;
+    saveSheetTemplateCode(code);
+  }
+
+  /**
+   * Topbar / canvas picker. The user picked a sheet to design for, so
+   * the canvas already resized via `media.pickSheet`. Drop any per-
+   * document output override (canvas now matches what the user wants
+   * to print onto) and bump the global last-picked so fresh documents
+   * inherit this choice.
+   */
+  function recordCanvasSheetPick(template: SheetTemplate | string): void {
     const code = typeof template === 'string' ? template : template.code;
-    sheetTemplateCode.value = code;
+    const docId = designer.document?.id ?? null;
+    if (docId && overrideByDoc.value.has(docId)) {
+      const next = new Map(overrideByDoc.value);
+      next.delete(docId);
+      overrideByDoc.value = next;
+    }
+    globalSheetCode.value = code;
     saveSheetTemplateCode(code);
   }
 
@@ -218,7 +285,9 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     sheetPossible,
     showDestinationToggle,
     sheetTemplate,
+    sheetOverrideActive,
     setSheetTemplate,
+    recordCanvasSheetPick,
     outputSelection,
     setOutputSelection,
     clearSelectionFor,

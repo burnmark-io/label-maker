@@ -286,6 +286,47 @@ setup affordance, not a per-print interruption:
 After the first configuration, every subsequent click of Print with
 destination = sheet renders directly to the configured template.
 
+### 4.0 Resolution chain (post-implementation refinement)
+
+The "global last-picked" rule of §4 misses a real user expectation:
+when someone designs a label *for* a specific sheet (via the topbar
+size selector → `media.pickSheet`), the Print popup should already
+know that's the sheet they want to output onto. Treating output
+template as a wholly independent global meant two pickers showing
+unrelated values until manually synced.
+
+The fix is to resolve `sheetTemplate` through a three-step chain:
+
+1. **Per-document override.** Set when the user explicitly picks a
+   sheet via the Print popup that diverges from the canvas sheet.
+   Session-only, keyed by document id. Lives in
+   `print-config.overrideByDoc: Map<docId, code>`.
+2. **Canvas sheet (`media.sheetCode`).** When the user designed the
+   label for a specific sheet, that's the natural output target.
+   This is per-document and round-trips through document save / load
+   (it lives in the document's canvas config).
+3. **Global last-picked**, persisted to `localStorage`. Acts as the
+   seed for fresh documents whose canvas source is custom or
+   detected (no `sheetCode` to inherit from).
+
+Two write paths:
+
+- **Topbar picker** (`LabelSizeSelector.onSheet`) calls
+  `media.pickSheet(t)` (existing — resizes canvas, sets `sheetCode`)
+  *and* `print-config.recordCanvasSheetPick(t)`. The latter clears
+  any per-document override and bumps the global last-picked. Output
+  picks up the new canvas sheet via step #2 of the chain.
+
+- **Print popup picker** ("Sheet: X — change" link / first-run CTA)
+  calls `print-config.setSheetTemplate(t)`. Writes the per-document
+  override + global last-picked. Does **not** touch the canvas — the
+  user wants to print onto a different sheet than the one they
+  designed for, without losing their layout.
+
+A `sheetOverrideActive` computed exposes whether the resolved
+template diverges from the canvas sheet, for surfacing a "(override)"
+hint near the change link.
+
 ### 4.1 Sheet × Dataset
 
 When destination = sheet and a dataset is loaded:
