@@ -328,7 +328,12 @@ async function onFilePicked(event: Event): Promise<void> {
 }
 
 async function onNewLabel(): Promise<void> {
-  if (!(await lifecycle.confirmDestructiveSwap())) return;
+  const choice = await lifecycle.confirmSwapWithSave();
+  if (choice === 'cancel') return;
+  if (choice === 'save') {
+    const ok = await labelImport.saveCurrentToLibrary();
+    if (!ok) return;
+  }
   lifecycle.newBlankDocument();
   show(t('library.newLabelToast'), 'success');
 }
