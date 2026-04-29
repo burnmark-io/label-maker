@@ -103,7 +103,7 @@ describe('useConfirm.choose (three-way)', () => {
     expect(await promise).toBe('cancel');
   });
 
-  it("preempting confirm() with choose() resolves the prior caller to false", async () => {
+  it('preempting confirm() with choose() resolves the prior caller to false', async () => {
     const a = useConfirm();
     const first = a.confirm({ title: '1', confirmLabel: 'OK', cancelLabel: 'No' });
     const second = a.choose({
@@ -133,7 +133,7 @@ describe('useConfirm.choose (three-way)', () => {
     expect(await second).toBe(true);
   });
 
-  it("the options ref carries primaryLabel and secondaryLabel for the dialog to read", async () => {
+  it('the options ref carries primaryLabel and secondaryLabel for the dialog to read', async () => {
     const a = useConfirm();
     const promise = a.choose({
       title: 'T',

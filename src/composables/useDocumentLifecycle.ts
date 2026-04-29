@@ -44,9 +44,7 @@ export function useDocumentLifecycle(): DocumentLifecycle {
    * - `'discard'` — load the incoming, throw away current canvas work.
    * - `'cancel'` — abort; canvas state preserved.
    */
-  async function confirmSwapWithSave(
-    opts: { incomingName?: string } = {},
-  ): Promise<SwapChoice> {
+  async function confirmSwapWithSave(opts: { incomingName?: string } = {}): Promise<SwapChoice> {
     if (isSwapping.value) return 'cancel';
     isSwapping.value = true;
     try {

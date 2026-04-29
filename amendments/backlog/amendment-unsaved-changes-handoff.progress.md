@@ -41,19 +41,31 @@ Re-read the plan; codebase exploration confirms:
 - **Factor thumbnail helper** to `src/services/thumbnail.ts` (Step 3).
   Two existing call sites already duplicate the logic; adding a third
   in `useLabelImport.saveCurrentToLibrary` would compound the drift.
+- **`DesignLibrary.onOpen` skips the prompt when re-opening the
+  document already on the canvas** (`id === designer.document.id`).
+  Not in the plan, but the prompt would be confusing — there's no swap
+  to confirm.
+- **`useConfirm` preemption is bidirectional.** Calling `confirm()`
+  while a `choose()` is in flight resolves the choose to `'cancel'`,
+  and vice versa. Tests cover both directions.
 - **Commit cadence**: gate-and-commit after each step (10 commits).
-  Gate = typecheck + tests pass for steps that touch TS; full lint at
-  the final step.
+  Gate = typecheck + tests pass for steps that touch TS; full build +
+  lint at the final step.
 
 ## Steps
 
-- [ ] Step 1: Extend `useConfirm` + `ConfirmDialog` with `choose()`
-- [ ] Step 2: Add `confirmSwapWithSave` helper
-- [ ] Step 3: Factor out thumbnail helper
-- [ ] Step 4: `useLabelImport` — `saveCurrentToLibrary` + migrate `runImport`
-- [ ] Step 5: AppShell hashchange — migrate
-- [ ] Step 6: `DesignLibrary` — add `onOpen` prompt + migrate `onNewBlankSlot`
-- [ ] Step 7: `CanvasActions.onNewLabel` — migrate
-- [ ] Step 8: i18n keys (en + nl)
-- [ ] Step 9: Remove `confirmDestructiveSwap`; update tests
-- [ ] Step 10: Final gate
+- [x] Step 1: Extend `useConfirm` + `ConfirmDialog` with `choose()` —
+      commit `fd51bac`
+- [x] Step 2: Add `confirmSwapWithSave` helper — commit `146d585`
+- [x] Step 3: Factor out thumbnail helper — commit `a08ebd3`
+- [x] Step 4: `useLabelImport` — `saveCurrentToLibrary` + migrate
+      `runImport` — commit `727b378`
+- [x] Step 5: AppShell hashchange — migrate — commit `3428149`
+- [x] Step 6: `DesignLibrary` — add `onOpen` prompt + migrate
+      `onNewBlankSlot` — commit `0d36946`
+- [x] Step 7: `CanvasActions.onNewLabel` — migrate — commit `9312aa8`
+- [x] Step 8: i18n keys (en + nl) — commit `6461fc3`
+- [x] Step 9: Remove `confirmDestructiveSwap`; rewrite tests —
+      commit `2a6a7be`
+- [x] Step 10: Final gate — typecheck, lint, prettier (touched files
+      only), full build, 442 tests passing

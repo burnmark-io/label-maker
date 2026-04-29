@@ -108,9 +108,7 @@ describe('useDocumentLifecycle.confirmSwapWithSave', () => {
     const lifecycle = withSetup();
     designerState.canUndo = true;
     const promise = lifecycle.confirmSwapWithSave();
-    expect(lifecycle.confirmer.options.value?.message).toContain(
-      'Continuing will replace what',
-    );
+    expect(lifecycle.confirmer.options.value?.message).toContain('Continuing will replace what');
     lifecycle.confirmer.cancel();
     await promise;
   });

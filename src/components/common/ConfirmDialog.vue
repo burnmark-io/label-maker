@@ -57,9 +57,7 @@ const emit = defineEmits<{
 }>();
 
 const primaryButtonLabel = computed(() => props.primaryLabel ?? props.confirmLabel ?? '');
-const primaryButtonTone = computed<DialogTone>(
-  () => props.primaryTone ?? props.tone ?? 'primary',
-);
+const primaryButtonTone = computed<DialogTone>(() => props.primaryTone ?? props.tone ?? 'primary');
 
 function onConfirm(): void {
   emit('confirm');
