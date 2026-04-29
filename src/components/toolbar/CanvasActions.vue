@@ -57,6 +57,7 @@
         </svg>
       </button>
       <div v-if="optionsOpen" class="actions__options" role="dialog">
+        <DestinationRow @open-sheet-picker="emit('open-sheet')" />
         <SourceRow />
         <label class="actions__field">
           {{ t('actions.copies') }}
@@ -199,6 +200,7 @@ import { FAMILIES_WITH_STATUS_POLLING } from '@/lib/printer/registry';
 import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { captureCanvasThumbnail } from '@/services/thumbnail';
 import SourceRow from '@/components/output/SourceRow.vue';
+import DestinationRow from '@/components/output/DestinationRow.vue';
 
 const emit = defineEmits<{
   (e: 'open-batch'): void;

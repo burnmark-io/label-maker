@@ -109,6 +109,13 @@
       "rangeTo": "Tot",
       "rangeAdjusted": "Bereik aangepast naar {from}–{to}"
     },
+    "destination": {
+      "label": "Bestemming",
+      "thermal": "Thermisch",
+      "sheet": "Vel",
+      "sheetCurrent": "Vel: {brand} {part} — wijzigen",
+      "setupSheet": "Vel-sjabloon instellen →"
+    },
     "button": {
       "print": "Printen",
       "printNLabels": "{n} labels printen",

@@ -19,7 +19,11 @@
             @open-library="libraryOpen = true"
           />
         </section>
-        <SidePanel data-tour="side-panel" @open-batch="batchOpen = true" />
+        <SidePanel
+          data-tour="side-panel"
+          @open-batch="batchOpen = true"
+          @open-sheet-picker="sheetOpen = true"
+        />
       </main>
       <InstallPrompt />
       <ImportDropOverlay />

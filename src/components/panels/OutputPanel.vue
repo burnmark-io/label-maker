@@ -1,7 +1,7 @@
 <template>
   <div class="output-panel">
     <PreviewSection />
-    <PrintSection />
+    <PrintSection @open-sheet-picker="emit('open-sheet-picker')" />
     <SaveAsFileSection />
   </div>
 </template>
@@ -10,6 +10,10 @@
 import PreviewSection from '@/components/output/PreviewSection.vue';
 import PrintSection from '@/components/output/PrintSection.vue';
 import SaveAsFileSection from '@/components/output/SaveAsFileSection.vue';
+
+const emit = defineEmits<{
+  (e: 'open-sheet-picker'): void;
+}>();
 </script>
 
 <style scoped>

@@ -109,6 +109,13 @@
       "rangeTo": "To",
       "rangeAdjusted": "Range adjusted to {from}–{to}"
     },
+    "destination": {
+      "label": "Destination",
+      "thermal": "Thermal",
+      "sheet": "Sheet",
+      "sheetCurrent": "Sheet: {brand} {part} — change",
+      "setupSheet": "Set up sheet template →"
+    },
     "button": {
       "print": "Print",
       "printNLabels": "Print {n} labels",

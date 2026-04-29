@@ -1,6 +1,7 @@
 <template>
-  <section v-if="printer.isConnected" class="output-print">
+  <section v-if="showSection" class="output-print">
     <h3 class="output-print__heading">{{ t('output.print.heading') }}</h3>
+    <DestinationRow @open-sheet-picker="emit('open-sheet-picker')" />
     <SourceRow />
     <div class="output-print__fields">
       <label class="output-print__field">
@@ -44,6 +45,11 @@ import { useDataStore } from '@/stores/data';
 import { usePrintConfigStore } from '@/stores/print-config';
 import { useToast } from '@/composables/useToast';
 import SourceRow from './SourceRow.vue';
+import DestinationRow from './DestinationRow.vue';
+
+const emit = defineEmits<{
+  (e: 'open-sheet-picker'): void;
+}>();
 
 const { t } = useI18n();
 const printer = usePrinterStore();
@@ -52,9 +58,22 @@ const data = useDataStore();
 const config = usePrintConfigStore();
 const { show, update, dismiss } = useToast();
 
-const canPrint = computed<boolean>(
-  () => printer.isConnected && Boolean(printer.effectiveMedia) && !printer.isPrinting,
+// Section is visible when there's any output destination available —
+// either a connected thermal printer or a configured sheet template.
+// The DestinationRow's first-run CTA covers the "neither" state.
+const showSection = computed<boolean>(
+  () => config.thermalPossible || config.sheetPossible,
 );
+
+const canPrint = computed<boolean>(() => {
+  if (printer.isPrinting) return false;
+  if (config.effectiveDestination === 'thermal') {
+    return printer.isConnected && Boolean(printer.effectiveMedia);
+  }
+  // Sheet destination: requires a configured template; printer
+  // connectivity is irrelevant.
+  return config.sheetPossible;
+});
 
 const buttonLabel = computed(() =>
   config.count > 1

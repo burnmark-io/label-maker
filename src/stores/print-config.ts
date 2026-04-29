@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { findSheet, type SheetTemplate } from '@burnmark-io/sheet-templates';
 import { useDataStore } from './data';
 import { useDesignerStore } from './designer';
+import { usePrinterStore } from './printer';
 
 export type PrintDensity = 'light' | 'normal' | 'dark';
 
@@ -36,6 +37,7 @@ const DEFAULT_WITH_DATA: OutputSelection = { kind: 'all' };
 export const usePrintConfigStore = defineStore('print-config', () => {
   const data = useDataStore();
   const designer = useDesignerStore();
+  const printer = usePrinterStore();
 
   const copies = ref<number>(1);
   const density = ref<PrintDensity>('normal');
@@ -55,6 +57,31 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     const code = sheetTemplateCode.value;
     if (!code) return null;
     return findSheet(code) ?? null;
+  });
+
+  // §3.2 destination capability + visibility.
+  const thermalPossible = computed<boolean>(() => printer.isConnected);
+  const sheetPossible = computed<boolean>(() => sheetTemplate.value !== null);
+  const showDestinationToggle = computed<boolean>(
+    () => thermalPossible.value && sheetPossible.value,
+  );
+
+  /**
+   * The destination output should actually go to. Honours the user's
+   * stated preference when possible; otherwise falls back to whatever
+   * is available. When neither is available the value falls back to
+   * `thermal` — in that state the consumer should render a first-run
+   * setup CTA, not a Print button (§3.4).
+   */
+  const effectiveDestination = computed<PrintDestination>(() => {
+    const d = destination.value;
+    if (d === 'thermal' && !thermalPossible.value) {
+      return sheetPossible.value ? 'sheet' : 'thermal';
+    }
+    if (d === 'sheet' && !sheetPossible.value) {
+      return thermalPossible.value ? 'thermal' : 'sheet';
+    }
+    return d;
   });
 
   function setSheetTemplate(template: SheetTemplate | string | null): void {
@@ -167,6 +194,10 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     copies,
     density,
     destination,
+    effectiveDestination,
+    thermalPossible,
+    sheetPossible,
+    showDestinationToggle,
     sheetTemplate,
     setSheetTemplate,
     outputSelection,

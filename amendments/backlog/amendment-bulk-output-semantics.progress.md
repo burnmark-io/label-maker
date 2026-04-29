@@ -210,3 +210,49 @@ Tests (`print-config.test.ts` extended to 16 cases) cover destination
 default, sheet template persist + restore, and null clear.
 
 Typecheck clean.
+
+### 2.2 Destination toggle UI — DONE
+
+`src/components/output/DestinationRow.vue`:
+- Toggle (Thermal | Sheet) shown only when both destinations are
+  possible per §3.2.
+- "Sheet: {brand} {part} — change" link below the toggle when a sheet
+  template is configured (also shown standalone when only sheet is
+  possible).
+- First-run "Set up sheet template →" CTA shown when neither thermal
+  nor sheet is configured.
+- Both the change link and the CTA emit `open-sheet-picker`.
+
+Store: added `thermalPossible`, `sheetPossible`,
+`showDestinationToggle`, and `effectiveDestination` computeds. The
+last one honours the user's stated preference when capable, else
+falls back to the available destination — implements §3.6
+mid-session coercion as a pure derivation (no watchers, no side
+effects). Consumers always read `effectiveDestination`.
+
+`PrintSection.vue` now shows when *either* thermal OR sheet is
+possible (was: thermal only). `canPrint` becomes
+destination-aware: thermal needs media + connection, sheet needs a
+configured template.
+
+Event plumbed up: `DestinationRow` → `PrintSection` →
+`OutputPanel` → `SidePanel` → `AppShell` (which already wires
+`sheetOpen = true` for the legacy `open-sheet` event from
+CanvasActions; the new pathway joins the same handler). The
+`CanvasActions` popup also gets the row, emitting via the existing
+`open-sheet` event so AppShell needs no extra wiring on that branch.
+
+i18n keys: `output.destination.*` (label / thermal / sheet /
+sheetCurrent / setupSheet) in both locales.
+
+Tests: 8 cases in `DestinationRow.test.ts` cover all four §3.2
+visibility branches plus the toggle / change-link / CTA emits.
+
+Full suite (626 tests) green.
+
+**Decision — single emitted event for change + CTA + toggle popup
+trigger.** AppShell already opens the SheetDialog on
+`CanvasActions.open-sheet`. Reusing that event for the new pathways
+(rather than introducing a parallel one) means no AppShell handler
+expansion in this step; Phase 2.3 changes what the dialog *does* on
+confirm (sets the template instead of immediate one-shot export).
