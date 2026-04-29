@@ -18,12 +18,6 @@
     "saveCurrent": "Save",
     "newLabel": "New label",
     "saveAsNew": "Save as new",
-    "import": "Import…",
-    "exportPdf": "PDF",
-    "exportPng": "PNG",
-    "exportLabel": ".label file",
-    "exportZip": ".zip bundle",
-    "printSheet": "Print to sticker sheet",
     "printOptions": "Print options",
     "copies": "Copies",
     "density": "Density",
@@ -89,8 +83,6 @@
     }
   },
   "preview": {
-    "title": "Print preview",
-    "notConnected": "Connect a printer to see how your label will print.",
     "noPreview": "No preview yet",
     "rendering": "Rendering preview…",
     "refresh": "Refresh preview",
