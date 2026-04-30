@@ -90,7 +90,7 @@ const config = computed(() => ({
   opacity: props.object.opacity,
   visible: props.object.visible,
   listening: !props.object.locked,
-  draggable: props.draggable && !props.object.locked,
+  draggable: props.selected && props.draggable && !props.object.locked,
   image: image.value,
 }));
 

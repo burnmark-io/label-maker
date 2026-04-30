@@ -301,6 +301,10 @@ function onWheel(event: { evt: WheelEvent }): void {
 }
 
 function onObjectSelect(id: string, event: unknown): void {
+  // A click that completes a marquee drag must not override the marquee's
+  // selection — the post-pointerup @click on the same object would otherwise
+  // collapse the multi-selection back to a single id.
+  if (marquee.value.dragging) return;
   const native = (event as { evt?: MouseEvent }).evt;
   if (native?.shiftKey) {
     if (designer.selection.includes(id)) {
@@ -411,11 +415,23 @@ function nativeEventToDot(e: PointerEvent): { x: number; y: number } | null {
   return pointerToDot(e.clientX - rect.left, e.clientY - rect.top);
 }
 
-function isOnObject(event: { target?: { name?: () => string } }): boolean {
+/**
+ * True when the pointer-down target is an already-selected object — in
+ * that case Konva owns the gesture (drag the selection). For unselected
+ * objects we want the marquee to start instead, so the user can rubber-
+ * band through transparent fills and z-depth without accidentally grabbing
+ * whichever shape Konva's hit-test happened to top-pick.
+ */
+function isOnSelectedObject(event: {
+  target?: { name?: () => string; id?: () => string };
+}): boolean {
   const target = event.target;
   if (!target) return false;
   const name = typeof target.name === 'function' ? target.name() : '';
-  return name === 'object';
+  if (name !== 'object') return false;
+  const id = typeof target.id === 'function' ? target.id() : '';
+  if (!id) return false;
+  return designer.selection.includes(id);
 }
 
 // ---------------------------------------------------------------------------
@@ -506,9 +522,11 @@ function onStagePointerDown(event: {
     pointerId?: number;
   };
 }): void {
-  // Do not start a marquee when clicking on an object, when text is being
-  // edited, or when it's not the primary (left) button.
-  if (isOnObject(event)) return;
+  // Skip the marquee only when the click is on an already-selected object
+  // (the user is starting a drag of the selection). Clicks on unselected
+  // objects start a marquee — the object becomes draggable only after it's
+  // selected, so Konva won't initiate a drag on this gesture.
+  if (isOnSelectedObject(event)) return;
   if (editingTextId.value) return;
   if (event.evt?.button !== undefined && event.evt.button !== 0) return;
 

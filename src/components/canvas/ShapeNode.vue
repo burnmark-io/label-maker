@@ -80,7 +80,7 @@ const baseConfig = computed(() => ({
   opacity: props.object.opacity,
   visible: props.object.visible,
   listening: !props.object.locked,
-  draggable: props.draggable && !props.object.locked,
+  draggable: props.selected && props.draggable && !props.object.locked,
   fill: props.object.fill ? props.object.color : undefined,
   stroke: props.object.color,
   strokeWidth: props.object.fill ? 0 : props.object.strokeWidth,
