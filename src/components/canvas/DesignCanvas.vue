@@ -49,6 +49,18 @@
         />
       </VLayer>
 
+      <!-- Per-item selection outline. The Transformer above only shows the
+           group bounding box; this layer makes it visible *which* objects
+           are part of a multi-selection — particularly when overlapping or
+           nested. Non-listening so it never intercepts events. -->
+      <VLayer :config="{ listening: false }">
+        <VRect
+          v-for="cfg in selectionOutlines"
+          :key="cfg.id"
+          :config="cfg"
+        />
+      </VLayer>
+
       <VLayer :config="{ listening: false }">
         <AlignmentGuides
           v-if="dragGuides.vertical.length || dragGuides.horizontal.length"
@@ -196,6 +208,34 @@ const visibleSelection = computed(() =>
 const visibleSelectionObjects = computed<LabelObject[]>(() =>
   document.value.objects.filter(o => visibleSelection.value.includes(o.id)),
 );
+
+/**
+ * Konva configs for the per-item selection outlines. Only rendered when
+ * there's a multi-selection — for a single object the Transformer's own
+ * border already conveys the selection, so an inner dashed rect would
+ * just be visual noise. Mirrors each node's centred-origin positioning
+ * math so rotated objects outline correctly. Note: autoHeight text uses
+ * the stored `height`, which lags the rendered height — accept until the
+ * autoHeight value is persisted on content change.
+ */
+const selectionOutlines = computed(() => {
+  if (visibleSelectionObjects.value.length < 2) return [];
+  return visibleSelectionObjects.value.map(obj => ({
+    id: `selection-outline-${obj.id}`,
+    x: obj.x + obj.width / 2,
+    y: obj.y + obj.height / 2,
+    offsetX: obj.width / 2,
+    offsetY: obj.height / 2,
+    width: obj.width,
+    height: obj.height,
+    rotation: obj.rotation,
+    stroke: '#f59e0b',
+    strokeWidth: 1 / viewport.zoom.value,
+    dash: [4 / viewport.zoom.value, 3 / viewport.zoom.value],
+    listening: false,
+    perfectDrawEnabled: false,
+  }));
+});
 
 const editingTextId = ref<string | null>(null);
 const editingText = computed<TextObject | null>(() => {
