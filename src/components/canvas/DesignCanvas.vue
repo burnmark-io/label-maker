@@ -54,11 +54,7 @@
            are part of a multi-selection — particularly when overlapping or
            nested. Non-listening so it never intercepts events. -->
       <VLayer :config="{ listening: false }">
-        <VRect
-          v-for="cfg in selectionOutlines"
-          :key="cfg.id"
-          :config="cfg"
-        />
+        <VRect v-for="cfg in selectionOutlines" :key="cfg.id" :config="cfg" />
       </VLayer>
 
       <VLayer :config="{ listening: false }">
