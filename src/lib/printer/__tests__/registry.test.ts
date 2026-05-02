@@ -8,10 +8,10 @@ import {
 } from '../registry';
 
 describe('printer registry', () => {
-  it('identifies a Brother QL by VID/PID (QL-820NWB)', () => {
-    const entry = identifyByVidPid(0x04f9, 0x20a7); // 1273 / 8359
+  it('identifies a Brother QL by VID/PID (QL-820NWBc)', () => {
+    const entry = identifyByVidPid(0x04f9, 0x209d);
     expect(entry?.family).toBe('brother-ql');
-    expect(entry?.device.name).toBe('QL-820NWB');
+    expect(entry?.device.name).toBe('QL-820NWBc');
   });
 
   it('identifies a Dymo LabelWriter (LW 450)', () => {

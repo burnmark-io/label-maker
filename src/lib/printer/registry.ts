@@ -1,20 +1,26 @@
-import { DEVICES as BROTHER_DEVICES, MEDIA as BROTHER_MEDIA } from '@thermal-label/brother-ql-core';
+import {
+  DEVICES as BROTHER_DEVICES,
+  MEDIA as BROTHER_MEDIA,
+  findDevice as findBrother,
+} from '@thermal-label/brother-ql-core';
 import {
   DEVICES as LABELWRITER_DEVICES,
   MEDIA as LABELWRITER_MEDIA,
+  findDevice as findLabelwriter,
 } from '@thermal-label/labelwriter-core';
 import {
   DEVICES as LABELMANAGER_DEVICES,
   MEDIA as LABELMANAGER_MEDIA,
+  findDevice as findLabelmanager,
 } from '@thermal-label/labelmanager-core';
 import { buildUsbFilters } from '@thermal-label/transport';
-import type { DeviceDescriptor, MediaDescriptor } from '@thermal-label/contracts';
+import type { DeviceEntry, MediaDescriptor } from '@thermal-label/contracts';
 
 export type PrinterFamily = 'brother-ql' | 'labelwriter' | 'labelmanager';
 
 export interface RegistryEntry {
   family: PrinterFamily;
-  device: DeviceDescriptor;
+  device: DeviceEntry;
 }
 
 const ALL: RegistryEntry[] = [
@@ -26,16 +32,22 @@ const ALL: RegistryEntry[] = [
   })),
 ];
 
-const ALL_DEVICES: DeviceDescriptor[] = ALL.map(entry => entry.device);
+const ALL_DEVICES: DeviceEntry[] = ALL.map(entry => entry.device);
 
 /** Combined USB filter set across every supported family. */
 export function getAllUsbFilters(): USBDeviceFilter[] {
   return buildUsbFilters(ALL_DEVICES);
 }
 
-/** Identify a USB device by VID/PID. */
+/** Identify a USB device by VID/PID. Delegates to each driver's `findDevice` so hex-string parsing stays inside the driver. */
 export function identifyByVidPid(vid: number, pid: number): RegistryEntry | undefined {
-  return ALL.find(entry => entry.device.vid === vid && entry.device.pid === pid);
+  const b = findBrother(vid, pid);
+  if (b) return { family: 'brother-ql', device: b };
+  const w = findLabelwriter(vid, pid);
+  if (w) return { family: 'labelwriter', device: w };
+  const m = findLabelmanager(vid, pid);
+  if (m) return { family: 'labelmanager', device: m };
+  return undefined;
 }
 
 /**

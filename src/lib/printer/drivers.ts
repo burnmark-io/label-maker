@@ -39,15 +39,15 @@ export async function openFromUSBDeviceForFamily(
 }
 
 /**
- * Open a Brother QL via Web Serial — for the QL-820NWB Bluetooth SPP
+ * Open a Brother QL via Web Serial — for the QL-820NWBc Bluetooth SPP
  * pairing. The OS-level pairing must already exist; the browser shows a
  * port picker that includes paired SPP devices alongside wired serial
  * ports.
  */
 export async function openBrotherQLViaSerial(): Promise<PrinterAdapter> {
   const transport = await WebSerialTransport.request();
-  // The serial transport doesn't expose VID/PID, so we assume QL-820NWB
+  // The serial transport doesn't expose VID/PID, so we assume QL-820NWBc
   // — that is the only Brother QL with Bluetooth SPP. If a future model
   // adds web-serial transport, add a small selector here.
-  return new WebBrotherQLPrinter(BROTHER_DEVICES.QL_820NWB, transport);
+  return new WebBrotherQLPrinter(BROTHER_DEVICES.QL_820NWBc, transport);
 }
