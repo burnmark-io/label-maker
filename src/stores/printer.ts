@@ -12,7 +12,6 @@ import type {
 import {
   FAMILIES_WITH_STATUS_POLLING,
   PER_MODEL_STATUS_POLLING_EXCLUSIONS,
-  identifyByVidPid,
   modelKey,
   type PrinterFamily,
 } from '@/lib/printer/registry';
@@ -105,6 +104,26 @@ export const usePrinterStore = defineStore('printer', () => {
 
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let consecutiveFailures = 0;
+  /**
+   * Active push-status subscription. Brother QL over USB emits a
+   * status frame after every print job and (per firmware) some
+   * lid/media events, all of which flow into the read loop and out
+   * via `onStatus`. Polling continues alongside as the cadence floor;
+   * push is purely additive — when it fires sooner than the next poll
+   * tick, the UI catches up without waiting.
+   */
+  let unsubscribePush: (() => void) | null = null;
+
+  function applyStatus(status: PrinterStatus): void {
+    // Same status object can arrive via two paths when push and
+    // polling are both active (the response to getStatus() flows
+    // through the push subscription too). Identity-dedup before
+    // committing avoids double reactive notifications.
+    if (lastStatus.value === status) return;
+    lastStatus.value = status;
+    lastStatusAt.value = Date.now();
+    detectedMedia.value = status.detectedMedia ?? null;
+  }
 
   const isConnected = computed(() => connection.value.kind === 'connected');
   const family = computed<PrinterFamily | null>(() =>
@@ -123,20 +142,32 @@ export const usePrinterStore = defineStore('printer', () => {
   );
 
   function setAdapter(next: PrinterAdapter | null): void {
+    // Tear down any existing push subscription before swapping adapters
+    // so the old read loop's notifications don't leak into the new one's
+    // state.
+    if (unsubscribePush) {
+      unsubscribePush();
+      unsubscribePush = null;
+    }
+
     adapter.value = next;
     if (next) {
-      const entry = next.device
-        ? identifyByVidPid(next.device.vid ?? -1, next.device.pid ?? -1)
-        : undefined;
-      const fam: PrinterFamily =
-        (entry?.family as PrinterFamily | undefined) ?? (next.family as PrinterFamily);
+      const fam = next.family as PrinterFamily;
       connection.value = { kind: 'connected', family: fam, model: next.model };
       lastPaired.value = { family: fam, model: next.model };
       writeLastConnected(lastPaired.value);
-      // Fresh adapter = fresh chance for status polling.
+      // Fresh adapter = fresh chance for status polling / push.
       circuitBroken.value = false;
       consecutiveFailures = 0;
       seenErrorCodes.value = new Set<string>();
+
+      // Subscribe to push frames if the adapter supports it. This is
+      // additive — polling still runs as the cadence floor; push just
+      // delivers state changes the moment the read loop sees them
+      // (post-print frames, any spontaneous events).
+      if (typeof next.onStatus === 'function') {
+        unsubscribePush = next.onStatus(applyStatus);
+      }
       startPolling();
     } else {
       stopPolling();
@@ -198,9 +229,7 @@ export const usePrinterStore = defineStore('printer', () => {
   async function refreshStatus(): Promise<void> {
     if (!adapter.value) return;
     const status = await adapter.value.getStatus();
-    lastStatus.value = status;
-    lastStatusAt.value = Date.now();
-    detectedMedia.value = status.detectedMedia ?? null;
+    applyStatus(status);
   }
 
   async function refreshPreview(image: RawImageData): Promise<void> {
