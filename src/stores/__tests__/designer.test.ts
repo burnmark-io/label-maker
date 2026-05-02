@@ -58,14 +58,28 @@ describe('designer store — orientation-aware render', () => {
     expect(docArg.canvas.orientation).toBe('vertical');
   });
 
-  it('renderToRGBA leaves continuous canvases on canonical (horizontal continuous is parked)', async () => {
+  it('renderToRGBA renders horizontal-continuous as die-cut (long axis × short axis) so designs do not get clipped to a tiny strip', async () => {
     const designer = useDesignerStore();
+    // 100 dots @ 300dpi ≈ 8.467 mm; 4:3 default continuous length ≈ 11 mm → 130 dots.
     designer.setCanvas({ widthDots: 100, heightDots: 0, dpi: 300, orientation: 'horizontal' });
     await designer.renderToRGBA();
 
     const docArg = renderFullSpy.mock.calls.at(-1)?.[0] as LabelDocument;
-    expect(docArg.canvas.widthDots).toBe(100);
-    expect(docArg.canvas.heightDots).toBe(0);
+    expect(docArg.canvas.widthDots).toBe(130);
+    expect(docArg.canvas.heightDots).toBe(100);
+    expect(docArg.canvas.orientation).toBe('vertical');
+  });
+
+  it('renderToRGBA respects the user-set continuous length when present', async () => {
+    const designer = useDesignerStore();
+    designer.setCanvas({ widthDots: 100, heightDots: 0, dpi: 300, orientation: 'horizontal' });
+    designer.setDocumentMetadata({ canvasContinuousLengthMm: 80 });
+    await designer.renderToRGBA();
+
+    const docArg = renderFullSpy.mock.calls.at(-1)?.[0] as LabelDocument;
+    // 80 mm @ 300dpi = 945 dots.
+    expect(docArg.canvas.widthDots).toBe(945);
+    expect(docArg.canvas.heightDots).toBe(100);
   });
 
   it('toggling orientation does not mutate the document widthDots/heightDots', async () => {

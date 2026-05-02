@@ -29,6 +29,7 @@ import {
 } from '@burnmark-io/designer-core';
 import { BurnmarkAssetLoader } from '@/services/asset-loader';
 import { autoNameFor, type TypeLabelKey } from '@/lib/naming/auto-name';
+import { dotsFromMm, mmFromDots, defaultContinuousLength } from '@/stores/media';
 import { i18n } from '@/i18n';
 
 /**
@@ -204,20 +205,46 @@ export const useDesignerStore = defineStore('designer', () => {
    * orientation-aware downstream code (e.g. the exporter's
    * `respectOrientation` default) doesn't add a second rotation on top.
    *
-   * Continuous tape (`heightDots === 0`) is intentionally left alone:
-   * the renderer's growth-axis logic keys off `heightDots` and a clean
-   * swap to "growth along x" needs more work. Horizontal continuous
-   * is parked.
+   * Continuous tape (`heightDots === 0`) needs the same display-coords
+   * alignment but the renderer keys "grow along the long axis" off
+   * `heightDots === 0`, so we can't just swap. Instead, treat the
+   * current continuous length as a fixed long-axis dimension and
+   * render as die-cut: `widthDots = continuousLengthDots` (long axis),
+   * `heightDots = canvas.widthDots` (short axis). Anything past the
+   * continuous length is clipped — same intent as the on-screen frame.
+   * Without this, designs on tape media with `defaultOrientation:
+   * 'horizontal'` (e.g. LabelManager D1) rendered as a small portion
+   * of the leftmost 142-dot strip ("tiny square" bug).
    */
   function getRenderDoc(): LabelDocument {
     const raw = composable.designer.document;
     const { canvas } = raw;
-    if (canvas.orientation !== 'horizontal' || canvas.heightDots === 0) return raw;
+    if (canvas.orientation !== 'horizontal') return raw;
+
+    if (canvas.heightDots !== 0) {
+      return {
+        ...raw,
+        canvas: {
+          ...canvas,
+          widthDots: canvas.heightDots,
+          heightDots: canvas.widthDots,
+          orientation: 'vertical',
+        },
+      };
+    }
+
+    const storedLengthMm = raw.metadata?.canvasContinuousLengthMm;
+    const widthMm = mmFromDots(canvas.widthDots, canvas.dpi);
+    const lengthMm =
+      typeof storedLengthMm === 'number' && Number.isFinite(storedLengthMm) && storedLengthMm > 0
+        ? storedLengthMm
+        : defaultContinuousLength(widthMm);
+    const longAxisDots = dotsFromMm(lengthMm, canvas.dpi);
     return {
       ...raw,
       canvas: {
         ...canvas,
-        widthDots: canvas.heightDots,
+        widthDots: longAxisDots,
         heightDots: canvas.widthDots,
         orientation: 'vertical',
       },
