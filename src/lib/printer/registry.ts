@@ -1,20 +1,32 @@
 import {
+  DEVICE_REGISTRY as BROTHER_REGISTRY,
   DEVICES as BROTHER_DEVICES,
   MEDIA as BROTHER_MEDIA,
+  PROTOCOLS as BROTHER_PROTOCOLS,
   findDevice as findBrother,
 } from '@thermal-label/brother-ql-core';
 import {
+  REGISTRY_LW as LABELWRITER_REGISTRY,
   DEVICES as LABELWRITER_DEVICES,
   MEDIA as LABELWRITER_MEDIA,
+  PROTOCOLS as LABELWRITER_PROTOCOLS,
   findDevice as findLabelwriter,
 } from '@thermal-label/labelwriter-core';
 import {
+  DEVICE_REGISTRY_DATA as LABELMANAGER_REGISTRY,
   DEVICES as LABELMANAGER_DEVICES,
   MEDIA as LABELMANAGER_MEDIA,
+  PROTOCOLS as LABELMANAGER_PROTOCOLS,
   findDevice as findLabelmanager,
 } from '@thermal-label/labelmanager-core';
 import { buildUsbFilters } from '@thermal-label/transport';
-import type { DeviceEntry, MediaDescriptor } from '@thermal-label/contracts';
+import {
+  resolveSupportedDevices,
+  type DeviceEntry,
+  type MediaDescriptor,
+  type SupportedDevice,
+  type TransportType,
+} from '@thermal-label/contracts';
 
 export type PrinterFamily = 'brother-ql' | 'labelwriter' | 'labelmanager';
 
@@ -22,6 +34,41 @@ export interface RegistryEntry {
   family: PrinterFamily;
   device: DeviceEntry;
 }
+
+export interface SupportedEntry {
+  family: PrinterFamily;
+  supported: SupportedDevice;
+}
+
+/**
+ * Transports this runtime can drive in the browser. `usb` covers Web
+ * USB; `serial` covers Web Serial including Bluetooth-SPP devices the
+ * OS pre-pairs into the serial picker. Expand when we add Web TCP or
+ * Web Bluetooth GATT.
+ */
+const RUNTIME_TRANSPORTS: ReadonlySet<TransportType> = new Set(['usb', 'serial']);
+
+/**
+ * Per-family supported-device tables. Each entry is a `SupportedDevice`
+ * with per-engine `drivable` flags and `drivableTransports` /
+ * `undrivableTransports` arrays — drives the picker badges and engine
+ * slot construction at pair time.
+ */
+export const SUPPORTED_BROTHER: readonly SupportedDevice[] = resolveSupportedDevices(
+  BROTHER_REGISTRY,
+  BROTHER_PROTOCOLS,
+  RUNTIME_TRANSPORTS,
+);
+export const SUPPORTED_LABELWRITER: readonly SupportedDevice[] = resolveSupportedDevices(
+  LABELWRITER_REGISTRY,
+  LABELWRITER_PROTOCOLS,
+  RUNTIME_TRANSPORTS,
+);
+export const SUPPORTED_LABELMANAGER: readonly SupportedDevice[] = resolveSupportedDevices(
+  LABELMANAGER_REGISTRY,
+  LABELMANAGER_PROTOCOLS,
+  RUNTIME_TRANSPORTS,
+);
 
 const ALL: RegistryEntry[] = [
   ...Object.values(BROTHER_DEVICES).map(d => ({ family: 'brother-ql' as const, device: d })),
@@ -50,35 +97,33 @@ export function identifyByVidPid(vid: number, pid: number): RegistryEntry | unde
   return undefined;
 }
 
-/**
- * Driver families that have media auto-detection on the web. Used by the
- * UI to decide whether to surface the manual media selector by default.
- */
-export const FAMILIES_WITH_DETECTION: ReadonlySet<PrinterFamily> = new Set(['brother-ql']);
+function supportedTableFor(family: PrinterFamily): readonly SupportedDevice[] {
+  switch (family) {
+    case 'brother-ql':
+      return SUPPORTED_BROTHER;
+    case 'labelwriter':
+      return SUPPORTED_LABELWRITER;
+    case 'labelmanager':
+      return SUPPORTED_LABELMANAGER;
+  }
+}
 
 /**
- * Driver families that support periodic status polling. All three
- * supported families implement getStatus() with structured errors;
- * Brother QL and LabelWriter 550 also report detectedMedia.
- *
- * See `amendment-printer-status-polling.md §3.6` for the per-protocol
- * breakdown.
+ * Look up a device in the resolved supported-device table. Useful when
+ * the store needs per-engine `drivable` flags or per-transport
+ * drivability hints for a connected device.
  */
-export const FAMILIES_WITH_STATUS_POLLING: ReadonlySet<PrinterFamily> = new Set([
-  'brother-ql',
-  'labelwriter',
-  'labelmanager',
-]);
+export function findSupported(family: PrinterFamily, name: string): SupportedDevice | undefined {
+  return supportedTableFor(family).find(d => d.name === name);
+}
 
 /**
  * Per-model exclusions from periodic polling. A model whose key is in
- * this set does NOT poll even if its family is in
- * `FAMILIES_WITH_STATUS_POLLING`.
+ * this set does NOT poll even though `getStatus()` exists.
  *
  * Empty in v1 — architectural seam for the future case where a specific
- * model within a polling family turns out to misbehave on status
- * queries (e.g. firmware that hangs the bulk pipe under repeated
- * `getStatus()` calls).
+ * model's firmware misbehaves on repeated status queries (e.g. hangs
+ * the bulk pipe). Drop into this set rather than gating by family.
  */
 export const PER_MODEL_STATUS_POLLING_EXCLUSIONS: ReadonlySet<string> = new Set<string>();
 
@@ -86,13 +131,6 @@ export const PER_MODEL_STATUS_POLLING_EXCLUSIONS: ReadonlySet<string> = new Set<
 export function modelKey(family: PrinterFamily, model: string): string {
   return `${family}:${model}`;
 }
-
-/**
- * Whether a family supports Web Serial in the browser. Brother's
- * QL-820NWB(c) speak Bluetooth SPP, listed by the OS-paired serial
- * picker; the others are USB-only.
- */
-export const FAMILIES_WITH_WEB_SERIAL: ReadonlySet<PrinterFamily> = new Set(['brother-ql']);
 
 /** All media descriptors known for a family. */
 export function getMediaForFamily(family: PrinterFamily): MediaDescriptor[] {

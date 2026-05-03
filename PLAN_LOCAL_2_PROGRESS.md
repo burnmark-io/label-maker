@@ -71,3 +71,45 @@ derived from what `*-web` already imports."
   same. Gate: 16 tests pass.
 
 Step 1 complete. Proceeding to Step 2.
+
+## Step 2 — §3 Adopt `resolveSupportedDevices` in registry
+
+**Goal:** the registry exports per-family `SUPPORTED_*` arrays from
+`resolveSupportedDevices(...)` and drops the hand-rolled
+`FAMILIES_WITH_*` flags whose only consumers were either tests or
+no-op gates (every family was in the set already).
+
+### Decisions
+
+- **`FAMILIES_WITH_DETECTION` and `FAMILIES_WITH_WEB_SERIAL` were
+  test-only.** Both deleted; the test that asserted on them is
+  replaced with a positive test on `SUPPORTED_BROTHER` confirming the
+  QL-820NWBc engine resolves as `drivable: true` with the `ql-raster`
+  protocol.
+- **`FAMILIES_WITH_STATUS_POLLING` was a no-op gate at the family
+  level** (all three families were in the set). Dropped from
+  `printer.ts` (`shouldPoll`), `PrinterStatus.vue` (`pillState`), and
+  `CanvasActions.vue` (`blockedByError`). `PER_MODEL_STATUS_POLLING_EXCLUSIONS`
+  stays — that's the genuine escape hatch.
+- **Kept `RegistryEntry` and `identifyByVidPid`** unchanged in
+  signature. They feed `connect.ts` and `drivers.ts` which look up by
+  VID/PID; switching to `SupportedDevice` cascades into the connect
+  path without need. Added `findSupported(family, modelName)` for the
+  store's per-engine reads in Step 3.
+- **`RUNTIME_TRANSPORTS = ['usb', 'serial']`.** Per-plan §3.1 default;
+  Web Serial covers Bluetooth-SPP (the OS pre-pairs it into the
+  serial picker on macOS/Linux/Win).
+
+### Gate
+
+- `pnpm typecheck` → clean.
+- `pnpm test` → 62 files / 699 tests pass (+1 new
+  `findSupported` assertion).
+
+### Note for downstream
+
+The `blockedByError` logic in `CanvasActions.vue` still **disables
+the print button** when a thermal status reports an error. Plan §0.5
+"rails not walls" says the button should remain clickable and surface
+the error on click. Out of scope for Step 2 (registry); flagged for
+Step 5 (print path) or Step 4 (UI).

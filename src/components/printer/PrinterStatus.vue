@@ -15,7 +15,6 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePrinterStore } from '@/stores/printer';
-import { FAMILIES_WITH_STATUS_POLLING } from '@/lib/printer/registry';
 import { localisedErrorMessage } from '@/composables/usePrinterErrors';
 
 defineProps<{ open?: boolean }>();
@@ -33,7 +32,6 @@ const pillState = computed<PillState>(() => {
   // connected — derive from the last poll. Pre-first-tick (lastStatus
   // null) we show ready rather than "unknown" to avoid a yellow flash
   // every time someone reconnects.
-  if (!FAMILIES_WITH_STATUS_POLLING.has(c.family)) return 'ready';
   const status = printer.lastStatus;
   if (!status) return 'ready';
   if (!status.ready) return 'error';

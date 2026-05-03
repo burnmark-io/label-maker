@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FAMILIES_WITH_DETECTION,
-  FAMILIES_WITH_WEB_SERIAL,
+  SUPPORTED_BROTHER,
+  SUPPORTED_LABELMANAGER,
+  SUPPORTED_LABELWRITER,
+  findSupported,
   getAllUsbFilters,
   getMediaForFamily,
   identifyByVidPid,
@@ -37,10 +39,21 @@ describe('printer registry', () => {
     expect(getMediaForFamily('labelmanager').length).toBeGreaterThan(0);
   });
 
-  it('flags brother-ql as supporting auto-detection and web-serial', () => {
-    expect(FAMILIES_WITH_DETECTION.has('brother-ql')).toBe(true);
-    expect(FAMILIES_WITH_WEB_SERIAL.has('brother-ql')).toBe(true);
-    expect(FAMILIES_WITH_DETECTION.has('labelwriter')).toBe(false);
-    expect(FAMILIES_WITH_WEB_SERIAL.has('labelmanager')).toBe(false);
+  it('exposes resolveSupportedDevices output per family', () => {
+    expect(SUPPORTED_BROTHER.length).toBeGreaterThan(0);
+    expect(SUPPORTED_LABELWRITER.length).toBeGreaterThan(0);
+    expect(SUPPORTED_LABELMANAGER.length).toBeGreaterThan(0);
+    // Every supported device has at least one drivable transport on this runtime.
+    for (const d of [...SUPPORTED_BROTHER, ...SUPPORTED_LABELWRITER, ...SUPPORTED_LABELMANAGER]) {
+      expect(d.drivableTransports.length).toBeGreaterThan(0);
+      expect(d.engines.some(e => e.drivable)).toBe(true);
+    }
+  });
+
+  it('marks the QL-820NWBc engine as drivable (ql-raster)', () => {
+    const ql820 = findSupported('brother-ql', 'QL-820NWBc');
+    expect(ql820).toBeDefined();
+    expect(ql820?.engines[0]?.drivable).toBe(true);
+    expect(ql820?.engines[0]?.protocol).toBe('ql-raster');
   });
 });

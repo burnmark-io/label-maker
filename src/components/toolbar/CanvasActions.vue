@@ -188,7 +188,6 @@ import { useToast } from '@/composables/useToast';
 import { useDocumentLifecycle } from '@/composables/useDocumentLifecycle';
 import { useLabelImport } from '@/composables/useLabelImport';
 import { localisedErrorMessage } from '@/composables/usePrinterErrors';
-import { FAMILIES_WITH_STATUS_POLLING } from '@/lib/printer/registry';
 import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { captureCanvasThumbnail } from '@/services/thumbnail';
 import SourceRow from '@/components/output/SourceRow.vue';
@@ -240,7 +239,6 @@ const blockedByError = computed(() => {
   if (config.effectiveDestination !== 'thermal') return false;
   const c = printer.connection;
   if (c.kind !== 'connected') return false;
-  if (!FAMILIES_WITH_STATUS_POLLING.has(c.family)) return false;
   const status = printer.lastStatus;
   if (!status) return false;
   return !status.ready || status.errors.length > 0;

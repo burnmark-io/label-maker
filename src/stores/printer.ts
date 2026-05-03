@@ -10,7 +10,6 @@ import type {
 } from '@thermal-label/contracts';
 
 import {
-  FAMILIES_WITH_STATUS_POLLING,
   PER_MODEL_STATUS_POLLING_EXCLUSIONS,
   modelKey,
   type PrinterFamily,
@@ -279,7 +278,6 @@ export const usePrinterStore = defineStore('printer', () => {
 
   function shouldPoll(): boolean {
     if (connection.value.kind !== 'connected') return false;
-    if (!FAMILIES_WITH_STATUS_POLLING.has(connection.value.family)) return false;
     if (
       PER_MODEL_STATUS_POLLING_EXCLUSIONS.has(
         modelKey(connection.value.family, connection.value.model),
