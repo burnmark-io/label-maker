@@ -99,7 +99,10 @@
                   :class="`popover__slot-dot--${entry.dotClass}`"
                   aria-hidden="true"
                 />
-                <span class="popover__slot-label">{{ entry.label }}</span>
+                <span class="popover__slot-stack">
+                  <span class="popover__slot-label">{{ entry.label }}</span>
+                  <span class="popover__slot-media">{{ entry.mediaLabel }}</span>
+                </span>
               </button>
               <button
                 class="popover__chip-btn"
@@ -182,6 +185,7 @@ interface FlatSlotEntry {
   connectionId: string;
   role: string;
   label: string;
+  mediaLabel: string;
   dotClass: DotClass;
 }
 
@@ -214,11 +218,14 @@ const flatSlotEntries = computed<FlatSlotEntry[]>(() => {
       // same-model disambiguation is the nickname's job (plan §2.6).
       const baseLabel = conn.nickname ?? conn.model;
       const label = slot.role === 'primary' ? baseLabel : `${baseLabel} — ${slot.role}`;
+      const media = slot.selectedMedia ?? slot.detectedMedia;
+      const mediaLabel = media ? media.name : t('printer.noMediaDetected');
       out.push({
         key: `${conn.id}:${slot.role}`,
         connectionId: conn.id,
         role: slot.role,
         label,
+        mediaLabel,
         dotClass,
       });
     }
@@ -418,8 +425,8 @@ onBeforeUnmount(() => {
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  min-width: 280px;
-  max-width: 360px;
+  min-width: 320px;
+  max-width: 440px;
   padding: var(--space-3);
   background: var(--color-bg-panel);
   border: 1px solid var(--color-border);
@@ -539,14 +546,34 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
   font-size: var(--text-sm);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
 }
 
+.popover__slot-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
 .popover__slot-label {
   font-weight: var(--weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.popover__slot-media {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .popover__slot-dot {
