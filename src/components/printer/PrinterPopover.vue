@@ -81,64 +81,44 @@
             </button>
           </div>
 
-          <div v-else class="popover__section popover__section--multi">
-            <div
-              v-for="conn in connectionsList"
-              :key="conn.id"
-              class="popover__chassis"
+          <ul v-else class="popover__section popover__slots popover__slots--flat">
+            <li
+              v-for="entry in flatSlotEntries"
+              :key="entry.key"
+              class="popover__slot"
+              :class="{ 'popover__slot--active': isActive(entry.connectionId, entry.role) }"
             >
-              <div class="popover__chassis-chip">
-                <span class="popover__chassis-name">
-                  {{ conn.nickname ?? `${conn.model} · ${shortFingerprint(conn.fingerprint)}` }}
-                </span>
-                <button
-                  class="popover__chip-btn"
-                  type="button"
-                  @click="removeConnection(conn.id)"
-                  :title="t('printer.disconnect')"
-                >
-                  {{ t('printer.disconnect') }}
-                </button>
-              </div>
-
-              <ul class="popover__slots">
-                <li
-                  v-for="slot in slotsOf(conn)"
-                  :key="slot.role"
-                  class="popover__slot"
-                  :class="{
-                    'popover__slot--active': isActive(conn.id, slot.role),
-                  }"
-                >
-                  <button
-                    class="popover__slot-btn"
-                    type="button"
-                    @click="promote(conn.id, slot.role)"
-                    :aria-pressed="isActive(conn.id, slot.role)"
-                  >
-                    <span
-                      class="popover__pip"
-                      :class="{ 'popover__pip--active': isActive(conn.id, slot.role) }"
-                      aria-hidden="true"
-                    />
-                    <span class="popover__slot-label">
-                      {{ slotLabel(conn, slot) }}
-                    </span>
-                  </button>
-                  <p v-if="slot.detectedMedia" class="popover__detected">
-                    {{ t('printer.detectedMedia', { name: slot.detectedMedia.name }) }}
-                  </p>
-                </li>
+              <button
+                class="popover__slot-btn"
+                type="button"
+                @click="promote(entry.connectionId, entry.role)"
+                :aria-pressed="isActive(entry.connectionId, entry.role)"
+              >
+                <span
+                  class="popover__pip"
+                  :class="{ 'popover__pip--active': isActive(entry.connectionId, entry.role) }"
+                  aria-hidden="true"
+                />
+                <span class="popover__slot-label">{{ entry.label }}</span>
+              </button>
+              <button
+                class="popover__chip-btn"
+                type="button"
+                @click="removeConnection(entry.connectionId)"
+                :title="t('printer.disconnect')"
+              >
+                {{ t('printer.disconnect') }}
+              </button>
+            </li>
+            <li v-if="errorMessages.length > 0" class="popover__slot popover__slot--meta">
+              <ul class="popover__errors">
+                <li v-for="(msg, idx) in errorMessages" :key="idx">{{ msg }}</li>
               </ul>
-            </div>
-
-            <ul v-if="errorMessages.length > 0" class="popover__errors">
-              <li v-for="(msg, idx) in errorMessages" :key="idx">{{ msg }}</li>
-            </ul>
-            <p v-if="lastCheckedLabel" class="popover__note popover__note--checked">
-              {{ lastCheckedLabel }}
-            </p>
-          </div>
+            </li>
+            <li v-if="lastCheckedLabel" class="popover__slot popover__slot--meta">
+              <p class="popover__note popover__note--checked">{{ lastCheckedLabel }}</p>
+            </li>
+          </ul>
 
           <!--
             Pair-another always reachable from the connected state,
@@ -174,7 +154,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PrinterStatus from './PrinterStatus.vue';
-import { usePrinterStore, type Connection, type EngineSlotState } from '@/stores/printer';
+import { usePrinterStore } from '@/stores/printer';
 import { requestUsbPrinter } from '@/lib/printer/connect';
 import { openBrotherQLViaSerial } from '@/lib/printer/drivers';
 import { useBrowserCapabilities } from '@/composables/useBrowserCapabilities';
@@ -194,11 +174,36 @@ const connectError = ref<string | null>(null);
 
 const detectedName = computed(() => printer.detectedMedia?.name ?? null);
 const totalSlotCount = computed(() => printer.totalSlotCount());
-const connectionsList = computed<Connection[]>(() => Array.from(printer.connections.values()));
 
-function slotsOf(conn: Connection): EngineSlotState[] {
-  return Array.from(conn.slots.values());
+interface FlatSlotEntry {
+  key: string;
+  connectionId: string;
+  role: string;
+  label: string;
 }
+
+/**
+ * Flat list of every slot across every connection. With no
+ * composite-chassis users in the wild (Duo/Twin per plan §0.5) every
+ * connection contributes exactly one entry, so the multi-slot popover
+ * is just a flat list of cards rather than a chassis-grouped tree.
+ */
+const flatSlotEntries = computed<FlatSlotEntry[]>(() => {
+  const out: FlatSlotEntry[] = [];
+  for (const conn of printer.connections.values()) {
+    for (const slot of conn.slots.values()) {
+      const baseLabel = conn.nickname ?? `${conn.model} · ${shortFingerprint(conn.fingerprint)}`;
+      const label = slot.role === 'primary' ? baseLabel : `${baseLabel} — ${slot.role}`;
+      out.push({
+        key: `${conn.id}:${slot.role}`,
+        connectionId: conn.id,
+        role: slot.role,
+        label,
+      });
+    }
+  }
+  return out;
+});
 
 function isActive(connectionId: string, role: string): boolean {
   return (
@@ -214,13 +219,6 @@ function shortFingerprint(fp: string): string {
   // Last 4 chars — enough to disambiguate two-of-the-same-model in
   // the common case while staying short enough to read at a glance.
   return fp.slice(-4);
-}
-
-function slotLabel(conn: Connection, slot: EngineSlotState): string {
-  if (slot.role === 'primary') {
-    return conn.model;
-  }
-  return `${conn.model} — ${slot.role}`;
 }
 
 async function removeConnection(id: string): Promise<void> {
@@ -424,10 +422,6 @@ onBeforeUnmount(() => {
   gap: var(--space-2);
 }
 
-.popover__section--multi {
-  gap: var(--space-3);
-}
-
 .popover__pair-another {
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-2);
@@ -479,28 +473,6 @@ onBeforeUnmount(() => {
   color: var(--color-text);
 }
 
-.popover__chassis {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.popover__chassis-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 2px var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  background: var(--color-bg-canvas);
-  border-radius: var(--radius-sm);
-}
-
-.popover__chassis-name {
-  font-weight: var(--weight-medium);
-}
-
 .popover__chip-btn {
   appearance: none;
   background: none;
@@ -527,14 +499,20 @@ onBeforeUnmount(() => {
 
 .popover__slot {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
 }
 
 .popover__slot--active {
   background: var(--color-bg-canvas);
+}
+
+.popover__slot--meta {
+  display: block;
+  padding: 0 var(--space-2);
 }
 
 .popover__slot-btn {
