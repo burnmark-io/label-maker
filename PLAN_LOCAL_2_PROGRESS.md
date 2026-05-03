@@ -295,3 +295,49 @@ devices route correctly. Mostly already in place from Step 3.
 
 - `pnpm typecheck` → clean.
 - `pnpm test` → 62 files / 699 tests pass.
+
+## Step 6 — §6 Persistence
+
+**Goal:** the persisted "last connected" state is a list, not a single
+record. Boot replays every entry in parallel. The store exposes a
+"forget this printer" helper for explicit removal.
+
+### Decisions
+
+- **localStorage key migration.** Old key `burnmark.lastConnected`
+  (single object) → new key `burnmark.last-connections` (array).
+  First read attempts the new key; falls back to the old, migrates
+  in place, returns the migrated array. The legacy key is left in
+  place for a release-or-two before a `removeItem` followup.
+- **Record shape:** `{ family, model, fingerprint, transportKind,
+  address?, nickname? }` matching plan §6.2. `addConnection` upserts
+  by fingerprint to avoid duplicates within a session.
+- **`lastPaired` is now a computed** reading the first record. The
+  status pill copy works unchanged.
+- **`tryReconnectAllUsb()` runs `Promise.allSettled` over every paired
+  USBDevice.** Failed entries log and are skipped — they remain in
+  the persisted list (ghost-card data for a future commit; UI not
+  yet wired). Single-paired-device users see today's behaviour.
+- **`forgetLastConnection(fingerprint)`** removes one record;
+  `clearLastPaired()` (kept for BC) clears the entire list.
+- **`tryReconnectUsb()` kept as a thin wrapper** — preserves the
+  pre-refactor single-shot signature.
+
+### Deferred from §6
+
+- **Per-design `Document.metadata.targetSlot` (§6.1).** Out of scope
+  here per the realistic distribution rule — matters only for users
+  with ≥2 paired printers.
+- **Ghost-card UI in the popover.** `lastConnections` exposes the
+  records that didn't reconnect; the popover doesn't yet render
+  greyed cards with a Reconnect button.
+- **"Forget this printer" button in the chassis chip.** Helper
+  exists; UI affordance does not.
+
+### Gate
+
+- `pnpm typecheck` → clean.
+- `pnpm test` → 62 files / 699 tests pass. Two test updates:
+  - `printer.test.ts`: asserts on `burnmark.last-connections`.
+  - `useAutoReconnect.test.ts`: mocks `tryReconnectAllUsb` returning
+    array shapes.
