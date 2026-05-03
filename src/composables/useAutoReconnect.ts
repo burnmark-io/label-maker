@@ -45,10 +45,11 @@ export function useAutoReconnect(): void {
         );
         printer.addConnection(adapter, { fingerprintHint: match?.fingerprint });
       }
-      // Single status refresh for the active slot — Step 3's polling
-      // loop will catch up the rest within one tick.
+      // Refresh every connection in parallel so each row's status dot
+      // hydrates immediately — otherwise non-active rows show grey for
+      // up to POLL_INTERVAL_MS while waiting for their first poll.
       if (printer.connections.size > 0) {
-        await printer.refreshStatus();
+        await printer.refreshAllStatus();
       }
     } catch (err) {
       console.warn('[burnmark] auto-reconnect failed', err);

@@ -674,6 +674,29 @@ export const usePrinterStore = defineStore('printer', () => {
     applyStatus(conn.id, status);
   }
 
+  /**
+   * Pull status for every live connection in parallel. Used by
+   * `useAutoReconnect` so each row's status dot hydrates immediately
+   * on boot rather than waiting POLL_INTERVAL_MS for the first poll
+   * tick. Failures per connection are swallowed — the polling loop's
+   * circuit breaker takes over from there.
+   */
+  async function refreshAllStatus(): Promise<void> {
+    const ids = [...connections.keys()];
+    await Promise.allSettled(
+      ids.map(async id => {
+        const conn = connections.get(id);
+        if (!conn) return;
+        try {
+          const status = await conn.adapter.getStatus();
+          applyStatus(id, status);
+        } catch (err) {
+          console.warn('[burnmark] initial getStatus failed', err);
+        }
+      }),
+    );
+  }
+
   async function refreshPreview(image: RawImageData): Promise<void> {
     const conn = activeConnection();
     if (!conn) {
@@ -864,6 +887,7 @@ export const usePrinterStore = defineStore('printer', () => {
     disconnectAll,
     lastConnections,
     forgetLastConnection,
+    refreshAllStatus,
 
     // backward-compatible single-connection surface
     connection,
