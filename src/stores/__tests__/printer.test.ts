@@ -94,7 +94,7 @@ describe('printer store', () => {
     expect(store.isConnected).toBe(true);
     expect(store.family).toBe('brother-ql');
     expect(store.model).toBe('QL-820NWB');
-    expect(window.localStorage.getItem('burnmark.lastConnected')).toContain('QL-820NWB');
+    expect(window.localStorage.getItem('burnmark.last-connections')).toContain('QL-820NWB');
   });
 
   it('refreshStatus pulls detected media into the store', async () => {

@@ -9,6 +9,7 @@ import { useAutoReconnect } from '../useAutoReconnect';
 
 vi.mock('@/lib/printer/connect', () => ({
   tryReconnectUsb: vi.fn(),
+  tryReconnectAllUsb: vi.fn(),
 }));
 
 vi.mock('../useBrowserCapabilities', () => ({
@@ -21,9 +22,9 @@ vi.mock('../useBrowserCapabilities', () => ({
   }),
 }));
 
-import { tryReconnectUsb } from '@/lib/printer/connect';
+import { tryReconnectAllUsb } from '@/lib/printer/connect';
 
-const mockedTryReconnect = vi.mocked(tryReconnectUsb);
+const mockedTryReconnect = vi.mocked(tryReconnectAllUsb);
 
 const Harness = defineComponent({
   setup() {
@@ -69,7 +70,7 @@ describe('useAutoReconnect', () => {
 
   it('attaches the reconnected adapter on mount', async () => {
     const adapter = makeAdapter();
-    mockedTryReconnect.mockResolvedValueOnce(adapter);
+    mockedTryReconnect.mockResolvedValueOnce([adapter]);
 
     const wrapper = mount(Harness);
     await nextTick();
@@ -83,7 +84,7 @@ describe('useAutoReconnect', () => {
   });
 
   it('does nothing when no paired device is found', async () => {
-    mockedTryReconnect.mockResolvedValueOnce(null);
+    mockedTryReconnect.mockResolvedValueOnce([]);
 
     const wrapper = mount(Harness);
     await nextTick();

@@ -92,31 +92,75 @@ export type ConnectionState =
   | { kind: 'connected'; family: PrinterFamily; model: string }
   | { kind: 'error'; family?: PrinterFamily; model?: string; message: string };
 
-const LAST_CONNECTED_KEY = 'burnmark.lastConnected';
+/**
+ * Old single-entry localStorage key (pre-multi-printer). Kept for
+ * one-shot migration on first read; never written.
+ */
+const LEGACY_LAST_CONNECTED_KEY = 'burnmark.lastConnected';
 
-interface LastConnected {
+/**
+ * New multi-entry localStorage key (plan §6.2). One record per paired
+ * printer, replayed on boot in parallel.
+ */
+const LAST_CONNECTIONS_KEY = 'burnmark.last-connections';
+
+export interface LastConnectionRecord {
   family: PrinterFamily;
   model: string;
+  /** §2.6 fingerprint — disambiguates two-of-the-same-model. */
+  fingerprint: string;
+  /** Which transport pairing was used. Drives reconnect path. */
+  transportKind: 'usb' | 'serial';
+  /** Optional transport-specific address; surface for diagnostics. */
+  address?: string;
+  /** Optional user-assigned name; load-bearing when fingerprint isn't stable. */
+  nickname?: string;
 }
 
-function readLastConnected(): LastConnected | null {
-  if (typeof window === 'undefined') return null;
+function readLastConnections(): LastConnectionRecord[] {
+  if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(LAST_CONNECTED_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as LastConnected;
-    if (!parsed.family || !parsed.model) return null;
-    return parsed;
+    const raw = window.localStorage.getItem(LAST_CONNECTIONS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as LastConnectionRecord[];
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (r): r is LastConnectionRecord =>
+            !!r && typeof r === 'object' && !!r.family && !!r.model && !!r.fingerprint,
+        );
+      }
+    }
+    // Migrate from the old single-entry key on first read.
+    const legacy = window.localStorage.getItem(LEGACY_LAST_CONNECTED_KEY);
+    if (legacy) {
+      const parsed = JSON.parse(legacy) as { family?: PrinterFamily; model?: string };
+      if (parsed?.family && parsed?.model) {
+        const migrated: LastConnectionRecord = {
+          family: parsed.family,
+          model: parsed.model,
+          // Synthesize a fingerprint so the new shape is well-formed.
+          // Real fingerprint replaces this on the next addConnection.
+          fingerprint: `${parsed.family}-${parsed.model}-legacy`,
+          transportKind: 'usb',
+        };
+        writeLastConnections([migrated]);
+        return [migrated];
+      }
+    }
   } catch {
-    return null;
+    // Fall through to empty.
   }
+  return [];
 }
 
-function writeLastConnected(value: LastConnected | null): void {
+function writeLastConnections(records: LastConnectionRecord[]): void {
   if (typeof window === 'undefined') return;
   try {
-    if (value === null) window.localStorage.removeItem(LAST_CONNECTED_KEY);
-    else window.localStorage.setItem(LAST_CONNECTED_KEY, JSON.stringify(value));
+    if (records.length === 0) {
+      window.localStorage.removeItem(LAST_CONNECTIONS_KEY);
+    } else {
+      window.localStorage.setItem(LAST_CONNECTIONS_KEY, JSON.stringify(records));
+    }
   } catch {
     // ignore
   }
@@ -203,7 +247,21 @@ export const usePrinterStore = defineStore('printer', () => {
    */
   const pendingConnect = ref<PendingConnect>({ kind: 'idle' });
 
-  const lastPaired = ref<LastConnected | null>(readLastConnected());
+  /**
+   * Persisted pairing records — one per printer the user has paired,
+   * surviving reload. On boot, each record is replayed in parallel
+   * via the auto-reconnect composable.
+   */
+  const lastConnections = ref<LastConnectionRecord[]>(readLastConnections());
+
+  /**
+   * BC accessor: the first persisted record, used by the status pill
+   * to show "{model} — plug in to reconnect" when no live connection
+   * exists. Null when the list is empty.
+   */
+  const lastPaired = computed<LastConnectionRecord | null>(
+    () => lastConnections.value[0] ?? null,
+  );
   const lastPreview = shallowRef<PreviewResult | null>(null);
 
   /**
@@ -268,7 +326,12 @@ export const usePrinterStore = defineStore('printer', () => {
 
   function addConnection(
     adapter: PrinterAdapter,
-    opts?: { fingerprintHint?: string; nickname?: string },
+    opts?: {
+      fingerprintHint?: string;
+      nickname?: string;
+      transportKind?: 'usb' | 'serial';
+      address?: string;
+    },
   ): ConnectionId {
     const id = mintConnectionId();
     const family = adapter.family as PrinterFamily;
@@ -324,8 +387,14 @@ export const usePrinterStore = defineStore('printer', () => {
       }
     }
 
-    lastPaired.value = { family, model: adapter.model };
-    writeLastConnected(lastPaired.value);
+    upsertLastConnection({
+      family,
+      model: adapter.model,
+      fingerprint: conn.fingerprint,
+      transportKind: opts?.transportKind ?? 'usb',
+      address: opts?.address,
+      nickname: opts?.nickname,
+    });
     pendingConnect.value = { kind: 'idle' };
 
     scheduleNextPoll(id);
@@ -499,9 +568,25 @@ export const usePrinterStore = defineStore('printer', () => {
     lastPreview.value = preview;
   }
 
+  function upsertLastConnection(record: LastConnectionRecord): void {
+    const next = lastConnections.value.filter(r => r.fingerprint !== record.fingerprint);
+    next.unshift(record);
+    lastConnections.value = next;
+    writeLastConnections(next);
+  }
+
+  /** Plan §6.2 "Forget this printer" — remove from the persisted list. */
+  function forgetLastConnection(fingerprint: string): void {
+    const next = lastConnections.value.filter(r => r.fingerprint !== fingerprint);
+    if (next.length === lastConnections.value.length) return;
+    lastConnections.value = next;
+    writeLastConnections(next);
+  }
+
+  /** BC: clear the entire persisted list. Equivalent to forgetting every printer. */
   function clearLastPaired(): void {
-    lastPaired.value = null;
-    writeLastConnected(null);
+    lastConnections.value = [];
+    writeLastConnections([]);
   }
 
   /**
@@ -703,6 +788,8 @@ export const usePrinterStore = defineStore('printer', () => {
     effectiveMediaForSlot,
     getConnection,
     disconnectAll,
+    lastConnections,
+    forgetLastConnection,
 
     // backward-compatible single-connection surface
     connection,
