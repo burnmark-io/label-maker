@@ -166,15 +166,16 @@ describe('media store — auto-resize-on-printer-connect', () => {
     window.localStorage.clear();
   });
 
-  it('auto-applies detected media when source is detected', async () => {
+  it('auto-applies detected media on a fresh canvas', async () => {
     const media = useMediaStore();
     const printer = usePrinterStore();
 
-    // Default starting state: source defaults to 'manual' on a fresh
-    // doc whose metadata has no canvasSource. Reset to 'detected' via
-    // applyLastUsedOrDefault, which also seeds the default size.
+    // Fresh first-visit (no localStorage): applyLastUsedOrDefault now
+    // seeds source 'custom' so the print pipeline works without any
+    // setup. Auto-adopt is gated on canUndo (untouched), not source,
+    // so a connected printer's detected media still wins.
     media.applyLastUsedOrDefault();
-    expect(media.source).toBe('detected');
+    expect(media.source).toBe('custom');
 
     const detected = makeMedia({ widthMm: 89, heightMm: 28 });
     printer.setDetectedMedia(detected);
@@ -364,12 +365,14 @@ describe('media store — localStorage persistence', () => {
     expect(media.source).toBe('detected');
   });
 
-  it('falls back to 62mm continuous when localStorage is empty', () => {
+  it('falls back to 62mm continuous (custom) when localStorage is empty', () => {
     const media = useMediaStore();
     media.applyLastUsedOrDefault();
     expect(media.widthMm).toBeCloseTo(62, 0);
     expect(media.heightMm).toBe(null);
-    expect(media.source).toBe('detected');
+    // First-visit fallback uses 'custom' so the PDF synth in
+    // print-config makes Print work immediately.
+    expect(media.source).toBe('custom');
   });
 });
 

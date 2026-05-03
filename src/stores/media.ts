@@ -335,10 +335,17 @@ export const useMediaStore = defineStore('media', () => {
       });
       return;
     }
+    // First-visit fallback (no localStorage). Source 'custom' so the
+    // PDF-render synth in print-config kicks in immediately — a fresh
+    // visitor can hit Print on the demo label and get a PDF without
+    // having to set up a printer or pick a sheet first. Rails not
+    // walls. The auto-adopt-on-printer-connect watch below is gated
+    // on canUndo, not source, so this doesn't break the upgrade path
+    // when the user later pairs a printer.
     applySize({
       widthMm: DEFAULT_WIDTH_MM,
       heightMm: DEFAULT_HEIGHT_MM,
-      source: 'detected',
+      source: 'custom',
       resetContinuousLength: true,
       orientation: defaultOrientationFor({
         widthMm: DEFAULT_WIDTH_MM,
