@@ -113,3 +113,73 @@ the print button** when a thermal status reports an error. Plan §0.5
 "rails not walls" says the button should remain clickable and surface
 the error on click. Out of scope for Step 2 (registry); flagged for
 Step 5 (print path) or Step 4 (UI).
+
+## Step 3 — §2 Store refactor: connections + slots
+
+**Goal:** the printer store owns a `Map<ConnectionId, Connection>`
+where each `Connection` has a `slots: Map<role, EngineSlotState>`,
+plus an `activeSlot: { connectionId, role } | null` print
+destination. Existing single-connection consumers continue to work
+through a backward-compatible facade that resolves through the
+active slot.
+
+### Decisions
+
+- **Backward-compatible facade strategy.** Today ~30 consumer call
+  sites read `printer.adapter`, `printer.connection`,
+  `printer.detectedMedia`, etc. Rather than touch all of them in
+  Step 3, the new store exposes the multi-connection surface
+  (`connections`, `activeSlot`, `addConnection`, etc.) **alongside**
+  computed BC accessors that project through the active slot. Step 4
+  builds the new UI against the multi-connection API; old consumers
+  keep working unchanged.
+- **Reactivity model.** Connections are stored in a
+  `shallowReactive(Map)`; each `Connection` is wrapped in
+  `reactive(...)` so per-field mutations (e.g. `conn.isPrinting =
+  false`) propagate to BC computeds without manual bumps. Identity-
+  sensitive references (`adapter`, `device`, `status` payload) are
+  `markRaw`-ed inside the reactive proxy so `printer.adapter ===
+  adapter` (asserted by tests + tooling).
+- **Per-connection poll timer.** One `setTimeout` per connection,
+  keyed by `ConnectionId`. Backoff/breaker state lives on each
+  `Connection`. Visibility-change handler stops/restarts every
+  connection's timer.
+- **Fingerprint policy (§2.6).** Minted at pair time. For now it
+  defaults to a random UUID prefixed with `${family}-${model}-`. This
+  satisfies "two-of-the-same-model within one session" disambiguation
+  but does **not** survive replug — surfacing USB serial via the
+  transport requires a separate change to drivers/transport that's
+  out of scope here. Plan §2.6 explicitly accepts nickname as the
+  fallback when fingerprint isn't stable.
+- **`setAdapter` BC semantics.** Old code's `setAdapter(non-null)`
+  replaced the single adapter. Faithful BC: `setAdapter(adapter)`
+  removes any current connection first, then adds the new one. Pure
+  multi-connection callers (Step 4 UI) use `addConnection` directly.
+- **Scratch detected/selectedMedia.** Tests + the media store call
+  `setDetectedMedia` / `setSelectedMedia` before any adapter exists.
+  The store keeps top-level scratch refs that BC computeds fall back
+  to when no slot is active; on `addConnection` they flow into the
+  fresh primary slot and clear. Production paths always have an
+  adapter first, so the scratch is invisible to them.
+- **Detected media stays chassis-level on multi-engine devices.** Per
+  §0.6 spike, `PrinterStatus` has no per-engine `detectedMedia`. The
+  store mirrors `status.detectedMedia` onto the primary slot **only
+  when the connection has exactly one slot**, leaving Duo's two slots
+  alone (deferred per §0.5 — no Duo owners today).
+
+### Out of scope here, deferred to later steps
+
+- Multi-restore / ghost-card data flow → §6 Persistence (Step 6).
+- New ConnectionsPanel UI → Step 4.
+- Print-path `engine: slot.role` bridging → already in `print()`,
+  reused in Step 5 for batch printing.
+
+### Gate
+
+- `pnpm typecheck` → clean.
+- `pnpm test` → 62 files / 699 tests pass. Same count as Step 2.
+- One test recovery story worth flagging: initial run had 10 failures
+  (reactivity-tracking bugs from `shallowReactive(Map)` + identity
+  loss on `reactive(adapter)`). Resolved by `reactive` per-Connection
+  + `markRaw` on adapter/device/status, and by adding the scratch
+  detected/selectedMedia fallback for pre-adapter setters.
