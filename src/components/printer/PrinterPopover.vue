@@ -94,12 +94,13 @@
                 @click="promote(entry.connectionId, entry.role)"
                 :aria-pressed="isActive(entry.connectionId, entry.role)"
               >
-                <span
-                  class="popover__pip"
-                  :class="{ 'popover__pip--active': isActive(entry.connectionId, entry.role) }"
-                  aria-hidden="true"
-                />
                 <span class="popover__slot-label">{{ entry.label }}</span>
+                <span
+                  v-if="isActive(entry.connectionId, entry.role)"
+                  class="popover__active-tag"
+                >
+                  {{ t('printer.activeSlot') }}
+                </span>
               </button>
               <button
                 class="popover__chip-btn"
@@ -508,6 +509,7 @@ onBeforeUnmount(() => {
 
 .popover__slot--active {
   background: var(--color-bg-canvas);
+  box-shadow: inset 2px 0 0 var(--color-primary);
 }
 
 .popover__slot--meta {
@@ -533,18 +535,12 @@ onBeforeUnmount(() => {
   font-weight: var(--weight-medium);
 }
 
-.popover__pip {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  border: 1.5px solid var(--color-text-muted);
-  background: transparent;
-  flex-shrink: 0;
-}
-
-.popover__pip--active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+.popover__active-tag {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .popover__note {
