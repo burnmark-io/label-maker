@@ -59,6 +59,21 @@
       <div v-if="optionsOpen" class="actions__options" role="dialog">
         <DestinationRow @open-sheet-picker="emit('open-sheet')" />
         <SourceRow />
+        <label
+          v-if="showPrinterPicker"
+          class="actions__field"
+        >
+          {{ t('actions.printer') }}
+          <select v-model="activeSlotKey" class="actions__input">
+            <option
+              v-for="opt in printerPickerOptions"
+              :key="opt.key"
+              :value="opt.key"
+            >
+              {{ opt.label }}
+            </option>
+          </select>
+        </label>
         <label class="actions__field">
           {{ t('actions.copies') }}
           <input
@@ -234,6 +249,56 @@ const saveRootRef = ref<HTMLElement | null>(null);
  * speculative print with the existing media is better UX than dead-
  * locking on "waiting for status".
  */
+/**
+ * Printer-picker dropdown. Only mounted when more than one slot is
+ * available across all connections AND the user is targeting thermal —
+ * single-printer parity (plan §0.5) and irrelevant when going to
+ * sheet output. Offline slots are not currently surfaced (they would
+ * appear when ghost cards land — out of scope here); the picker lists
+ * just live slots for now.
+ */
+const showPrinterPicker = computed(
+  () => config.effectiveDestination === 'thermal' && printer.totalSlotCount() > 1,
+);
+
+interface PrinterPickerOption {
+  key: string;
+  connectionId: string;
+  role: string;
+  label: string;
+}
+
+const printerPickerOptions = computed<PrinterPickerOption[]>(() => {
+  const out: PrinterPickerOption[] = [];
+  for (const conn of printer.connections.values()) {
+    for (const slot of conn.slots.values()) {
+      const baseLabel = conn.nickname ?? conn.model;
+      const label = slot.role === 'primary' ? baseLabel : `${baseLabel} — ${slot.role}`;
+      out.push({
+        key: `${conn.id}:${slot.role}`,
+        connectionId: conn.id,
+        role: slot.role,
+        label,
+      });
+    }
+  }
+  return out;
+});
+
+const activeSlotKey = computed<string>({
+  get() {
+    const a = printer.activeSlot;
+    return a ? `${a.connectionId}:${a.role}` : '';
+  },
+  set(value: string) {
+    const sep = value.indexOf(':');
+    if (sep < 0) return;
+    const connectionId = value.slice(0, sep);
+    const role = value.slice(sep + 1);
+    printer.setActiveSlot({ connectionId, role });
+  },
+});
+
 const blockedByError = computed(() => {
   // Thermal status guard only applies when output is going to thermal.
   if (config.effectiveDestination !== 'thermal') return false;
