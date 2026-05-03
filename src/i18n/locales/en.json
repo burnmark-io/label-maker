@@ -113,6 +113,10 @@
     "connect": {
       "cta": "Connect a printer"
     },
+    "row": {
+      "expand": "Expand",
+      "collapse": "Collapse"
+    },
     "previewFootnote": {
       "disconnected": "Connect a printer for device-accurate preview",
       "noPreviewSupport": "Preview not available for {family}; showing approximate render"
@@ -191,6 +195,56 @@
       "label": ".label",
       "rangeOption": "Range {from}–{to}",
       "errorsToast": "Exported {ok} of {total}; {failed} row(s) failed"
+    }
+  },
+  "support": {
+    "chip": {
+      "partial": "Partial support",
+      "broken": "Known issues",
+      "untested": "Untested"
+    },
+    "cta": {
+      "untested": "Help us verify this device →",
+      "partial": "Known limitations — share yours →",
+      "broken": "Known issues — report yours →"
+    },
+    "deviceInfo": "Device info",
+    "sheet": {
+      "title": "Device support",
+      "close": "Close",
+      "statusHeading": "Support status",
+      "statusVerified": "Verified",
+      "statusPartial": "Partial support",
+      "statusBroken": "Known issues",
+      "statusUntested": "Untested",
+      "lastVerified": "Last verified: {date}",
+      "packageVersion": "Verified against {package}",
+      "transportsHeading": "Per transport",
+      "enginesHeading": "Per engine",
+      "quirksHeading": "Quirks & notes",
+      "noQuirks": "No editorial notes for this device.",
+      "reportsHeading": "Accepted reports",
+      "noReports": "No accepted reports yet.",
+      "reportLine": "{result} on {os} — {reporter}, {date}",
+      "reportLineNoOs": "{result} — {reporter}, {date}",
+      "reportSelfVerified": "(self-verified)",
+      "fileReport": "File a report"
+    },
+    "form": {
+      "title": "File a verification report",
+      "intro": "We'll open a pre-filled GitHub issue. You review and submit — we never post on your behalf.",
+      "resultLabel": "What happened?",
+      "resultVerified": "Printed cleanly",
+      "resultPartial": "Printed with issues",
+      "resultBroken": "Failed to print",
+      "transportLabel": "Transport",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "What went well or wrong? Any setup steps that mattered?",
+      "diagnosticToggle": "Include a diagnostic snapshot",
+      "diagnosticHint": "Adds engine details, status flags, and detected media to the report. No serial numbers or IPs.",
+      "diagnosticPreview": "Preview",
+      "openIssue": "Open issue on GitHub",
+      "cancel": "Cancel"
     }
   },
   "toolbar": {

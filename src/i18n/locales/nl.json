@@ -113,6 +113,10 @@
     "connect": {
       "cta": "Printer verbinden"
     },
+    "row": {
+      "expand": "Uitvouwen",
+      "collapse": "Invouwen"
+    },
     "previewFootnote": {
       "disconnected": "Verbind een printer voor een apparaat-nauwkeurig voorbeeld",
       "noPreviewSupport": "Voorbeeld niet beschikbaar voor {family}; benadering getoond"
@@ -191,6 +195,56 @@
       "rangeOption": "Bereik {from}–{to}",
       "errorsToast": "{ok} van {total} geëxporteerd; {failed} rij(en) mislukt",
       "label": ".label"
+    }
+  },
+  "support": {
+    "chip": {
+      "partial": "Gedeeltelijk ondersteund",
+      "broken": "Bekende problemen",
+      "untested": "Niet getest"
+    },
+    "cta": {
+      "untested": "Help dit apparaat verifiëren →",
+      "partial": "Bekende beperkingen — deel jouw ervaring →",
+      "broken": "Bekende problemen — meld jouw ervaring →"
+    },
+    "deviceInfo": "Apparaatinfo",
+    "sheet": {
+      "title": "Apparaatondersteuning",
+      "close": "Sluiten",
+      "statusHeading": "Ondersteuningsstatus",
+      "statusVerified": "Geverifieerd",
+      "statusPartial": "Gedeeltelijk ondersteund",
+      "statusBroken": "Bekende problemen",
+      "statusUntested": "Niet getest",
+      "lastVerified": "Laatst geverifieerd: {date}",
+      "packageVersion": "Geverifieerd tegen {package}",
+      "transportsHeading": "Per transport",
+      "enginesHeading": "Per engine",
+      "quirksHeading": "Eigenaardigheden & opmerkingen",
+      "noQuirks": "Geen redactionele opmerkingen voor dit apparaat.",
+      "reportsHeading": "Geaccepteerde meldingen",
+      "noReports": "Nog geen geaccepteerde meldingen.",
+      "reportLine": "{result} op {os} — {reporter}, {date}",
+      "reportLineNoOs": "{result} — {reporter}, {date}",
+      "reportSelfVerified": "(zelf geverifieerd)",
+      "fileReport": "Melding indienen"
+    },
+    "form": {
+      "title": "Verificatiemelding indienen",
+      "intro": "We openen een voor-ingevuld GitHub-issue. Jij controleert en verstuurt — wij plaatsen niets namens jou.",
+      "resultLabel": "Wat gebeurde er?",
+      "resultVerified": "Schoon geprint",
+      "resultPartial": "Geprint met problemen",
+      "resultBroken": "Printen mislukt",
+      "transportLabel": "Transport",
+      "notesLabel": "Opmerkingen (optioneel)",
+      "notesPlaceholder": "Wat ging goed of fout? Belangrijke setup-stappen?",
+      "diagnosticToggle": "Diagnostische snapshot meesturen",
+      "diagnosticHint": "Voegt engine-details, statusvlaggen en gedetecteerde media toe. Geen serienummers of IP's.",
+      "diagnosticPreview": "Voorbeeld",
+      "openIssue": "Issue openen op GitHub",
+      "cancel": "Annuleren"
     }
   },
   "toolbar": {

@@ -93,9 +93,12 @@
         <p class="paper-card__note paper-card__note--checked">{{ lastCheckedLabel }}</p>
       </section>
 
-      <section class="paper-card__section paper-card__section--meta">
+      <section class="paper-card__section paper-card__section--meta paper-card__meta-row">
         <button class="paper-card__btn" type="button" @click="emit('disconnect', connectionId!)">
           {{ t('printer.disconnect') }}
+        </button>
+        <button class="paper-card__btn" type="button" @click="emit('open-support')">
+          {{ t('support.deviceInfo') }}
         </button>
       </section>
     </template>
@@ -168,6 +171,7 @@ const emit = defineEmits<{
   (e: 'pick-custom'): void;
   (e: 'change-sheet'): void;
   (e: 'disconnect', id: string): void;
+  (e: 'open-support'): void;
 }>();
 
 const { t } = useI18n();
@@ -292,6 +296,12 @@ const labelsPerPage = computed(() => printConfig.labelsPerPage);
 
 .paper-card__section--meta {
   margin-top: var(--space-1);
+}
+
+.paper-card__meta-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .paper-card__heading {

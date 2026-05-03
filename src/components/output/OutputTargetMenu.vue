@@ -37,18 +37,22 @@
               :slot="entry.slot"
               :connection="entry.connection"
               :active="isThermalRowActive(entry)"
-              :expanded="isThermalRowActive(entry)"
+              :expanded="isExpanded(entry.key)"
+              :collapsible="true"
               @select="onSelectThermal(entry)"
+              @toggle-expand="toggleExpanded(entry.key)"
+              @open-support="onOpenSupport(entry.connectionId, entry.role)"
             >
               <template #card>
                 <OutputTargetPaperCard
-                  v-if="isThermalRowActive(entry)"
+                  v-if="isExpanded(entry.key)"
                   kind="thermal"
                   :connection-id="entry.connectionId"
                   :role="entry.role"
-                  :last-checked-label="lastCheckedLabel"
+                  :last-checked-label="isThermalRowActive(entry) ? lastCheckedLabel : null"
                   @pick-media="close"
                   @disconnect="onDisconnect"
+                  @open-support="onOpenSupport(entry.connectionId, entry.role)"
                 />
               </template>
             </OutputTargetRow>
@@ -63,19 +67,34 @@
             class="output-menu__sheet-row"
             :class="{ 'output-menu__sheet-row--active': activeTarget.kind === 'sheet' }"
           >
-            <button
-              type="button"
-              class="output-menu__sheet-btn"
-              :aria-pressed="activeTarget.kind === 'sheet'"
-              :aria-expanded="activeTarget.kind === 'sheet'"
-              @click="onSelectSheet"
-            >
-              <span class="output-menu__icon" aria-hidden="true">📄</span>
-              <span class="output-menu__stack">
-                <span class="output-menu__sheet-label">{{ t('output.sheet.row.title') }}</span>
-                <span class="output-menu__sheet-sub">{{ sheetSubLabel }}</span>
-              </span>
-            </button>
+            <div class="output-menu__sheet-head">
+              <button
+                type="button"
+                class="output-menu__sheet-btn"
+                :aria-pressed="activeTarget.kind === 'sheet'"
+                @click="onSelectSheet"
+              >
+                <span class="output-menu__icon" aria-hidden="true">📄</span>
+                <span class="output-menu__stack">
+                  <span class="output-menu__sheet-label">{{ t('output.sheet.row.title') }}</span>
+                  <span class="output-menu__sheet-sub">{{ sheetSubLabel }}</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                class="output-menu__sheet-toggle"
+                :aria-expanded="showSheetCard"
+                :aria-label="showSheetCard ? t('output.row.collapse') : t('output.row.expand')"
+                @click="toggleExpanded(SHEET_KEY)"
+              >
+                <span
+                  class="output-menu__chevron"
+                  :class="{ 'output-menu__chevron--open': showSheetCard }"
+                  aria-hidden="true"
+                  >▾</span
+                >
+              </button>
+            </div>
             <OutputTargetPaperCard
               v-if="showSheetCard"
               kind="sheet"
@@ -135,6 +154,13 @@
       @close="sheetPickerOpen = false"
       @select="onSheetPicked"
     />
+
+    <DeviceSupportSheet
+      :open="supportOpen"
+      :connection-id="supportConnectionId"
+      :role="supportRole"
+      @close="onCloseSupport"
+    />
   </div>
 </template>
 
@@ -154,6 +180,7 @@ import { localisedErrorMessage } from '@/composables/usePrinterErrors';
 import OutputTargetRow from './OutputTargetRow.vue';
 import OutputTargetPaperCard from './OutputTargetPaperCard.vue';
 import SheetPickerDialog from '@/components/media/SheetPickerDialog.vue';
+import DeviceSupportSheet from '@/components/support/DeviceSupportSheet.vue';
 
 const { t } = useI18n();
 const media = useMediaStore();
@@ -171,7 +198,27 @@ const {
 const open = ref(false);
 const whyOpen = ref(false);
 const sheetPickerOpen = ref(false);
+const supportOpen = ref(false);
+const supportConnectionId = ref<string | null>(null);
+const supportRole = ref<string | null>(null);
 const rootRef = ref<HTMLElement | null>(null);
+
+/**
+ * Accordion: at most one paper card visible at a time. Independent
+ * of "active" — opening a row's panel is a pure UI affordance and
+ * does not change the print target. (Plan Local-4 §1.2: configuring
+ * printer B's media doesn't promote it to active.) Keys are slot
+ * keys (`${connectionId}:${role}`) for thermal rows; `SHEET_KEY` for
+ * the sheet row. `null` = nothing open (default).
+ */
+const SHEET_KEY = '__sheet';
+const openPanel = ref<string | null>(null);
+function isExpanded(key: string): boolean {
+  return openPanel.value === key;
+}
+function toggleExpanded(key: string): void {
+  openPanel.value = openPanel.value === key ? null : key;
+}
 
 interface ThermalEntry {
   key: string;
@@ -296,20 +343,12 @@ const resolvedSheet = computed<SheetTemplate | null>(() => {
 });
 
 /**
- * Show the PDF row's expanded card when:
- *  - it's the active target (source ∈ {sheet, custom}), OR
- *  - the user has nothing remembered yet (no sheet ever picked AND
- *    no custom dims) — auto-expand so first-time users see the
- *    sheet/custom choice without a dialog detour.
- *
- * When a sheet has been picked previously but the user is on a
- * thermal target, the card stays collapsed: tapping the row
- * re-applies the remembered sheet (one-click switch back).
+ * Paper card visibility is purely driven by `expandedKeys`. Rows
+ * default collapsed; the chevron is the sole authority. Activation
+ * does not auto-expand — picking a print target and configuring its
+ * paper are independent actions.
  */
-const showSheetCard = computed(() => {
-  if (activeTarget.value.kind === 'sheet') return true;
-  return !resolvedSheet.value;
-});
+const showSheetCard = computed(() => isExpanded(SHEET_KEY));
 
 const sheetSubLabel = computed(() => {
   if (media.source === 'custom') {
@@ -415,11 +454,17 @@ function close(): void {
 
 function onDocClick(event: MouseEvent): void {
   if (!open.value) return;
+  // Defer to nested overlays — sheet picker dialog and support sheet
+  // teleport to body, so a click inside them looks like "outside the
+  // popover". Don't close while either is open.
+  if (sheetPickerOpen.value || supportOpen.value) return;
   if (rootRef.value && !rootRef.value.contains(event.target as Node)) close();
 }
 
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape' && open.value) {
+    // Nested overlays own ESC while they are open.
+    if (sheetPickerOpen.value || supportOpen.value) return;
     close();
   }
 }
@@ -508,6 +553,16 @@ async function onConnectSerial(): Promise<void> {
   const { openBrotherQLViaSerial } = await import('@/lib/printer/drivers');
   await runConnect(openBrotherQLViaSerial, additive);
   if (!additive) close();
+}
+
+function onOpenSupport(connectionId: string, role: string): void {
+  supportConnectionId.value = connectionId;
+  supportRole.value = role;
+  supportOpen.value = true;
+}
+
+function onCloseSupport(): void {
+  supportOpen.value = false;
 }
 </script>
 
@@ -641,6 +696,13 @@ async function onConnectSerial(): Promise<void> {
   background: var(--color-bg-canvas);
 }
 
+.output-menu__sheet-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+}
+
 .output-menu__sheet-btn {
   appearance: none;
   background: none;
@@ -649,11 +711,43 @@ async function onConnectSerial(): Promise<void> {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   font-size: var(--text-sm);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
+}
+
+.output-menu__sheet-toggle {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: var(--space-1);
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background var(--duration-fast) var(--easing);
+}
+
+.output-menu__sheet-toggle:hover {
+  background: var(--color-bg-panel);
+  color: var(--color-text);
+}
+
+.output-menu__chevron {
+  display: inline-block;
+  font-size: var(--text-xs);
+  transition: transform var(--duration-fast) var(--easing);
+}
+
+.output-menu__chevron--open {
+  transform: rotate(180deg);
 }
 
 .output-menu__stack {
