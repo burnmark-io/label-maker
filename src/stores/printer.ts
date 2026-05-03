@@ -13,7 +13,7 @@ import type {
 
 import {
   PER_MODEL_STATUS_POLLING_EXCLUSIONS,
-  getMediaForFamily,
+  getMediaForEngine,
   modelKey,
   type PrinterFamily,
 } from '@/lib/printer/registry';
@@ -396,16 +396,17 @@ export const usePrinterStore = defineStore('printer', () => {
     const slots = buildSlots(device);
 
     // Restore per-slot persisted media (plan §6.2). Look up each
-    // slot's persisted media id under `${fingerprint}:${role}` and
-    // resolve via the family's media registry. Done before scratch
-    // inheritance so that scratch (in-session intent) overrides
+    // slot's persisted media id under `${fingerprint}:${role}`, scoped
+    // to that engine's compatible-media list so a stale persisted id
+    // can't resurrect e.g. a D1 tape onto an lw-450 slot. Done before
+    // scratch inheritance so scratch (in-session intent) overrides
     // persistence (prior-session intent) when both are present.
     const persistedMediaIds = readSlotMediaIds();
-    const familyMedia = getMediaForFamily(family);
     for (const slot of slots.values()) {
       const persistedId = persistedMediaIds[slotKey(fingerprint, slot.role)];
       if (persistedId) {
-        const media = familyMedia.find(m => String(m.id) === persistedId);
+        const compatible = getMediaForEngine(family, slot.engine);
+        const media = compatible.find(m => String(m.id) === persistedId);
         if (media) slot.selectedMedia = media;
       }
     }

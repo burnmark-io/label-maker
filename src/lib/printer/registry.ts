@@ -143,3 +143,27 @@ export function getMediaForFamily(family: PrinterFamily): MediaDescriptor[] {
       return Object.values(LABELMANAGER_MEDIA);
   }
 }
+
+/**
+ * Media compatible with a specific engine — filters the family list
+ * down to entries whose `targetModels` overlap the engine's
+ * `mediaCompatibility`. An engine without `mediaCompatibility` accepts
+ * the whole family; a media without `targetModels` fits every device
+ * in the family. Both rules are documented on the contracts.
+ *
+ * Example: an LW 450's `lw-450` engine has `mediaCompatibility: ['lw']`,
+ * which excludes the family's D1 tape entries (those target `['d1']`)
+ * — so the LW 450's picker doesn't list D1 cartridges.
+ */
+export function getMediaForEngine(
+  family: PrinterFamily,
+  engine: { mediaCompatibility?: readonly string[] },
+): MediaDescriptor[] {
+  const all = getMediaForFamily(family);
+  if (!engine.mediaCompatibility || engine.mediaCompatibility.length === 0) return all;
+  const compat = new Set(engine.mediaCompatibility);
+  return all.filter(m => {
+    if (!m.targetModels || m.targetModels.length === 0) return true;
+    return m.targetModels.some(t => compat.has(t));
+  });
+}

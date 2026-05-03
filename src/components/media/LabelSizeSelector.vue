@@ -135,7 +135,7 @@ import { useMediaStore } from '@/stores/media';
 import { usePrinterStore } from '@/stores/printer';
 import { usePrintConfigStore } from '@/stores/print-config';
 import { COMMON_SIZES, type CommonSize } from '@/lib/media/common-sizes';
-import { getMediaForFamily } from '@/lib/printer/registry';
+import { getMediaForEngine, getMediaForFamily } from '@/lib/printer/registry';
 import { useToast } from '@/composables/useToast';
 import CustomSizeInput from './CustomSizeInput.vue';
 import SheetPickerDialog from './SheetPickerDialog.vue';
@@ -189,6 +189,17 @@ const sheetCurrentLabel = computed(() => {
  */
 const printerMedia = computed<MediaDescriptor[]>(() => {
   if (!printer.family) return [];
+  // Scope to the active slot's engine when available so a single-engine
+  // printer (e.g. LabelWriter 450) doesn't see media meant for other
+  // engines in the family (e.g. D1 tapes for the LabelWriter Duo's
+  // tape head). Falls back to the family list when the slot can't
+  // resolve — keeps today's behaviour for any pre-active-slot path.
+  const a = printer.activeSlot;
+  if (a) {
+    const conn = printer.connections.get(a.connectionId);
+    const slot = conn?.slots.get(a.role);
+    if (slot) return getMediaForEngine(printer.family, slot.engine);
+  }
   return getMediaForFamily(printer.family);
 });
 
