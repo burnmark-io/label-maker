@@ -11,8 +11,18 @@ const dataState = reactive<{ rows: Record<string, string>[]; currentIndex: numbe
   rows: [],
   currentIndex: 0,
 });
-const designerState = reactive<{ document: { id: string } | null }>({
-  document: { id: 'doc-1' },
+const designerState = reactive<{
+  document: {
+    id: string;
+    canvas: { widthDots: number; heightDots: number; dpi: number };
+    metadata: Record<string, unknown>;
+  } | null;
+}>({
+  document: {
+    id: 'doc-1',
+    canvas: { widthDots: 696, heightDots: 472, dpi: 300 },
+    metadata: {},
+  },
 });
 
 vi.mock('@/stores/printer', () => ({
@@ -32,7 +42,11 @@ beforeEach(() => {
   setActivePinia(createPinia());
   printerState.isConnected = false;
   dataState.rows = [];
-  designerState.document = { id: 'doc-1' };
+  designerState.document = {
+    id: 'doc-1',
+    canvas: { widthDots: 696, heightDots: 472, dpi: 300 },
+    metadata: {},
+  };
   window.localStorage.clear();
 });
 
@@ -80,18 +94,16 @@ describe('DestinationRow', () => {
     expect(config.destination).toBe('sheet');
   });
 
-  it('shows the first-run CTA when neither destination is possible', async () => {
+  it('shows the change link with the synth label when no printer + no sheet picked', async () => {
+    // No printer, no real sheet → print-config falls back to the
+    // 1-up custom synth so Print still works. DestinationRow surfaces
+    // it as a normal "Sheet: ... — change" link.
     const wrapper = mountRow();
     await nextTick();
-    expect(wrapper.find('.destination-row__cta').exists()).toBe(true);
-    expect(wrapper.find('.destination-row__cta').text()).toContain('Set up');
-  });
-
-  it('CTA emits open-sheet-picker on click', async () => {
-    const wrapper = mountRow();
-    await nextTick();
-    await wrapper.find('.destination-row__cta').trigger('click');
-    expect(wrapper.emitted('open-sheet-picker')).toHaveLength(1);
+    expect(wrapper.find('.destination-row__cta').exists()).toBe(false);
+    const change = wrapper.find('.destination-row__change');
+    expect(change.exists()).toBe(true);
+    expect(change.text()).toContain('Custom');
   });
 
   it('shows the change link when only sheet is possible', async () => {

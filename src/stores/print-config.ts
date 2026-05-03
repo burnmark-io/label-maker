@@ -67,16 +67,16 @@ export const usePrintConfigStore = defineStore('print-config', () => {
   const globalSheetCode = ref<string | null>(loadSheetTemplateCode());
 
   const sheetTemplate = computed<SheetTemplate | null>(() => {
-    // Custom canvas → synthesize a 1-up sheet at the canvas dimensions.
-    // This is the third "way to set paper size" the user picks from the
-    // PDF row's expanded card: PDF output, no template, single label per
-    // page. With a dataset loaded, `renderSheet` produces N pages
-    // automatically — same plumbing as a real sheet, just 1×1 layout.
-    // Wins over override / canvas-code / global because picking custom
-    // is an explicit "design for these dims, no sheet" intent.
+    // Custom canvas → synthesize a 1-up sheet at the canvas dims. The
+    // user explicitly picked "custom" from the PDF row's expanded card:
+    // PDF output, no template, single label per page. With a dataset
+    // loaded, `renderSheet` produces N pages automatically — same
+    // plumbing as a real sheet, just 1×1 layout. Wins over
+    // override/canvas/global because explicit user intent.
     if (media.source === 'custom') {
       return synthesizeCustomSheet(media.widthMm, media.heightMm, media.continuousLengthMm);
     }
+    // Explicit user picks: per-doc override, then canvas-baked sheet.
     const docId = designer.document?.id ?? null;
     if (docId) {
       const override = overrideByDoc.value.get(docId);
@@ -92,6 +92,16 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     }
     if (globalSheetCode.value) {
       return findSheet(globalSheetCode.value) ?? null;
+    }
+    // Fallback synth: only when there's no printer connected. Lets a
+    // setup-less user (first-visit demo, returning user with no
+    // printer paired yet) hit Print and get a PDF without having to
+    // pick a sheet first — rails not walls. We deliberately don't
+    // synth when a printer IS connected: that user has thermal as a
+    // viable target, and surfacing a "Sheet: Custom · 62×40mm" toggle
+    // they didn't ask for would be noise.
+    if (!printer.isConnected) {
+      return synthesizeCustomSheet(media.widthMm, media.heightMm, media.continuousLengthMm);
     }
     return null;
   });

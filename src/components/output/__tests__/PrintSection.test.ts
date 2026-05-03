@@ -34,7 +34,11 @@ vi.mock('@/stores/printer', () => ({
 
 vi.mock('@/stores/designer', () => ({
   useDesignerStore: () => ({
-    document: { id: 'doc-1' },
+    document: {
+      id: 'doc-1',
+      canvas: { widthDots: 696, heightDots: 472, dpi: 300 },
+      metadata: {},
+    },
     renderToRGBA: vi.fn(async () => ({
       width: 100,
       height: 50,
@@ -69,10 +73,13 @@ beforeEach(() => {
 });
 
 describe('PrintSection', () => {
-  it('hides entirely when no printer is connected', () => {
+  it('still renders without a printer (PDF synth fallback keeps Print usable)', () => {
+    // Rails not walls: a setup-less user can still hit Print and get
+    // a PDF via the print-config 1-up sheet synth. PrintSection is
+    // visible because sheetPossible is true even without a printer.
     isConnected.value = false;
     const wrapper = mountSection();
-    expect(wrapper.find('.output-print').exists()).toBe(false);
+    expect(wrapper.find('.output-print').exists()).toBe(true);
   });
 
   it('renders when a printer is connected', () => {
