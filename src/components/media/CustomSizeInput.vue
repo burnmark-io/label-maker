@@ -3,28 +3,32 @@
     <div class="custom-size__row">
       <label class="custom-size__field">
         <span class="custom-size__label">{{ t('media.custom.width') }}</span>
-        <input
-          v-model.number="width"
-          type="number"
-          min="1"
-          step="0.1"
-          class="custom-size__input"
-          :aria-label="t('media.custom.width')"
-        />
-        <span class="custom-size__unit">mm</span>
+        <span class="custom-size__inputrow">
+          <input
+            v-model.number="width"
+            type="number"
+            min="1"
+            step="0.1"
+            class="custom-size__input"
+            :aria-label="t('media.custom.width')"
+          />
+          <span class="custom-size__unit">mm</span>
+        </span>
       </label>
       <label class="custom-size__field">
         <span class="custom-size__label">{{ t('media.custom.height') }}</span>
-        <input
-          v-model="heightRaw"
-          type="number"
-          min="0"
-          step="0.1"
-          class="custom-size__input"
-          :placeholder="t('media.custom.heightPlaceholder')"
-          :aria-label="t('media.custom.height')"
-        />
-        <span class="custom-size__unit">mm</span>
+        <span class="custom-size__inputrow">
+          <input
+            v-model="heightRaw"
+            type="number"
+            min="0"
+            step="0.1"
+            class="custom-size__input"
+            :placeholder="t('media.custom.heightPlaceholder')"
+            :aria-label="t('media.custom.height')"
+          />
+          <span class="custom-size__unit">mm</span>
+        </span>
       </label>
     </div>
     <p class="custom-size__hint">{{ t('media.custom.hint') }}</p>
@@ -96,20 +100,28 @@ function round1(n: number): number {
 
 .custom-size__field {
   display: flex;
-  align-items: center;
-  gap: var(--space-1);
+  flex-direction: column;
+  gap: 4px;
   flex: 1;
+  min-width: 0;
 }
 
 .custom-size__label {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
-  min-width: 38px;
+}
+
+.custom-size__inputrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .custom-size__input {
   flex: 1;
   min-width: 0;
+  width: 100%;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);

@@ -315,9 +315,7 @@ export const usePrinterStore = defineStore('printer', () => {
    * to show "{model} — plug in to reconnect" when no live connection
    * exists. Null when the list is empty.
    */
-  const lastPaired = computed<LastConnectionRecord | null>(
-    () => lastConnections.value[0] ?? null,
-  );
+  const lastPaired = computed<LastConnectionRecord | null>(() => lastConnections.value[0] ?? null);
   const lastPreview = shallowRef<PreviewResult | null>(null);
 
   /**
@@ -490,9 +488,8 @@ export const usePrinterStore = defineStore('printer', () => {
       const next = connections.values().next().value as Connection | undefined;
       if (next) {
         const firstRole = next.slots.keys().next().value as SlotRole | undefined;
-        activeSlot.value = firstRole !== undefined
-          ? { connectionId: next.id, role: firstRole }
-          : null;
+        activeSlot.value =
+          firstRole !== undefined ? { connectionId: next.id, role: firstRole } : null;
       } else {
         activeSlot.value = null;
         // Last connection just left — clear any preview that was tied
@@ -512,10 +509,7 @@ export const usePrinterStore = defineStore('printer', () => {
     activeSlot.value = { connectionId: slot.connectionId, role: slot.role };
   }
 
-  function setSelectedMediaForSlot(
-    slot: ActiveSlotRef,
-    media: MediaDescriptor | null,
-  ): void {
+  function setSelectedMediaForSlot(slot: ActiveSlotRef, media: MediaDescriptor | null): void {
     const conn = connections.get(slot.connectionId);
     const s = conn?.slots.get(slot.role);
     if (!conn || !s) return;
@@ -706,10 +700,7 @@ export const usePrinterStore = defineStore('printer', () => {
     }
     try {
       const media = effectiveMedia.value;
-      const result = await conn.adapter.createPreview(
-        image,
-        media ? { media } : undefined,
-      );
+      const result = await conn.adapter.createPreview(image, media ? { media } : undefined);
       lastPreview.value = result;
     } catch (err) {
       console.warn('[burnmark] createPreview failed', err);

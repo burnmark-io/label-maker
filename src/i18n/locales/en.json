@@ -62,13 +62,11 @@
     "helpLink": "Need help connecting?",
     "disconnect": "Disconnect",
     "pairAnother": "Pair another printer",
-    "popoverTitle": "Printer connection",
     "media": "Media",
     "mediaPick": "Pick a label size…",
     "autoDetected": "auto-detected",
     "detectedMedia": "Detected: {name}",
     "noMediaDetected": "No media detected.",
-    "changeSizeHint": "Change the label size from the top-bar size selector.",
     "lastCheckedSeconds": "Last checked: {seconds}s ago",
     "statusUnavailable": "Status updates unavailable for this printer.",
     "errors": {
@@ -91,6 +89,30 @@
     "assumedBanner": "Preview based on assumed media ({media}). Connect or pick a media for an accurate result."
   },
   "output": {
+    "menu": {
+      "title": "Output target"
+    },
+    "targets": {
+      "heading": "Output targets"
+    },
+    "pickTarget": "Pick output…",
+    "sheet": {
+      "heading": "Sheet template",
+      "perPage": "{count} labels per page",
+      "row": {
+        "title": "PDF sticker sheet",
+        "empty": "Pick a sheet template or custom size…",
+        "pickTemplate": "Pick a sheet template…",
+        "changeTemplate": "Change template…"
+      }
+    },
+    "custom": {
+      "heading": "Custom size",
+      "triggerLabel": "Custom · {dims}"
+    },
+    "connect": {
+      "cta": "Connect a printer"
+    },
     "previewFootnote": {
       "disconnected": "Connect a printer for device-accurate preview",
       "noPreviewSupport": "Preview not available for {family}; showing approximate render"
@@ -468,12 +490,14 @@
     "outOfBoundsResizeToast": "{count} object is now outside the label edge. | {count} objects are now outside the label edge."
   },
   "media": {
-    "selector": {
-      "label": "Label size"
-    },
+    "notSet": "no media",
     "fromPrinter": "From printer",
     "fromPrinterModel": "From {model}",
     "detected": "detected",
+    "more": {
+      "show": "More sizes ({count})",
+      "hide": "Hide other sizes"
+    },
     "commonSizes": "Common sizes",
     "fromSheet": "From sticker sheet",
     "format": {

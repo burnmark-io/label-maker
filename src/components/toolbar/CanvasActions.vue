@@ -59,17 +59,10 @@
       <div v-if="optionsOpen" class="actions__options" role="dialog">
         <DestinationRow @open-sheet-picker="emit('open-sheet')" />
         <SourceRow />
-        <label
-          v-if="showPrinterPicker"
-          class="actions__field"
-        >
+        <label v-if="showPrinterPicker" class="actions__field">
           {{ t('actions.printer') }}
           <select v-model="activeSlotKey" class="actions__input">
-            <option
-              v-for="opt in printerPickerOptions"
-              :key="opt.key"
-              :value="opt.key"
-            >
+            <option v-for="opt in printerPickerOptions" :key="opt.key" :value="opt.key">
               {{ opt.label }}
             </option>
           </select>

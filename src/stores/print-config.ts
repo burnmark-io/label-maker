@@ -67,6 +67,16 @@ export const usePrintConfigStore = defineStore('print-config', () => {
   const globalSheetCode = ref<string | null>(loadSheetTemplateCode());
 
   const sheetTemplate = computed<SheetTemplate | null>(() => {
+    // Custom canvas → synthesize a 1-up sheet at the canvas dimensions.
+    // This is the third "way to set paper size" the user picks from the
+    // PDF row's expanded card: PDF output, no template, single label per
+    // page. With a dataset loaded, `renderSheet` produces N pages
+    // automatically — same plumbing as a real sheet, just 1×1 layout.
+    // Wins over override / canvas-code / global because picking custom
+    // is an explicit "design for these dims, no sheet" intent.
+    if (media.source === 'custom') {
+      return synthesizeCustomSheet(media.widthMm, media.heightMm, media.continuousLengthMm);
+    }
     const docId = designer.document?.id ?? null;
     if (docId) {
       const override = overrideByDoc.value.get(docId);
@@ -298,6 +308,43 @@ export const usePrintConfigStore = defineStore('print-config', () => {
     pageCount,
   };
 });
+
+/**
+ * Build a one-label-per-page SheetTemplate at the given dims. Used as
+ * the canvas's effective sheet when `media.source === 'custom'`.
+ *
+ * Continuous canvases (no fixed height) take the canvas's
+ * `continuousLengthMm` as the page height — same length the user sees
+ * on the canvas, so the printed PDF page matches.
+ *
+ * The synthesized template is computed on every read; do not persist
+ * it. `code: '__custom__'` is a sentinel — `findSheet` will not
+ * resolve it, so any code path that round-trips through localStorage
+ * fails closed.
+ */
+function synthesizeCustomSheet(
+  widthMm: number,
+  heightMm: number | null,
+  continuousLengthMm: number,
+): SheetTemplate {
+  const w = Math.max(1, widthMm);
+  const h = heightMm !== null && heightMm > 0 ? heightMm : continuousLengthMm;
+  const round1 = (n: number): number => Math.round(n * 10) / 10;
+  return {
+    code: '__custom__',
+    name: 'Custom',
+    brand: 'Custom',
+    part: `${round1(w)}×${round1(h)}mm`,
+    paperSize: 'Custom',
+    paperWidthMm: w,
+    paperHeightMm: h,
+    labelWidthMm: w,
+    labelHeightMm: h,
+    labelShape: 'rectangle',
+    layouts: [{ columns: 1, rows: 1, originXMm: 0, originYMm: 0, pitchXMm: 0, pitchYMm: 0 }],
+    marginMm: 0,
+  };
+}
 
 function loadSheetTemplateCode(): string | null {
   if (typeof window === 'undefined') return null;

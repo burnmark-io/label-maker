@@ -62,13 +62,11 @@
     "helpLink": "Hulp nodig met verbinden?",
     "disconnect": "Verbinding verbreken",
     "pairAnother": "Nog een printer koppelen",
-    "popoverTitle": "Printerverbinding",
     "media": "Media",
     "mediaPick": "Kies een labelmaat…",
     "autoDetected": "automatisch gedetecteerd",
     "detectedMedia": "Gedetecteerd: {name}",
     "noMediaDetected": "Geen media gedetecteerd.",
-    "changeSizeHint": "Wijzig de labelmaat via de maatkiezer in de bovenbalk.",
     "lastCheckedSeconds": "Laatst gecontroleerd: {seconds}s geleden",
     "statusUnavailable": "Statusupdates niet beschikbaar voor deze printer.",
     "errors": {
@@ -91,6 +89,30 @@
     "assumedBanner": "Voorbeeld op basis van aangenomen media ({media}). Verbind of kies een media voor een nauwkeurig resultaat."
   },
   "output": {
+    "menu": {
+      "title": "Uitvoerdoel"
+    },
+    "targets": {
+      "heading": "Uitvoerdoelen"
+    },
+    "pickTarget": "Kies uitvoer…",
+    "sheet": {
+      "heading": "Vel-sjabloon",
+      "perPage": "{count} labels per pagina",
+      "row": {
+        "title": "PDF stickervel",
+        "empty": "Kies een vel-sjabloon of aangepaste maat…",
+        "pickTemplate": "Kies een vel-sjabloon…",
+        "changeTemplate": "Sjabloon wijzigen…"
+      }
+    },
+    "custom": {
+      "heading": "Aangepaste maat",
+      "triggerLabel": "Aangepast · {dims}"
+    },
+    "connect": {
+      "cta": "Printer verbinden"
+    },
     "previewFootnote": {
       "disconnected": "Verbind een printer voor een apparaat-nauwkeurig voorbeeld",
       "noPreviewSupport": "Voorbeeld niet beschikbaar voor {family}; benadering getoond"
@@ -468,12 +490,14 @@
     "outOfBoundsResizeToast": "{count} object valt nu buiten het label. | {count} objecten vallen nu buiten het label."
   },
   "media": {
-    "selector": {
-      "label": "Labelmaat"
-    },
+    "notSet": "geen media",
     "fromPrinter": "Van printer",
     "fromPrinterModel": "Voor {model}",
     "detected": "gedetecteerd",
+    "more": {
+      "show": "Meer maten ({count})",
+      "hide": "Andere maten verbergen"
+    },
     "commonSizes": "Veelvoorkomende maten",
     "fromSheet": "Vanaf stickervel",
     "format": {

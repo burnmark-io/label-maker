@@ -102,7 +102,7 @@ const steps: Step[] = [
     placement: 'left',
   },
   {
-    selector: '[data-tour="printer"]',
+    selector: '[data-tour="output-target"]',
     titleKey: 'tour.step4Title',
     bodyKey: 'tour.step4Body',
     placement: 'bottom',

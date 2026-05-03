@@ -5,11 +5,10 @@
         <span class="topbar__logo" aria-hidden="true">🏷️</span>
         <span class="topbar__name">{{ t('app.name') }}</span>
       </div>
-      <LabelSizeSelector data-tour="label-size" />
     </div>
 
-    <div class="topbar__center" data-tour="printer">
-      <PrinterPopover />
+    <div class="topbar__center" data-tour="output-target">
+      <OutputTargetMenu />
     </div>
 
     <div class="topbar__actions">
@@ -126,8 +125,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import IconButton from '@/components/common/IconButton.vue';
-import PrinterPopover from '@/components/printer/PrinterPopover.vue';
-import LabelSizeSelector from '@/components/media/LabelSizeSelector.vue';
+import OutputTargetMenu from '@/components/output/OutputTargetMenu.vue';
 import { useDesignerStore } from '@/stores/designer';
 import { useUiDialogs } from '@/composables/useUiDialogs';
 
