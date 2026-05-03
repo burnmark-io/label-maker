@@ -94,13 +94,12 @@
                 @click="promote(entry.connectionId, entry.role)"
                 :aria-pressed="isActive(entry.connectionId, entry.role)"
               >
-                <span class="popover__slot-label">{{ entry.label }}</span>
                 <span
-                  v-if="isActive(entry.connectionId, entry.role)"
-                  class="popover__active-tag"
-                >
-                  {{ t('printer.activeSlot') }}
-                </span>
+                  class="popover__slot-dot"
+                  :class="`popover__slot-dot--${entry.dotClass}`"
+                  aria-hidden="true"
+                />
+                <span class="popover__slot-label">{{ entry.label }}</span>
               </button>
               <button
                 class="popover__chip-btn"
@@ -176,11 +175,27 @@ const connectError = ref<string | null>(null);
 const detectedName = computed(() => printer.detectedMedia?.name ?? null);
 const totalSlotCount = computed(() => printer.totalSlotCount());
 
+type DotClass = 'green' | 'yellow' | 'red' | 'gray';
+
 interface FlatSlotEntry {
   key: string;
   connectionId: string;
   role: string;
   label: string;
+  dotClass: DotClass;
+}
+
+/**
+ * Mirror of `PrinterStatus.vue`'s pill logic, scoped to one connection
+ * so each row in the multi-slot dropdown reflects its own state.
+ * Green/ready, yellow/warning, red/error, gray when no status yet.
+ */
+function dotClassFor(conn: { status: { ready: boolean; errors: { code: string }[] } | null }): DotClass {
+  const status = conn.status;
+  if (!status) return 'gray';
+  if (!status.ready) return 'red';
+  if (status.errors.length > 0) return 'yellow';
+  return 'green';
 }
 
 /**
@@ -192,14 +207,19 @@ interface FlatSlotEntry {
 const flatSlotEntries = computed<FlatSlotEntry[]>(() => {
   const out: FlatSlotEntry[] = [];
   for (const conn of printer.connections.values()) {
+    const dotClass = dotClassFor(conn);
     for (const slot of conn.slots.values()) {
-      const baseLabel = conn.nickname ?? `${conn.model} · ${shortFingerprint(conn.fingerprint)}`;
+      // Show nickname when set, else just the model — the fingerprint
+      // last-4 hash is implementation-detail noise for users. Two-of-
+      // same-model disambiguation is the nickname's job (plan §2.6).
+      const baseLabel = conn.nickname ?? conn.model;
       const label = slot.role === 'primary' ? baseLabel : `${baseLabel} — ${slot.role}`;
       out.push({
         key: `${conn.id}:${slot.role}`,
         connectionId: conn.id,
         role: slot.role,
         label,
+        dotClass,
       });
     }
   }
@@ -214,12 +234,6 @@ function isActive(connectionId: string, role: string): boolean {
 
 function promote(connectionId: string, role: string): void {
   printer.setActiveSlot({ connectionId, role });
-}
-
-function shortFingerprint(fp: string): string {
-  // Last 4 chars — enough to disambiguate two-of-the-same-model in
-  // the common case while staying short enough to read at a glance.
-  return fp.slice(-4);
 }
 
 async function removeConnection(id: string): Promise<void> {
@@ -535,12 +549,30 @@ onBeforeUnmount(() => {
   font-weight: var(--weight-medium);
 }
 
-.popover__active-tag {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.popover__slot-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.popover__slot-dot--green {
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.popover__slot-dot--yellow {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.popover__slot-dot--red {
+  background: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+}
+
+.popover__slot-dot--gray {
+  background: var(--color-text-muted);
 }
 
 .popover__note {
