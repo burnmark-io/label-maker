@@ -183,3 +183,74 @@ active slot.
   loss on `reactive(adapter)`). Resolved by `reactive` per-Connection
   + `markRaw` on adapter/device/status, and by adding the scratch
   detected/selectedMedia fallback for pre-adapter setters.
+
+## Step 4 — §4 UI: slot-aware ConnectionsPanel
+
+**Goal:** the printer popover iterates over slots, renders chassis
+chip + role suffix + active-slot pip when total slot count > 1, and
+remains visually identical to today when exactly one slot exists.
+Pair-another is reachable from the connected state.
+
+### Decisions
+
+- **Kept `PrinterPopover.vue` filename** (vs the plan's
+  "ConnectionsPanel.vue" rename). Renaming cascades into ~6 imports
+  and offers no functional benefit. Documented in this log; the file
+  now plays the `ConnectionsPanel` role.
+- **1-slot path is verbatim today's popover** — heading=model, detected
+  media line, errors list, last-checked, hint, disconnect button. No
+  chassis chip, no role suffix, no pip. Implemented as a separate
+  `<template v-if="totalSlotCount === 1">` branch so the structural
+  change for multi-slot doesn't leak into the 80% case.
+- **Multi-slot path:** chassis chip per `Connection` (showing nickname
+  or `model · last-4 fingerprint`, plus a Disconnect link), then
+  nested slot cards. Each slot has a click-to-promote button with a
+  filled/outline pip indicating active state. Role suffix appears on
+  slots whose role is not `'primary'`.
+- **Pair-another button is always visible when connected**, gated only
+  by transport availability, in a quiet bottom section. Calls
+  `printer.addConnection()` directly (additive). Single-printer users
+  see a small text button at the bottom — visible but unobtrusive.
+- **`runConnect(opener, additive)` helper** unifies the four entry
+  points. The disconnected popover uses `additive=false` (preserves
+  pre-refactor "replace" semantics, including `setConnecting` /
+  `setError` toasts and the cancelled-NotFoundError quiet-path).
+  Pair-another uses `additive=true` so an existing connection isn't
+  swapped out.
+
+### Deferred from §4
+
+These were enumerated in the plan but not delivered in Step 4:
+
+- **Per-slot inline `LabelSizeSelector` (§4.3).** Today's
+  LabelSizeSelector lives in a properties panel and reads the
+  active-slot family. For 1-slot users this is unchanged (plan
+  promise). For multi-slot users, embedding a media selector
+  per-slot is a larger refactor that touches the media store's
+  `pickPrinterMedia` flow. Marked TODO; the multi-slot popover
+  currently shows each slot's `detectedMedia` but no editable
+  selector. **Rationale:** plan §0.5 deprioritises Duo/Twin polish.
+- **Nickname inline editor.** The store has `setConnectionNickname`;
+  the chassis chip currently displays the nickname (or the
+  fingerprint hash) but has no edit affordance. Quick to add when a
+  multi-printer user asks; the plumbing is in place.
+- **Destination picker on the print toolbar (§4.2).** When slot
+  count > 1, the print button should show "Print to: [slot]" with a
+  dropdown for alternates. Currently the print button always uses
+  the active slot, set via the popover. The picker is purely a
+  toolbar UX convenience — printing routes correctly already.
+- **`createPreview({ engine: slot.role })` (§4.4).** The
+  `@thermal-label/contracts` `PreviewOptions` interface does not
+  include an `engine` field today, so the plan's call signature
+  doesn't compile. This requires an upstream contract change. Out of
+  scope here, and irrelevant for single-engine users; flagged as
+  prerequisite for genuine Duo support.
+
+### Gate
+
+- `pnpm typecheck` → clean.
+- `pnpm test` → 62 files / 699 tests pass.
+- Manual smoke: 1-printer popover renders identically to before
+  (verified by reading the v-if branch — content unchanged); the
+  multi-slot branch is templated but only mounts when a 2nd
+  connection is paired, which I haven't tested with hardware.

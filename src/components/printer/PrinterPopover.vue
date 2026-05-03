@@ -3,75 +3,168 @@
     <PrinterStatus class="popover__trigger" :open="open" @click="toggle" />
     <transition name="popover-fade">
       <div v-if="open" class="popover__panel" role="dialog" :aria-label="t('printer.popoverTitle')">
-        <div v-if="!printer.isConnected" class="popover__section">
-          <template v-if="hasAnyTransport">
-            <p class="popover__heading">{{ t('printer.connectHeading') }}</p>
-            <button
-              v-if="webUsb"
-              class="popover__btn popover__btn--primary"
-              type="button"
-              @click="connectUsb"
-            >
-              {{ t('printer.connectUsb') }}
-            </button>
-            <button
-              v-if="webSerial"
-              class="popover__btn"
-              :class="{ 'popover__btn--primary': !webUsb }"
-              type="button"
-              :title="t('printer.connectSerialHint')"
-              @click="connectSerial"
-            >
-              {{ t('printer.connectSerial') }}
-            </button>
-            <p v-if="connectError" class="popover__error">
-              {{ connectError }}
-              <a
-                class="popover__help-link"
-                :href="PRINTER_HELP_URL"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{ t('printer.helpLink') }} ↗
-              </a>
-            </p>
-          </template>
-          <template v-else>
-            <p class="popover__heading">{{ t('printer.unsupportedBrowser.title') }}</p>
-            <p class="popover__note">{{ unsupportedCopy }}</p>
-            <p class="popover__note">{{ t('printer.unsupportedBrowser.body') }}</p>
-            <button
-              class="popover__why"
-              type="button"
-              :aria-expanded="whyOpen"
-              @click="whyOpen = !whyOpen"
-            >
-              {{ t('printer.unsupportedBrowser.whyExpander') }}
-              <span aria-hidden="true">{{ whyOpen ? '▴' : '▾' }}</span>
-            </button>
-            <p v-if="whyOpen" class="popover__why-body">
-              {{ t('printer.unsupportedBrowser.whyExplanation') }}
-            </p>
-          </template>
+        <!-- Disconnected, no transports -->
+        <div v-if="!hasAnyTransport" class="popover__section">
+          <p class="popover__heading">{{ t('printer.unsupportedBrowser.title') }}</p>
+          <p class="popover__note">{{ unsupportedCopy }}</p>
+          <p class="popover__note">{{ t('printer.unsupportedBrowser.body') }}</p>
+          <button
+            class="popover__why"
+            type="button"
+            :aria-expanded="whyOpen"
+            @click="whyOpen = !whyOpen"
+          >
+            {{ t('printer.unsupportedBrowser.whyExpander') }}
+            <span aria-hidden="true">{{ whyOpen ? '▴' : '▾' }}</span>
+          </button>
+          <p v-if="whyOpen" class="popover__why-body">
+            {{ t('printer.unsupportedBrowser.whyExplanation') }}
+          </p>
         </div>
 
-        <div v-else class="popover__section">
-          <p class="popover__heading">{{ printer.model }}</p>
-          <p v-if="detectedName" class="popover__detected">
-            {{ t('printer.detectedMedia', { name: detectedName }) }}
-          </p>
-          <p v-else class="popover__note">{{ t('printer.noMediaDetected') }}</p>
-          <ul v-if="errorMessages.length > 0" class="popover__errors">
-            <li v-for="(msg, idx) in errorMessages" :key="idx">{{ msg }}</li>
-          </ul>
-          <p v-if="lastCheckedLabel" class="popover__note popover__note--checked">
-            {{ lastCheckedLabel }}
-          </p>
-          <p class="popover__hint">{{ t('printer.changeSizeHint') }}</p>
-          <button class="popover__btn" type="button" @click="disconnect">
-            {{ t('printer.disconnect') }}
+        <!-- Disconnected: initial connect prompt -->
+        <div v-else-if="!printer.isConnected" class="popover__section">
+          <p class="popover__heading">{{ t('printer.connectHeading') }}</p>
+          <button
+            v-if="webUsb"
+            class="popover__btn popover__btn--primary"
+            type="button"
+            @click="connectUsb"
+          >
+            {{ t('printer.connectUsb') }}
           </button>
+          <button
+            v-if="webSerial"
+            class="popover__btn"
+            :class="{ 'popover__btn--primary': !webUsb }"
+            type="button"
+            :title="t('printer.connectSerialHint')"
+            @click="connectSerial"
+          >
+            {{ t('printer.connectSerial') }}
+          </button>
+          <p v-if="connectError" class="popover__error">
+            {{ connectError }}
+            <a
+              class="popover__help-link"
+              :href="PRINTER_HELP_URL"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ t('printer.helpLink') }} ↗
+            </a>
+          </p>
         </div>
+
+        <!--
+          Connected — single-slot path renders verbatim today's popover
+          (per plan §0.5: "single-printer user must not be able to tell
+          the refactor happened"). Multi-slot path renders chassis-chip-
+          grouped slot cards.
+        -->
+        <template v-else>
+          <div v-if="totalSlotCount === 1" class="popover__section">
+            <p class="popover__heading">{{ printer.model }}</p>
+            <p v-if="detectedName" class="popover__detected">
+              {{ t('printer.detectedMedia', { name: detectedName }) }}
+            </p>
+            <p v-else class="popover__note">{{ t('printer.noMediaDetected') }}</p>
+            <ul v-if="errorMessages.length > 0" class="popover__errors">
+              <li v-for="(msg, idx) in errorMessages" :key="idx">{{ msg }}</li>
+            </ul>
+            <p v-if="lastCheckedLabel" class="popover__note popover__note--checked">
+              {{ lastCheckedLabel }}
+            </p>
+            <p class="popover__hint">{{ t('printer.changeSizeHint') }}</p>
+            <button class="popover__btn" type="button" @click="disconnectActive">
+              {{ t('printer.disconnect') }}
+            </button>
+          </div>
+
+          <div v-else class="popover__section popover__section--multi">
+            <div
+              v-for="conn in connectionsList"
+              :key="conn.id"
+              class="popover__chassis"
+            >
+              <div class="popover__chassis-chip">
+                <span class="popover__chassis-name">
+                  {{ conn.nickname ?? `${conn.model} · ${shortFingerprint(conn.fingerprint)}` }}
+                </span>
+                <button
+                  class="popover__chip-btn"
+                  type="button"
+                  @click="removeConnection(conn.id)"
+                  :title="t('printer.disconnect')"
+                >
+                  {{ t('printer.disconnect') }}
+                </button>
+              </div>
+
+              <ul class="popover__slots">
+                <li
+                  v-for="slot in slotsOf(conn)"
+                  :key="slot.role"
+                  class="popover__slot"
+                  :class="{
+                    'popover__slot--active': isActive(conn.id, slot.role),
+                  }"
+                >
+                  <button
+                    class="popover__slot-btn"
+                    type="button"
+                    @click="promote(conn.id, slot.role)"
+                    :aria-pressed="isActive(conn.id, slot.role)"
+                  >
+                    <span
+                      class="popover__pip"
+                      :class="{ 'popover__pip--active': isActive(conn.id, slot.role) }"
+                      aria-hidden="true"
+                    />
+                    <span class="popover__slot-label">
+                      {{ slotLabel(conn, slot) }}
+                    </span>
+                  </button>
+                  <p v-if="slot.detectedMedia" class="popover__detected">
+                    {{ t('printer.detectedMedia', { name: slot.detectedMedia.name }) }}
+                  </p>
+                </li>
+              </ul>
+            </div>
+
+            <ul v-if="errorMessages.length > 0" class="popover__errors">
+              <li v-for="(msg, idx) in errorMessages" :key="idx">{{ msg }}</li>
+            </ul>
+            <p v-if="lastCheckedLabel" class="popover__note popover__note--checked">
+              {{ lastCheckedLabel }}
+            </p>
+          </div>
+
+          <!--
+            Pair-another always reachable from the connected state,
+            per plan §4.1 ("rails not walls"). Renders as a quiet
+            secondary button so single-printer users barely notice it.
+          -->
+          <div class="popover__section popover__pair-another">
+            <button
+              v-if="webUsb"
+              class="popover__btn popover__btn--quiet"
+              type="button"
+              @click="pairAnotherUsb"
+            >
+              {{ t('printer.pairAnother') }}
+            </button>
+            <button
+              v-if="webSerial && !webUsb"
+              class="popover__btn popover__btn--quiet"
+              type="button"
+              @click="pairAnotherSerial"
+            >
+              {{ t('printer.pairAnother') }}
+            </button>
+            <p v-if="connectError" class="popover__error">{{ connectError }}</p>
+          </div>
+        </template>
       </div>
     </transition>
   </div>
@@ -81,7 +174,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PrinterStatus from './PrinterStatus.vue';
-import { usePrinterStore } from '@/stores/printer';
+import { usePrinterStore, type Connection, type EngineSlotState } from '@/stores/printer';
 import { requestUsbPrinter } from '@/lib/printer/connect';
 import { openBrotherQLViaSerial } from '@/lib/printer/drivers';
 import { useBrowserCapabilities } from '@/composables/useBrowserCapabilities';
@@ -100,17 +193,53 @@ const rootRef = ref<HTMLElement | null>(null);
 const connectError = ref<string | null>(null);
 
 const detectedName = computed(() => printer.detectedMedia?.name ?? null);
+const totalSlotCount = computed(() => printer.totalSlotCount());
+const connectionsList = computed<Connection[]>(() => Array.from(printer.connections.values()));
+
+function slotsOf(conn: Connection): EngineSlotState[] {
+  return Array.from(conn.slots.values());
+}
+
+function isActive(connectionId: string, role: string): boolean {
+  return (
+    printer.activeSlot?.connectionId === connectionId && printer.activeSlot?.role === role
+  );
+}
+
+function promote(connectionId: string, role: string): void {
+  printer.setActiveSlot({ connectionId, role });
+}
+
+function shortFingerprint(fp: string): string {
+  // Last 4 chars — enough to disambiguate two-of-the-same-model in
+  // the common case while staying short enough to read at a glance.
+  return fp.slice(-4);
+}
+
+function slotLabel(conn: Connection, slot: EngineSlotState): string {
+  if (slot.role === 'primary') {
+    return conn.model;
+  }
+  return `${conn.model} — ${slot.role}`;
+}
+
+async function removeConnection(id: string): Promise<void> {
+  const conn = printer.getConnection(id);
+  if (!conn) return;
+  try {
+    await conn.adapter.close();
+  } catch (err) {
+    console.warn('[burnmark] close failed', err);
+  }
+  printer.removeConnection(id);
+  if (printer.connections.size === 0) close();
+}
 
 const errorMessages = computed<string[]>(() => {
   const errs = printer.lastStatus?.errors ?? [];
   return errs.map(e => localisedErrorMessage(e, t));
 });
 
-/**
- * "Last checked Ns ago" — uses a 1s ticking ref so the relative
- * timestamp updates while the popover is open. The ref starts/stops
- * with the popover visibility to avoid an idle interval.
- */
 const now = ref(Date.now());
 let tickHandle: ReturnType<typeof setInterval> | null = null;
 function startTicker(): void {
@@ -132,11 +261,6 @@ const lastCheckedLabel = computed<string | null>(() => {
   return t('printer.lastCheckedSeconds', { seconds });
 });
 
-/**
- * First-occurrence toasts. Watch the full status object — a fresh
- * tick replaces it (shallowRef, no deep mutation), so the watcher
- * fires on every poll.
- */
 watch(
   () => printer.lastStatus,
   status => {
@@ -145,9 +269,6 @@ watch(
       printer.clearSeenErrorCodes();
       return;
     }
-    // Suppress toasts while the popover is open — the user is already
-    // looking at the same errors there. The codes are marked seen on
-    // popover open, so re-opening doesn't re-fire either.
     if (open.value) return;
     const seen = printer.seenErrorCodes;
     const fresh = status.errors.filter(e => !seen.has(e.code));
@@ -159,9 +280,6 @@ watch(
   },
 );
 
-// Circuit breaker — one-time, non-blocking notice so the user knows
-// status updates have stopped without spelling out the underlying
-// transport problem.
 watch(
   () => printer.circuitBroken,
   broken => {
@@ -186,8 +304,6 @@ function toggle(): void {
   whyOpen.value = false;
   if (open.value) {
     startTicker();
-    // Errors visible in the popover count as "user has seen them" —
-    // suppress any future toast for those codes (§4.3).
     const errs = printer.lastStatus?.errors ?? [];
     if (errs.length > 0) {
       printer.markErrorCodesSeen(errs.map(e => e.code));
@@ -205,46 +321,55 @@ function close(): void {
 }
 
 async function connectUsb(): Promise<void> {
-  connectError.value = null;
-  printer.setConnecting();
-  try {
-    const adapter = await requestUsbPrinter();
-    printer.setAdapter(adapter);
-    await printer.refreshStatus();
-    close();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    // The user dismissing the picker shows up as NotFoundError — treat
-    // as a quiet cancel, not an error.
-    if (err instanceof Error && err.name === 'NotFoundError') {
-      printer.setAdapter(null);
-      return;
-    }
-    printer.setError(message);
-    connectError.value = message;
-  }
+  await runConnect(requestUsbPrinter, /*additive*/ false);
 }
 
 async function connectSerial(): Promise<void> {
+  await runConnect(openBrotherQLViaSerial, /*additive*/ false);
+}
+
+async function pairAnotherUsb(): Promise<void> {
+  await runConnect(requestUsbPrinter, /*additive*/ true);
+}
+
+async function pairAnotherSerial(): Promise<void> {
+  await runConnect(openBrotherQLViaSerial, /*additive*/ true);
+}
+
+/**
+ * Unified connect helper. `additive=true` adds another connection
+ * alongside any existing ones (the "Pair another printer" path).
+ * `additive=false` follows the pre-refactor "replace whatever's
+ * connected" semantics used from the disconnected popover.
+ */
+async function runConnect(
+  open: () => Promise<import('@thermal-label/contracts').PrinterAdapter>,
+  additive: boolean,
+): Promise<void> {
   connectError.value = null;
-  printer.setConnecting();
+  if (!additive) printer.setConnecting();
   try {
-    const adapter = await openBrotherQLViaSerial();
-    printer.setAdapter(adapter);
+    const adapter = await open();
+    if (additive) {
+      printer.addConnection(adapter);
+    } else {
+      printer.setAdapter(adapter);
+    }
     await printer.refreshStatus();
-    close();
+    if (!additive) close();
   } catch (err) {
     if (err instanceof Error && err.name === 'NotFoundError') {
-      printer.setAdapter(null);
+      // User dismissed the picker — quiet cancel.
+      if (!additive) printer.setAdapter(null);
       return;
     }
     const message = err instanceof Error ? err.message : String(err);
-    printer.setError(message);
+    if (!additive) printer.setError(message);
     connectError.value = message;
   }
 }
 
-async function disconnect(): Promise<void> {
+async function disconnectActive(): Promise<void> {
   await printer.disconnect();
   close();
 }
@@ -288,12 +413,24 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .popover__section {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.popover__section--multi {
+  gap: var(--space-3);
+}
+
+.popover__pair-another {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-2);
 }
 
 .popover__heading {
@@ -329,6 +466,107 @@ onBeforeUnmount(() => {
 
 .popover__btn--primary:hover {
   background: var(--color-primary-hover);
+}
+
+.popover__btn--quiet {
+  background: transparent;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.popover__btn--quiet:hover {
+  background: var(--color-bg-canvas);
+  color: var(--color-text);
+}
+
+.popover__chassis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.popover__chassis-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 2px var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-canvas);
+  border-radius: var(--radius-sm);
+}
+
+.popover__chassis-name {
+  font-weight: var(--weight-medium);
+}
+
+.popover__chip-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.popover__chip-btn:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.popover__slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.popover__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.popover__slot--active {
+  background: var(--color-bg-canvas);
+}
+
+.popover__slot-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.popover__slot-label {
+  font-weight: var(--weight-medium);
+}
+
+.popover__pip {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-text-muted);
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.popover__pip--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .popover__note {
