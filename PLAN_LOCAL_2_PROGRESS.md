@@ -341,3 +341,91 @@ record. Boot replays every entry in parallel. The store exposes a
   - `printer.test.ts`: asserts on `burnmark.last-connections`.
   - `useAutoReconnect.test.ts`: mocks `tryReconnectAllUsb` returning
     array shapes.
+
+## Step 7 — §7 Verification matrix walk-through
+
+### Final gate
+
+- `pnpm typecheck` → clean.
+- `pnpm test` → 62 files / 699 tests pass (baseline was 698 — the
+  `findSupported` registry test added in Step 2 brings the count to
+  699, stable thereafter).
+
+### Smoke matrix — verified by inspection
+
+I don't have hardware in this session, so each row is verified by
+reading the resulting code paths rather than running a click-through.
+
+| scenario | verdict | how verified |
+| --- | --- | --- |
+| pair one QL-820NWBc — UX identical to today | ✅ | `PrinterPopover.vue` v-if="totalSlotCount === 1" branch is verbatim today's content (heading=model, detected line, errors, last checked, hint, disconnect). No chassis chip, no role suffix, no pip mounted. |
+| pair one Brother + one Dymo — two cards w/ picker | ⚠️ partial | Two cards render in the multi-slot branch with chassis chip + click-to-promote pip. **Picker on the print toolbar deferred** — destination still set via popover only (logged §4 deferred). |
+| pair two QL-820NWBc — two cards disambiguated by nickname / fingerprint | ⚠️ partial | Chassis chip shows `nickname ?? "${model} · ${last-4 fingerprint}"`. **Nickname inline editor deferred** — programmatically editable via `setConnectionNickname` but no UI affordance. |
+| configure media on the non-active card — inline selector edits | ❌ deferred | Per-slot inline `LabelSizeSelector` is logged §4 deferred. Multi-slot popover shows each slot's `detectedMedia` line but no editable selector. |
+| pair LabelWriter Duo — two cards labelled label/tape | ✅ structurally | `buildSlots(device)` materialises one slot per `device.engines` entry; `slotLabel(conn, slot)` shows `${model} — ${role}` for non-primary roles. Untestable without hardware; no Duo-specific path. |
+| disconnect cable — that connection's slots become greyed ghost cards | ❌ deferred | `lastConnections` array preserves the record after physical disconnect (since removeConnection is the explicit path). Ghost-card UI in popover not wired. |
+| reload page with two paired, both reconnect — first listed = active | ✅ | `tryReconnectAllUsb()` runs `Promise.allSettled` over every paired USB device; `useAutoReconnect` calls `printer.addConnection(adapter)` per result. The first `addConnection` sets `activeSlot`; subsequent ones inherit no active slot promotion (matches plan §6.2 "first-listed = active slot; no toast"). |
+| reload page with two paired, one fails — failed renders as ghost | ⚠️ data-only | The failed entry stays in `lastConnections`. Ghost-card UI not yet rendered (logged §6 deferred). |
+| open a design saved against a different model — toast at fallback level 3 | ❌ deferred | `Document.metadata.targetSlot` save/load not implemented (logged §6 deferred). |
+| click print while active slot reports error — button NOT disabled | ✅ | `canPrint` no longer reads `blockedByError`. Button stays clickable; the warning icon and tooltip surface the cause. Implemented in Step 5. |
+
+### Repo state at close
+
+| repo | status |
+| --- | --- |
+| `label-maker` (this repo) | 6 commits ahead of pre-plan main: registry → store → popover → canvas-actions → persistence → docs followup. Working tree only carries the pre-existing `PLAN_LOCAL_2_MULTI_PRINTER.md` / `PLAN_LOCAL_3_DEVICE_REPORTS.md` modifications that were already there at session start. |
+| `@thermal-label/brother-ql-core` | `f306834` `feat(core): export PROTOCOLS set for resolveSupportedDevices`. Working tree clean. (A later docs commit `2af0246` from the user is unrelated to this plan.) |
+| `@thermal-label/labelwriter-core` | `a88fa68` same, with note about Duo's `d1-tape` engine living in labelmanager-core. Working tree carries pre-existing untracked PDFs/scripts that were there at session start. |
+| `@thermal-label/labelmanager-core` | `889560e` same. Working tree clean. (A later docs commit `38ab2cc` from the user is unrelated.) |
+
+### Outstanding follow-ups (consolidated)
+
+If/when a multi-printer user surfaces (per the realistic-distribution
+guidance, no rush):
+
+1. **Per-slot `LabelSizeSelector`** in the popover slot card (§4.3
+   inline media selector). Bind to `setSelectedMediaForSlot`.
+2. **Destination picker on the print toolbar** (§4.2). Show "Print to:
+   [active slot label]" with a dropdown listing all slots; click
+   promotes via `setActiveSlot`. Offline slots greyed but selectable.
+3. **Nickname inline editor** in the chassis chip. The store helper
+   `setConnectionNickname` is in place.
+4. **Ghost cards** in the popover for entries that didn't reconnect on
+   boot. Render greyed cards from `lastConnections` minus live
+   connections; "Reconnect" button re-runs the pair flow scoped to
+   that record's family/model; "Forget" calls `forgetLastConnection`.
+5. **`Document.metadata.targetSlot` save/load (§6.1).** Watcher writes
+   `{ family, model, role, fingerprint }` on `activeSlot` change;
+   one-shot resolution on document load with the layered fallbacks.
+6. **`createPreview({ engine: slot.role })` (§4.4).** Blocked on an
+   upstream `PreviewOptions.engine` field in
+   `@thermal-label/contracts`. Land that contract change first, then
+   thread it through `printer.refreshPreview`.
+7. **Stable USB-serial fingerprinting.** Currently
+   `mintFingerprint` falls back to a session-random UUID, which means
+   two-of-the-same-model with empty USB serials get unstable
+   fingerprints across reboots. Surface `USBDevice.serialNumber`
+   through the transport so the fingerprint is hardware-stable; until
+   then, nicknames are the load-bearing tiebreaker.
+8. **Cleanup of the legacy `burnmark.lastConnected` localStorage
+   key.** Migration is one-shot; after a release-or-two, the key can
+   be `removeItem`-ed in `readLastConnections`.
+
+### Reflection — what I'd do differently
+
+- **Spike-driven scope cuts paid off.** The plan's `createPreview`
+  engine pass-through (§4.4) and per-engine `PrinterStatus` carve-out
+  (§0.6 spike 1) would have been wasted work — the contracts don't
+  support either today, and Duo owners don't exist. Reading the
+  contracts before writing the resolver saved at least an hour.
+- **The BC facade was the right call for Step 3.** ~30 consumer call
+  sites kept reading the same single-connection API; a swing-the-
+  rope-bridge refactor would have multiplied the diff size and the
+  test surface. Computeds projecting through the active slot let the
+  data-shape change land in one commit.
+- **One thing I'd revisit:** the `markRaw` decision on `adapter` /
+  `device` / `status`. It works, but it's defensive — Vue 3's
+  `reactive(...)` recursion is the surface concern. A future cleanup
+  could narrow this to just `adapter` (the only one tests assert
+  identity on) and let device/status be reactive proxies. Low value
+  unless someone hits a Vue-DevTools weirdness.
