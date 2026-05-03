@@ -49,15 +49,22 @@
         />
       </VLayer>
 
-      <!-- Per-item selection outline. The Transformer above only shows the
-           group bounding box; this layer makes it visible *which* objects
-           are part of a multi-selection — particularly when overlapping or
-           nested. Non-listening so it never intercepts events. -->
+      <!--
+        Non-interactive overlay layer. Three layers' worth of visuals
+        sharing one canvas (Konva caps at ~5 layers; stacking each on
+        its own would push us to 6). Konva renders children in
+        template order so the visual stacking is preserved:
+          1. per-item selection outlines
+          2. alignment guides + cut line
+          3. marquee rubber-band
+        All `listening: false` so events still fall through to the
+        objects / transformer layers underneath / above.
+      -->
       <VLayer :config="{ listening: false }">
+        <!-- Per-item selection outlines — visible "which objects" markers
+             behind the Transformer's group bounding box. -->
         <VRect v-for="cfg in selectionOutlines" :key="cfg.id" :config="cfg" />
-      </VLayer>
 
-      <VLayer :config="{ listening: false }">
         <AlignmentGuides
           v-if="dragGuides.vertical.length || dragGuides.horizontal.length"
           :vertical="dragGuides.vertical"
@@ -72,10 +79,7 @@
           :height="viewport.labelHeightDots.value"
           :scale="viewport.zoom.value"
         />
-      </VLayer>
 
-      <!-- Marquee rubber-band layer — above objects, below transformer -->
-      <VLayer :config="{ listening: false }">
         <VRect v-if="marquee.active" :config="marqueeRectConfig" />
       </VLayer>
 
