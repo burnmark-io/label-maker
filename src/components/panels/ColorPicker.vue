@@ -35,13 +35,19 @@ const emit = defineEmits<{
 }>();
 
 /**
- * Thermal-friendly palette. Black is the default for monochrome printers.
- * Red is the second plane on Brother QL with DK-22251. The greys give a
- * sense of how mid-tones threshold at print time.
+ * Thermal-friendly palette. Values match the printer-palette ink colours
+ * (pure black, pure red) so the editor view, the multi-plane preview,
+ * and the printed output all show the same shade. Earlier swatches used
+ * stylised values (#1c1917, #dc2626) that classified correctly but
+ * displayed differently from the preview/print, causing "is the
+ * mapping right?" confusion on Brother DK-22251 two-colour media.
+ *
+ * The greys still threshold to ink, but show how mid-tones fall on
+ * single-ink media — useful for previewing dither behaviour.
  */
 const palette = [
-  { name: 'Black', value: '#1c1917' },
-  { name: 'Red', value: '#dc2626' },
+  { name: 'Black', value: '#000000' },
+  { name: 'Red', value: '#ff0000' },
   { name: 'Dark grey', value: '#57534e' },
   { name: 'Light grey', value: '#a8a29e' },
 ];
