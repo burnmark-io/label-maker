@@ -13,6 +13,7 @@ import type {
 
 import {
   PER_MODEL_STATUS_POLLING_EXCLUSIONS,
+  getMediaForFamily,
   modelKey,
   type PrinterFamily,
 } from '@/lib/printer/registry';
@@ -164,6 +165,61 @@ function writeLastConnections(records: LastConnectionRecord[]): void {
   } catch {
     // ignore
   }
+}
+
+/**
+ * Per-slot media persistence (plan §6.2 spirit — every slot's user-
+ * picked roll survives reload). Keyed by `${fingerprint}:${role}` to
+ * disambiguate slots across composite chassis. We persist the media
+ * `id` rather than the full descriptor so a registry update never
+ * resurrects a stale shape — the descriptor is re-fetched from
+ * `getMediaForFamily` at restore time.
+ */
+const SLOT_MEDIA_KEY = 'burnmark.slot-media';
+
+function slotKey(fingerprint: string, role: SlotRole): string {
+  return `${fingerprint}:${role}`;
+}
+
+function readSlotMediaIds(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(SLOT_MEDIA_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function writeSlotMediaIds(map: Record<string, string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (Object.keys(map).length === 0) {
+      window.localStorage.removeItem(SLOT_MEDIA_KEY);
+    } else {
+      window.localStorage.setItem(SLOT_MEDIA_KEY, JSON.stringify(map));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function persistSlotMedia(
+  fingerprint: string,
+  role: SlotRole,
+  media: MediaDescriptor | null,
+): void {
+  const map = readSlotMediaIds();
+  const k = slotKey(fingerprint, role);
+  if (media) {
+    map[k] = String(media.id);
+  } else {
+    delete map[k];
+  }
+  writeSlotMediaIds(map);
 }
 
 function mintConnectionId(): ConnectionId {
@@ -336,7 +392,24 @@ export const usePrinterStore = defineStore('printer', () => {
     const id = mintConnectionId();
     const family = adapter.family as PrinterFamily;
     const device = adapter.device ?? null;
+    const fingerprint = mintFingerprint(adapter, opts?.fingerprintHint ?? null);
     const slots = buildSlots(device);
+
+    // Restore per-slot persisted media (plan §6.2). Look up each
+    // slot's persisted media id under `${fingerprint}:${role}` and
+    // resolve via the family's media registry. Done before scratch
+    // inheritance so that scratch (in-session intent) overrides
+    // persistence (prior-session intent) when both are present.
+    const persistedMediaIds = readSlotMediaIds();
+    const familyMedia = getMediaForFamily(family);
+    for (const slot of slots.values()) {
+      const persistedId = persistedMediaIds[slotKey(fingerprint, slot.role)];
+      if (persistedId) {
+        const media = familyMedia.find(m => String(m.id) === persistedId);
+        if (media) slot.selectedMedia = media;
+      }
+    }
+
     // Inherit any scratch media into the primary slot — preserves the
     // pre-refactor pattern of "set media on the store, adapter
     // inherits on connect" used by tests and a couple of UI flows.
@@ -360,7 +433,7 @@ export const usePrinterStore = defineStore('printer', () => {
       family,
       model: adapter.model,
       device: device ? markRaw(device) : null,
-      fingerprint: mintFingerprint(adapter, opts?.fingerprintHint ?? null),
+      fingerprint,
       nickname: opts?.nickname ?? null,
       slots,
       status: null,
@@ -446,6 +519,7 @@ export const usePrinterStore = defineStore('printer', () => {
     const s = conn?.slots.get(slot.role);
     if (!conn || !s) return;
     s.selectedMedia = media;
+    persistSlotMedia(conn.fingerprint, slot.role, media);
   }
 
   function setConnectionNickname(id: ConnectionId, nickname: string | null): void {

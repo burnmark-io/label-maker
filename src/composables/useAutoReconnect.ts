@@ -28,9 +28,22 @@ export function useAutoReconnect(): void {
     if (printer.connections.size > 0) return;
 
     try {
+      // Snapshot the persisted records before the addConnection loop
+      // mutates them — we want the *prior session's* fingerprints so
+      // per-slot media (keyed by fingerprint+role) round-trips. The
+      // upserts inside addConnection will rewrite the same records
+      // afterwards.
+      const priorRecords = [...printer.lastConnections];
       const adapters = await tryReconnectAllUsb();
       for (const adapter of adapters) {
-        printer.addConnection(adapter);
+        // Match by family+model — accepts the realistic-distribution
+        // collision (two of the exact same model fall to whichever
+        // record sorts first; nicknames are the user-driven
+        // tiebreaker per plan §2.6).
+        const match = priorRecords.find(
+          r => r.family === adapter.family && r.model === adapter.model,
+        );
+        printer.addConnection(adapter, { fingerprintHint: match?.fingerprint });
       }
       // Single status refresh for the active slot — Step 3's polling
       // loop will catch up the rest within one tick.
