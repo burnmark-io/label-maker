@@ -254,3 +254,44 @@ These were enumerated in the plan but not delivered in Step 4:
   (verified by reading the v-if branch — content unchanged); the
   multi-slot branch is templated but only mounts when a 2nd
   connection is paired, which I haven't tested with hardware.
+
+## Step 5 — §5 Print path
+
+**Goal:** `print()` calls forward `engine: slot.role` so composite
+devices route correctly. Mostly already in place from Step 3.
+
+### Status
+
+- **Engine routing already wired** in the store's `print()` from
+  Step 3: when `slot.role !== 'primary'`, the bridged options carry
+  `engine: slot.role`. Single-engine devices use the `'primary'`
+  sentinel and the field is omitted (drivers ignore unknown engines
+  on single-engine devices anyway).
+- **`thermal-batch.ts` calls through `printer.print()`** which routes
+  via active slot — no changes needed in the batch service.
+- **No direct `adapter.print` callers exist** outside the store; grep
+  confirmed.
+
+### Rails-not-walls fix in this step
+
+- **Print button stays clickable on thermal error.** The
+  `blockedByError` predicate previously gated `canPrint`, disabling
+  the button when the active slot reported `ready: false` or any
+  errors. Per plan §0.5 + §7 verification matrix, the button should
+  remain clickable; the warning icon + tooltip already communicate
+  the cause, and the click handler can surface a toast. Removed the
+  `blockedByError` gate from `canPrint`. The icon and tooltip still
+  fire — visual hint stays, hard block goes.
+
+### Out of scope (per plan §5)
+
+- Multi-target batch printing (e.g. CSV → 30 labels split between two
+  printers) — explicitly deferred in the plan.
+- Duo "split: label vs tape" job mode — explicitly deferred.
+- Auto vs explicit engine routing UX on Twin Turbo — driver
+  serializes today; no app-side queue.
+
+### Gate
+
+- `pnpm typecheck` → clean.
+- `pnpm test` → 62 files / 699 tests pass.

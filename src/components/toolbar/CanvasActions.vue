@@ -245,13 +245,15 @@ const blockedByError = computed(() => {
 });
 
 const canPrint = computed(() => {
-  if (printer.isPrinting || blockedByError.value) return false;
+  if (printer.isPrinting) return false;
   if (config.effectiveDestination === 'sheet') {
     return config.sheetPossible;
   }
-  // Thermal: matches the historical "always enabled when not printing,
-  // not blocked" behaviour — connection failure is communicated via the
-  // toast on click, not button-disabled.
+  // Thermal: rails not walls (plan §0.5). The button stays clickable
+  // even when the active slot reports an error — the warning icon and
+  // tooltip surface the cause, but the click attempts the print and
+  // surfaces the failure via toast if the driver rejects. Hard-blocking
+  // on a stale or transient error has dead-locked users in the past.
   return true;
 });
 
