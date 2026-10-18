@@ -126,12 +126,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { SupportStatus, TransportType } from '@thermal-label/contracts';
+import type { LegacySupportStatus, TransportType } from '@thermal-label/contracts';
 
 import Modal from '@/components/common/Modal.vue';
 import DeviceReportForm from './DeviceReportForm.vue';
 import { usePrinterStore } from '@/stores/printer';
-import { getEffectiveSupport, reportUrlBaseFor } from '@/lib/support';
+import { getEffectiveSupport, reportUrlBaseFor, type EffectiveSupport } from '@/lib/support';
 
 const props = defineProps<{
   open: boolean;
@@ -175,13 +175,13 @@ const connectionLabel = computed(() => {
   return `${base} — ${props.role}`;
 });
 
-const effective = computed(() => {
+const effective = computed<EffectiveSupport>(() => {
   const conn = connection.value;
   const s = slot.value;
   if (!conn || !s) {
     return {
-      status: 'untested' as SupportStatus,
-      support: { status: 'untested' as SupportStatus },
+      status: 'untested',
+      support: { status: 'untested' },
       engineStatus: undefined,
     };
   }
@@ -191,7 +191,7 @@ const effective = computed(() => {
 const transportEntries = computed(() => {
   const transports = effective.value.support.transports;
   if (!transports) return [];
-  return (Object.entries(transports) as Array<[TransportType, SupportStatus]>).map(
+  return (Object.entries(transports) as Array<[TransportType, LegacySupportStatus]>).map(
     ([key, status]) => ({ key, status }),
   );
 });
