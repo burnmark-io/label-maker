@@ -21,6 +21,7 @@ import { applyTemplate, type TextObject } from '@burnmark-io/designer-core';
 import { useDataStore } from '@/stores/data';
 import { useShiftKey } from '@/composables/useShiftKey';
 import { useTransformContext } from '@/composables/useTransformContext';
+import { textYCorrectionFor } from '@/lib/canvas/text-layout';
 
 const data = useDataStore();
 const shiftKey = useShiftKey();
@@ -88,11 +89,19 @@ const renderHeight = computed(() =>
   props.object.autoHeight ? measuredHeight.value : props.object.height,
 );
 
+/**
+ * WYSIWYG vertical correction (see `@/lib/canvas/text-layout`). Konva anchors
+ * the first line by its middle baseline, designer-core (print/export) by its
+ * alphabetic baseline; the node is shifted by this so the canvas matches the
+ * print. Every node↔object coordinate conversion below undoes it.
+ */
+const yCorrection = computed(() => textYCorrectionFor(props.object));
+
 const config = computed(() => ({
   id: props.object.id,
   name: 'object',
   x: props.object.x + props.object.width / 2,
-  y: props.object.y + renderHeight.value / 2,
+  y: props.object.y + yCorrection.value + renderHeight.value / 2,
   offsetX: props.object.width / 2,
   offsetY: renderHeight.value / 2,
   width: props.object.width,
@@ -136,7 +145,7 @@ function textFontStyle(o: TextObject): string {
 function onDragMove(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  emit('dragmove', t.x() - props.object.width / 2, t.y() - renderHeight.value / 2);
+  emit('dragmove', t.x() - props.object.width / 2, t.y() - yCorrection.value - renderHeight.value / 2);
 }
 
 function onDragEnd(event: {
@@ -147,7 +156,7 @@ function onDragEnd(event: {
   // For autoHeight text the stored height may differ from what Konva
   // actually rendered — read the live node height to avoid position drift.
   const renderedHeight = props.object.autoHeight && t.height ? t.height() : props.object.height;
-  emit('dragend', t.x() - props.object.width / 2, t.y() - renderedHeight / 2);
+  emit('dragend', t.x() - props.object.width / 2, t.y() - yCorrection.value - renderedHeight / 2);
 }
 
 const MIN_DIM = 10;
@@ -220,7 +229,9 @@ function onTransformStart(): void {
 
   dragStartRotationRad = (props.object.rotation * Math.PI) / 180;
   const cx = props.object.x + dragStartWidth / 2;
-  const cy = props.object.y + dragStartHeight / 2;
+  // The node is drawn `yCorrection` below the object box, so its centre — the
+  // pivot frame for everything below — carries the same shift.
+  const cy = props.object.y + yCorrection.value + dragStartHeight / 2;
   const off = localPivotOffset(dragStartAnchor, dragStartWidth, dragStartHeight);
   const cosR = Math.cos(dragStartRotationRad);
   const sinR = Math.sin(dragStartRotationRad);
@@ -368,7 +379,7 @@ function onTransformEnd(): void {
     posY = newCy - newHeight / 2;
   } else {
     posX = node.x() - newWidth / 2;
-    posY = node.y() - newHeight / 2;
+    posY = node.y() - yCorrection.value - newHeight / 2;
   }
 
   const patch: TransformEndPatch = {

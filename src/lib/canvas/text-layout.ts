@@ -12,7 +12,35 @@ export interface FontVerticalMetrics {
   descent: number;
 }
 
-type VerticalAlignInput = Pick<TextObject, 'fontSize' | 'lineHeight'>;
+type MeasurableText = Pick<TextObject, 'fontSize' | 'lineHeight'>;
+type FontedText = Pick<TextObject, 'fontSize' | 'fontFamily' | 'fontWeight' | 'fontStyle'>;
+
+/**
+ * CSS/canvas `font` shorthand for a text object, in the same shape Konva
+ * builds it (no quotes around the family) so `measureText` resolves the same
+ * face the editor draws with.
+ */
+export function konvaFontString(object: FontedText): string {
+  return `${object.fontStyle} ${object.fontWeight} ${object.fontSize}px ${object.fontFamily}`;
+}
+
+/**
+ * Measure the em-box ascent/descent for `font` on `ctx`, leaving the context's
+ * previous font restored.
+ */
+export function measureFontVerticalMetrics(
+  ctx: CanvasRenderingContext2D,
+  font: string,
+): FontVerticalMetrics {
+  const previous = ctx.font;
+  ctx.font = font;
+  const metrics = ctx.measureText('Mg');
+  ctx.font = previous;
+  return {
+    ascent: metrics.fontBoundingBoxAscent ?? metrics.actualBoundingBoxAscent ?? 0,
+    descent: metrics.fontBoundingBoxDescent ?? metrics.actualBoundingBoxDescent ?? 0,
+  };
+}
 
 /**
  * Local y at which **Konva** draws the first line's anchor.
@@ -21,7 +49,7 @@ type VerticalAlignInput = Pick<TextObject, 'fontSize' | 'lineHeight'>;
  * centres each line in its line box, so the first line's anchor sits at
  * `lineHeight · fontSize / 2` below the node's top.
  */
-export function konvaFirstLineAnchorY(object: VerticalAlignInput): number {
+export function konvaFirstLineAnchorY(object: MeasurableText): number {
   return (object.lineHeight * object.fontSize) / 2;
 }
 
@@ -38,28 +66,64 @@ export function designerCoreFirstLineBaselineY(object: Pick<TextObject, 'fontSiz
 }
 
 /**
- * Extra local-y offset the editor's Konva text node needs so its rendered ink
- * matches designer-core's `renderText`.
- *
- * Konva anchors the first line by its *middle* baseline at
- * `konvaFirstLineAnchorY`, whereas designer-core anchors it by its *alphabetic*
- * baseline at `designerCoreFirstLineBaselineY`. Converting Konva's middle
- * anchor to an alphabetic baseline uses the font's ascent/descent.
- *
- * ⚠️ **This currently returns `0` — the bug.** Until it returns the value
- * below, the editor draws the first line
- * `designerCoreFirstLineBaselineY(o) − (konvaFirstLineAnchorY(o) + (ascent − descent) / 2)`
- * dots away from where the print puts it (≈ 9% of `fontSize`, invisible for
- * small text and large for big glyphs). Reproduced by
- * `src/lib/canvas/__tests__/text-layout.test.ts`; the fix is to return the
- * formula here *and* apply it to the Konva node in
- * `src/components/canvas/TextNode.vue`.
+ * Local y of the first line's *alphabetic* baseline as Konva places it: the
+ * `textBaseline: 'middle'` anchor converted back with the font's ascent and
+ * descent (`middle` sits `(ascent − descent) / 2` above the baseline).
  */
-export function editorTextYCorrection(
-  object: VerticalAlignInput,
+export function konvaFirstLineBaselineY(
+  object: MeasurableText,
   metrics: FontVerticalMetrics,
 ): number {
-  void object;
-  void metrics;
-  return 0;
+  return konvaFirstLineAnchorY(object) + (metrics.ascent - metrics.descent) / 2;
+}
+
+/**
+ * Extra local-y offset the editor's Konva text node needs so its rendered ink
+ * matches `@burnmark-io/designer-core`'s `renderText`.
+ *
+ * Konva anchors the first line by its *middle* baseline
+ * (`konvaFirstLineBaselineY`), designer-core by its *alphabetic* baseline
+ * (`designerCoreFirstLineBaselineY`); the difference is a fixed shift that the
+ * editor has to add to the node's `y`. It is independent of `verticalAlign`
+ * (both renderers move the whole block identically for middle/bottom).
+ *
+ * Applied by `src/components/canvas/TextNode.vue` (and its inline editor) so
+ * the canvas is WYSIWYG with the print. Guarded by
+ * `src/lib/canvas/__tests__/text-layout.test.ts`.
+ */
+export function editorTextYCorrection(
+  object: MeasurableText,
+  metrics: FontVerticalMetrics,
+): number {
+  return designerCoreFirstLineBaselineY(object) - konvaFirstLineBaselineY(object, metrics);
+}
+
+/**
+ * Lazily-created shared 2D context used only to read font metrics. Text nodes
+ * are created/updated in bunches, so one offscreen canvas is enough. Returns
+ * `null` when there is no 2D context available (jsdom in tests, SSR), in which
+ * case the correction degrades to 0 — i.e. the pre-fix behaviour.
+ */
+let measurementCtx: CanvasRenderingContext2D | null | undefined;
+function sharedMeasurementContext(): CanvasRenderingContext2D | null {
+  if (measurementCtx !== undefined) return measurementCtx;
+  if (typeof document === 'undefined') {
+    measurementCtx = null;
+    return measurementCtx;
+  }
+  measurementCtx = document.createElement('canvas').getContext('2d');
+  return measurementCtx;
+}
+
+/**
+ * `editorTextYCorrection` for a text object, measuring the font itself.
+ *
+ * This is what the canvas components call: `TextNode.vue` offsets the Konva
+ * node's `y` by it, and `InlineTextEditor.vue` offsets the DOM overlay by the
+ * same amount so entering/leaving edit mode does not jump.
+ */
+export function textYCorrectionFor(object: MeasurableText & FontedText): number {
+  const ctx = sharedMeasurementContext();
+  if (!ctx) return 0;
+  return editorTextYCorrection(object, measureFontVerticalMetrics(ctx, konvaFontString(object)));
 }
