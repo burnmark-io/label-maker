@@ -116,6 +116,25 @@ function sharedMeasurementContext(): CanvasRenderingContext2D | null {
 }
 
 /**
+ * `height` to hand a Konva `Text` node.
+ *
+ * Konva *truncates* rendered lines once they exceed the node's `height` (and
+ * may add an ellipsis), while designer-core — the print / PNG / PDF renderer —
+ * lays out every line and only uses `height` to position the block. For a
+ * top-aligned box the height plays no part in the layout, so `undefined` (AUTO)
+ * lets Konva draw all lines like the print; `middle`/`bottom` still need the
+ * height for their alignment.
+ */
+export function konvaTextHeight(
+  object: Pick<TextObject, 'height' | 'autoHeight'> & {
+    verticalAlign?: TextObject['verticalAlign'];
+  },
+): number | undefined {
+  if (object.autoHeight) return undefined;
+  return (object.verticalAlign ?? 'top') === 'top' ? undefined : object.height;
+}
+
+/**
  * `editorTextYCorrection` for a text object, measuring the font itself.
  *
  * This is what the canvas components call: `TextNode.vue` offsets the Konva

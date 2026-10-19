@@ -22,6 +22,7 @@ import { renderFull, type LabelDocument, type RawImageData, type TextObject } fr
 import {
   konvaFirstLineAnchorY,
   editorTextYCorrection,
+  konvaTextHeight,
   type FontVerticalMetrics,
 } from '@/lib/canvas/text-layout';
 
@@ -135,6 +136,21 @@ function editorInkTop(object: TextObject): number {
 
   return inkTopOfCanvas(canvas);
 }
+
+describe('konvaTextHeight — Konva must not drop lines the print renders', () => {
+  it('omits the height for top-aligned text (Konva would truncate to the box)', () => {
+    expect(konvaTextHeight({ height: 110, autoHeight: false, verticalAlign: 'top' })).toBeUndefined();
+    expect(
+      konvaTextHeight({ height: 110, autoHeight: false, verticalAlign: undefined }),
+    ).toBeUndefined();
+  });
+
+  it('keeps the height where alignment needs it, and for autoHeight', () => {
+    expect(konvaTextHeight({ height: 110, autoHeight: false, verticalAlign: 'middle' })).toBe(110);
+    expect(konvaTextHeight({ height: 110, autoHeight: false, verticalAlign: 'bottom' })).toBe(110);
+    expect(konvaTextHeight({ height: 110, autoHeight: true, verticalAlign: 'middle' })).toBeUndefined();
+  });
+});
 
 describe('WYSIWYG — editor (Konva) vs print (designer-core) first text line', () => {
   for (const fontSize of [50, 120, 350]) {

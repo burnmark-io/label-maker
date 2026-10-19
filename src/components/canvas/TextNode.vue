@@ -21,7 +21,7 @@ import { applyTemplate, type TextObject } from '@burnmark-io/designer-core';
 import { useDataStore } from '@/stores/data';
 import { useShiftKey } from '@/composables/useShiftKey';
 import { useTransformContext } from '@/composables/useTransformContext';
-import { textYCorrectionFor } from '@/lib/canvas/text-layout';
+import { textYCorrectionFor, konvaTextHeight } from '@/lib/canvas/text-layout';
 
 const data = useDataStore();
 const shiftKey = useShiftKey();
@@ -105,7 +105,7 @@ const config = computed(() => ({
   offsetX: props.object.width / 2,
   offsetY: renderHeight.value / 2,
   width: props.object.width,
-  height: props.object.autoHeight ? undefined : props.object.height,
+  height: konvaTextHeight(props.object),
   text: applyTemplate(props.object.content, data.currentVariables),
   fontSize: props.object.fontSize,
   fontFamily: props.object.fontFamily,
