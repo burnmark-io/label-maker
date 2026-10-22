@@ -1,24 +1,31 @@
-import type { DeviceSupport, SupportStatus, TransportType } from '@thermal-label/contracts';
+import type { DeviceSupport, LegacySupportStatus, TransportType } from '@thermal-label/contracts';
 import type { Connection, EngineSlotState } from '@/stores/printer';
 import type { PrinterFamily } from '@/lib/printer/registry';
 
+/**
+ * `contracts@0.6` repurposed the `SupportStatus` name for the new
+ * per-transport verification grid (`'verified' | 'partial' |
+ * 'unsupported'`). The four-rung status the device registry still
+ * carries on `DeviceSupport.status` is now `LegacySupportStatus`, so
+ * that is what the compatibility chip / report flow speaks.
+ */
 export interface EffectiveSupport {
   /** Worst of chassis vs engine; drives chip colour and CTA wording. */
-  status: SupportStatus;
+  status: LegacySupportStatus;
   /** Underlying chassis support record from the device entry. */
   support: DeviceSupport;
   /** Engine-specific status if this slot's role has its own entry. */
-  engineStatus?: SupportStatus;
+  engineStatus?: LegacySupportStatus;
 }
 
-const STATUS_RANK: Record<SupportStatus, number> = {
+const STATUS_RANK: Record<LegacySupportStatus, number> = {
   verified: 0,
   partial: 1,
   untested: 2,
   broken: 3,
 };
 
-function worse(a: SupportStatus, b: SupportStatus): SupportStatus {
+function worse(a: LegacySupportStatus, b: LegacySupportStatus): LegacySupportStatus {
   return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
 }
 
