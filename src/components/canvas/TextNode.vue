@@ -379,7 +379,13 @@ function onTransformEnd(): void {
     posY = newCy - newHeight / 2;
   } else {
     posX = node.x() - newWidth / 2;
-    posY = node.y() - yCorrection.value - newHeight / 2;
+    // The WYSIWYG offset depends on the font size (and, in the overflow case,
+    // on the box/content height), which a corner resize changes — recompute it
+    // from the post-transform values instead of the pre-transform ones, or the
+    // stored `y` lands the text a few dots off (and jumps on the next render).
+    const nextFontSize = proportional ? Math.max(MIN_FONT, node.fontSize()) : props.object.fontSize;
+    const nextCorrection = textYCorrectionFor({ ...props.object, fontSize: nextFontSize });
+    posY = node.y() - nextCorrection - newHeight / 2;
   }
 
   const patch: TransformEndPatch = {
