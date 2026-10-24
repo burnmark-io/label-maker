@@ -58,7 +58,7 @@ const { SHEETS, findSheet } = await import('@burnmark-io/sheet-templates');
 
 ### 2.1 Tracking Files
 
-Create these in the repo root on day one:
+These live in `dev/`, next to this guide and `PLAN.md`:
 
 - **`PROGRESS.md`** — checkbox list of every phase and step from the plan's
   section 22. Tick boxes as you complete them. This is the primary status document.
