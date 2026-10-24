@@ -75,5 +75,14 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.{test,spec}.ts'],
+    // Node 25+ enables its own global `localStorage`, which is undefined
+    // without `--localstorage-file` and shadows jsdom's. Turn it off.
+    poolOptions: {
+      forks: {
+        execArgv: process.allowedNodeEnvironmentFlags.has('--experimental-webstorage')
+          ? ['--no-experimental-webstorage']
+          : [],
+      },
+    },
   },
 });

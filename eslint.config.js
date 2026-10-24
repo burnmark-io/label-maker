@@ -9,6 +9,7 @@ export default [
       'dist/**',
       'node_modules/**',
       'coverage/**',
+      '.claude/**',
       'public/**',
       '*.cjs',
       '*.config.js',

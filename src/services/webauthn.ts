@@ -13,7 +13,7 @@
  *   `prfSalt`, returns the 32-byte PRF result.
  *
  * The threat-model and architectural rationale lives in
- * `amendments/backlog/amendment-passkey-unlock.md`.
+ * `dev/amendments/implemented/amendment-passkey-unlock.md`.
  */
 
 const RP_NAME = 'burnmark';
