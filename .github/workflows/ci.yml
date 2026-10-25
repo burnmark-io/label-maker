@@ -2,11 +2,17 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
   test:
+    name: test (node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -14,11 +20,12 @@ jobs:
           version: 9
       - uses: actions/setup-node@v7
         with:
-          # Node 22: jsdom 25 is not happy on Node 26 (window.localStorage
-          # undefined), which fails ~154 unrelated tests.
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
+      # Typecheck and lint don't depend on the Node version; run them once.
+      - if: matrix.node == 24
+        run: pnpm typecheck
+      - if: matrix.node == 24
+        run: pnpm lint
       - run: pnpm test

@@ -4,6 +4,16 @@
   "private": true,
   "description": "Design beautiful labels — Vue 3 web app for thermal label printing.",
   "type": "module",
+  "author": "MBTech",
+  "license": "MIT",
+  "homepage": "https://burnmark.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/burnmark-io/label-maker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/burnmark-io/label-maker/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
