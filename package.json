@@ -53,6 +53,7 @@
   "devDependencies": {
     "@mbtech-nl/eslint-config": "^1.1.0",
     "@mbtech-nl/prettier-config": "^1.1.0",
+    "@napi-rs/canvas": "^0.1.0",
     "@types/node": "^22.0.0",
     "@types/pako": "^2.0.3",
     "@types/w3c-web-serial": "^1.0.8",
