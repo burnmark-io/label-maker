@@ -84,11 +84,9 @@ function onTransformStart(): void {
   if (!tr) return;
   activeAnchor.value = tr.getActiveAnchor?.() ?? '';
 
-  // Capture group-relative context so per-object transformend handlers
-  // can compute positions relative to the group centre rather than each
-  // object's own centre — see §5 of amendment-multi-select-fixes.md.
+  // No group context for a single selection: a one-object group would re-centre it.
   const objs = props.selectedObjects;
-  if (objs.length === 0) {
+  if (objs.length < 2) {
     groupContext.value = null;
     return;
   }
