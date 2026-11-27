@@ -1,5 +1,6 @@
 import type { ShapeObject, TextObject, BarcodeObject } from '@burnmark-io/designer-core';
 import type { useDesignerStore } from '@/stores/designer';
+import { DEFAULT_FONT_FAMILY } from '@/lib/fonts';
 
 type DesignerStore = ReturnType<typeof useDesignerStore>;
 
@@ -50,7 +51,7 @@ export function loadFirstVisitDocument(designer: DesignerStore): void {
     visible: true,
     color: '#1c1917',
     content: 'Hello {{name}}',
-    fontFamily: 'Inter',
+    fontFamily: DEFAULT_FONT_FAMILY,
     fontSize: 88,
     fontWeight: 'bold',
     fontStyle: 'normal',
@@ -77,7 +78,7 @@ export function loadFirstVisitDocument(designer: DesignerStore): void {
     visible: true,
     color: '#1c1917',
     content: 'Welcome to burnmark',
-    fontFamily: 'Inter',
+    fontFamily: DEFAULT_FONT_FAMILY,
     fontSize: 36,
     fontWeight: 'normal',
     fontStyle: 'italic',
