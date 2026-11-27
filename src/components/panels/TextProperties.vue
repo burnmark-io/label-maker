@@ -9,7 +9,9 @@
           class="props__input"
           @change="update('fontFamily', ($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="font in fonts" :key="font" :value="font">{{ font }}</option>
+          <option v-for="font in fontOptions" :key="font.value" :value="font.value">
+            {{ font.label }}
+          </option>
         </select>
       </label>
       <label class="props__field props__field--narrow">
@@ -150,9 +152,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { TextObject } from '@burnmark-io/designer-core';
 import { useI18n } from 'vue-i18n';
 import { useDesignerStore } from '@/stores/designer';
+import { fontOptionsFor } from '@/lib/fonts';
 import ColorPicker from './ColorPicker.vue';
 import ToggleField from './ToggleField.vue';
 import HybridNumberInput from '@/components/common/HybridNumberInput.vue';
@@ -162,15 +166,7 @@ const props = defineProps<{ object: TextObject }>();
 const { t } = useI18n();
 const designer = useDesignerStore();
 
-const fonts = [
-  'Inter',
-  'JetBrains Mono',
-  'Bitter',
-  'Barlow Condensed',
-  'Arial',
-  'Helvetica',
-  'Courier New',
-];
+const fontOptions = computed(() => fontOptionsFor(props.object.fontFamily));
 
 function update<K extends keyof TextObject>(key: K, value: TextObject[K]): void {
   designer.updateObject(props.object.id, { [key]: value } as Partial<TextObject>);

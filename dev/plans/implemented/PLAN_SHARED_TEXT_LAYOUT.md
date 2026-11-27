@@ -1,6 +1,12 @@
 # Plan — Shared text layout (editor renders what print renders)
 
-> **Status:** Draft. Backlog.
+> **Status:** Implemented in designer-core 0.6.0 (burnmark-io/designer-core#2)
+> and this repo's `feat/shared-text-layout`. Differences from the plan:
+> print now honours `autoHeight` (box, invert fill and rotation pivot use
+> the laid-out height); no-break spaces never wrap; bundled fonts now load
+> in the browser (they were never added to `document.fonts`), and the font
+> picker stores designer-core's bundled families. The cross-renderer test
+> compares the editor paint path against `renderFull` with the bundled font.
 >
 > **Goal:** Give text one layout engine. `@burnmark-io/designer-core`
 > computes where every line and glyph goes; both its own `renderText`

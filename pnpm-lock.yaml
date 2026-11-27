@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@burnmark-io/designer-core':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.6.0
+        version: 0.6.0(@napi-rs/canvas@0.1.100)
       '@burnmark-io/designer-vue':
-        specifier: ^0.5.0
-        version: 0.5.0(@burnmark-io/designer-core@0.5.0)(vue@3.5.33(typescript@5.5.4))
+        specifier: ^0.6.0
+        version: 0.6.0(@burnmark-io/designer-core@0.6.0(@napi-rs/canvas@0.1.100))(vue@3.5.33(typescript@5.5.4))
       '@burnmark-io/sheet-templates':
         specifier: ^0.1.1
         version: 0.1.1
@@ -84,6 +84,9 @@ importers:
       '@mbtech-nl/prettier-config':
         specifier: ^1.1.0
         version: 1.1.0(prettier@3.8.3)
+      '@napi-rs/canvas':
+        specifier: ^0.1.0
+        version: 0.1.100
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17
@@ -657,8 +660,8 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@burnmark-io/designer-core@0.5.0':
-    resolution: {integrity: sha512-W25WqWTr9y2Yf8MdjowQcmVLLx3PJYQqrFseTx4bGCrOmiB50037DJ6TRvon6h3NHvcE4I4dr4RJDleMLsNObQ==}
+  '@burnmark-io/designer-core@0.6.0':
+    resolution: {integrity: sha512-XxRsv+kltF81lRbg7tUDy3L6x+yZL/YACSnJ0DaSnAwbTWTsl4H/60/W8CoSJgWZPUq6CCfcOojlnlVahop6KA==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       '@napi-rs/canvas': ^0.1.0
@@ -666,11 +669,11 @@ packages:
       '@napi-rs/canvas':
         optional: true
 
-  '@burnmark-io/designer-vue@0.5.0':
-    resolution: {integrity: sha512-czn9gRvYwzyNoLI9WyUGD/8Scc8cNulx/33PhwS8xjX8U9HLYJ53AzVClNkQeScf3K935Tz1MybnXZgcCLD3xg==}
+  '@burnmark-io/designer-vue@0.6.0':
+    resolution: {integrity: sha512-ddbqUT61GrIsmNjd26inggj+pq3tS09aEx64Z/8WJWNZ5LuB2IzByKOrMV/LUVWGbNWMmreapDYOBheSFKW/9w==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
-      '@burnmark-io/designer-core': 0.5.0
+      '@burnmark-io/designer-core': 0.6.0
       vue: '>=3.3.0'
 
   '@burnmark-io/sheet-templates@0.1.1':
@@ -965,6 +968,76 @@ packages:
     engines: {node: '>=20.9.0'}
     peerDependencies:
       prettier: '>=3.0.0'
+
+  '@napi-rs/canvas-android-arm64@0.1.100':
+    resolution: {integrity: sha512-hjhCKhntPv9+t4ckHymdx0phYNcVW+GKQR6Lzw2zE+pOVjOplSmtx9nNNknTjbEDLcuLZqA1y8ufKg1XfgftzQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [android]
+
+  '@napi-rs/canvas-darwin-arm64@0.1.100':
+    resolution: {integrity: sha512-2PcswRaC7Ly645DGt88///zuFDhJxJYdKAs1uU3mfk1atYkXufgcgLfBpk6Tm12nCQBaNt1wpybuPZ4qOhTo8A==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@napi-rs/canvas-darwin-x64@0.1.100':
+    resolution: {integrity: sha512-ePNZtj7pNIva/siZMg+HmbeozkIjqUIYdoymH8HaA3qK7LfzFN4WMBM8G6HQ9ZC+H3+Dnn5pqtiXpgLykaPOhw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@napi-rs/canvas-linux-arm-gnueabihf@0.1.100':
+    resolution: {integrity: sha512-d5cDB48oWFGU8/XPhUOFAlySgb/VAu7D+s8fi55K1Pcfg8aPplHWqMgibhVLU8ky7Pyg/fuiVLz4Nf3JrSTuUA==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+
+  '@napi-rs/canvas-linux-arm64-gnu@0.1.100':
+    resolution: {integrity: sha512-rDxgxRu69RvDlX/bh9o22DxLsGr8EqsNgotL9+RwQE1S0b0cqeatqsw6aW45mukm0B42DIAaAacKaYQ8cqS1nw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@napi-rs/canvas-linux-arm64-musl@0.1.100':
+    resolution: {integrity: sha512-K3mDW66N+xT2/V439u1alFANiBUjdEx2gLiNYnCmUsva5jZMxWTjafBYwTzYK+EMFMHrUoabuU+T1BIP5CgbYQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@napi-rs/canvas-linux-riscv64-gnu@0.1.100':
+    resolution: {integrity: sha512-mooqUBTIsccZpnoQC4NgrC1v6C1vof39etLNMnBwCY+p0gajWJvAHLGQ6g/gGyS5YrpDW+GefSN4+Cvcr08UWw==}
+    engines: {node: '>= 10'}
+    cpu: [riscv64]
+    os: [linux]
+
+  '@napi-rs/canvas-linux-x64-gnu@0.1.100':
+    resolution: {integrity: sha512-1eCvkDCazm7FFhsT7DfGOdSaHgZVK3bt/dSBl5EWHOWmnz+I7j8tPseJqqD81NF+MH21jKUK4wQSDjN0mdhnTg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@napi-rs/canvas-linux-x64-musl@0.1.100':
+    resolution: {integrity: sha512-20arT6lnI19S68qNlii73TSEDbECNgzMz2EpldC1V3mZFuRkeujXkcebRk0LRJe9SEUAooYiLokfMViY8IX7yA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@napi-rs/canvas-win32-arm64-msvc@0.1.100':
+    resolution: {integrity: sha512-DZFFT1wIAg37LJw37yhMRFfjATd3vTQzjZ1Yki8u2vhO6Hi5VE6BVaGQ1aaDu7xb4iMErz+9EOwjpS7xcxFeBw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@napi-rs/canvas-win32-x64-msvc@0.1.100':
+    resolution: {integrity: sha512-MyT1j3mHC2+Lu4pBi9mKyMJhtP6U7k7EldY7sj/uS5gJA65gTXt8MefJQXLJo5d/vZbuWmfxzkEUNc/urV3pHA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@napi-rs/canvas@0.1.100':
+    resolution: {integrity: sha512-xglYA6q3XO5P3BNJYxVZ1IV7DLVjp1Py6nwag88YntrS+3vKHyYcMqXVS4ZztJmwz2uGvz1FWhI/4LgbR5uQDA==}
+    engines: {node: '>= 10'}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -1650,8 +1723,8 @@ packages:
     resolution: {integrity: sha512-zhaCDicdLuWN5UbN5IMnFqNMhNfo919sH85y2/ea+5Yg9TsTkeZxpL+JLbp6cgYFS4sRLp3YV4S6yDuqVWHYOw==}
     engines: {node: '>=6'}
 
-  bwip-js@4.10.1:
-    resolution: {integrity: sha512-I/cEPiXsu7dRCp78PpVY4gdIXmbH752n8dMC+DStM77XPkrzeathdYrjnZ/i/vZPIxXTUWc+JxgJ/MvbodqPLA==}
+  bwip-js@4.11.4:
+    resolution: {integrity: sha512-FOXnOQkinxog8FwxdnPB+8k2wRqwPnqXwxX37KcXOtMNW+9CinOkGv9MtIoRC4HX/UyogT0/9lIp6FDm2DcquQ==}
     hasBin: true
 
   cac@6.7.14:
@@ -1747,8 +1820,8 @@ packages:
   core-js-compat@3.49.0:
     resolution: {integrity: sha512-VQXt1jr9cBz03b331DFDCCP90b3fanciLkgiOoy8SBHy06gNf+vQ1A3WFLqG7I8TipYIKeYK9wxd0tUrvHcOZA==}
 
-  core-js@3.49.0:
-    resolution: {integrity: sha512-es1U2+YTtzpwkxVLwAFdSpaIMyQaq0PBgm3YD1W3Qpsn1NAmO3KSgZfu+oGSWVu6NvLHoHCV/aYcsE5wiB7ALg==}
+  core-js@3.51.0:
+    resolution: {integrity: sha512-7bDKx/5jm5MxzsXxc93g6Z2+4ZsuT/MddrfRmTDJNAkWsYWHU8EVNEsBiIEWnMAMCHMmRfUEjkuo3jeNBOIHRw==}
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -1835,8 +1908,8 @@ packages:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
 
-  dompurify@3.4.1:
-    resolution: {integrity: sha512-JahakDAIg1gyOm7dlgWSDjV4n7Ip2PKR55NIT6jrMfIgLFgWo81vdr1/QGqWtFNRqXP9UV71oVePtjqS2ebnPw==}
+  dompurify@3.5.0:
+    resolution: {integrity: sha512-LYC0ZkE8P1V42JsRYTwMdme/2ET8SpOc5AA2eOFjP/IadvRd2fwiT4TVz5vkfy0XUx12aS2UaRkTnfVPNOv9vw==}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -2048,8 +2121,8 @@ packages:
       picomatch:
         optional: true
 
-  fflate@0.8.2:
-    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   file-entry-cache@8.0.0:
     resolution: {integrity: sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ==}
@@ -2660,8 +2733,8 @@ packages:
   pako@2.1.0:
     resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
 
-  papaparse@5.5.3:
-    resolution: {integrity: sha512-5QvjGxYVjxO59MGU2lHVYpRWBBtKHnlIAcSe1uNFCkkptUh63NFRj0FJQm7nR67puEruUci/ZkjmEFrjCAyP4A==}
+  papaparse@5.7.1:
+    resolution: {integrity: sha512-qOR+UDWv6D3hMxnWWOk0ZpBdCkd+kw5Yh7aXOaNSQU8A+73EA2bhW7EiUix/hY0yulUi5FRvt7PpYSI2VDvY0g==}
 
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
@@ -4201,17 +4274,19 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@burnmark-io/designer-core@0.5.0':
+  '@burnmark-io/designer-core@0.6.0(@napi-rs/canvas@0.1.100)':
     dependencies:
       '@mbtech-nl/bitmap': 1.3.0
-      bwip-js: 4.10.1
+      bwip-js: 4.11.4
       jspdf: 3.0.4
       jszip: 3.10.1
-      papaparse: 5.5.3
+      papaparse: 5.7.1
+    optionalDependencies:
+      '@napi-rs/canvas': 0.1.100
 
-  '@burnmark-io/designer-vue@0.5.0(@burnmark-io/designer-core@0.5.0)(vue@3.5.33(typescript@5.5.4))':
+  '@burnmark-io/designer-vue@0.6.0(@burnmark-io/designer-core@0.6.0(@napi-rs/canvas@0.1.100))(vue@3.5.33(typescript@5.5.4))':
     dependencies:
-      '@burnmark-io/designer-core': 0.5.0
+      '@burnmark-io/designer-core': 0.6.0(@napi-rs/canvas@0.1.100)
       vue: 3.5.33(typescript@5.5.4)
 
   '@burnmark-io/sheet-templates@0.1.1': {}
@@ -4448,6 +4523,53 @@ snapshots:
   '@mbtech-nl/prettier-config@1.1.0(prettier@3.8.3)':
     dependencies:
       prettier: 3.8.3
+
+  '@napi-rs/canvas-android-arm64@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-darwin-arm64@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-darwin-x64@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-linux-arm-gnueabihf@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-linux-arm64-gnu@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-linux-arm64-musl@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-linux-riscv64-gnu@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-linux-x64-gnu@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-linux-x64-musl@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-win32-arm64-msvc@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas-win32-x64-msvc@0.1.100':
+    optional: true
+
+  '@napi-rs/canvas@0.1.100':
+    optionalDependencies:
+      '@napi-rs/canvas-android-arm64': 0.1.100
+      '@napi-rs/canvas-darwin-arm64': 0.1.100
+      '@napi-rs/canvas-darwin-x64': 0.1.100
+      '@napi-rs/canvas-linux-arm-gnueabihf': 0.1.100
+      '@napi-rs/canvas-linux-arm64-gnu': 0.1.100
+      '@napi-rs/canvas-linux-arm64-musl': 0.1.100
+      '@napi-rs/canvas-linux-riscv64-gnu': 0.1.100
+      '@napi-rs/canvas-linux-x64-gnu': 0.1.100
+      '@napi-rs/canvas-linux-x64-musl': 0.1.100
+      '@napi-rs/canvas-win32-arm64-msvc': 0.1.100
+      '@napi-rs/canvas-win32-x64-msvc': 0.1.100
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
@@ -5127,7 +5249,7 @@ snapshots:
 
   builtin-modules@3.3.0: {}
 
-  bwip-js@4.10.1: {}
+  bwip-js@4.11.4: {}
 
   cac@6.7.14: {}
 
@@ -5156,7 +5278,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.2
       '@types/raf': 3.4.3
-      core-js: 3.49.0
+      core-js: 3.51.0
       raf: 3.4.1
       regenerator-runtime: 0.13.11
       rgbcolor: 1.0.1
@@ -5223,7 +5345,7 @@ snapshots:
     dependencies:
       browserslist: 4.28.2
 
-  core-js@3.49.0:
+  core-js@3.51.0:
     optional: true
 
   core-util-is@1.0.3: {}
@@ -5303,7 +5425,7 @@ snapshots:
 
   delayed-stream@1.0.0: {}
 
-  dompurify@3.4.1:
+  dompurify@3.5.0:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
     optional: true
@@ -5621,7 +5743,7 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.4
 
-  fflate@0.8.2: {}
+  fflate@0.8.3: {}
 
   file-entry-cache@8.0.0:
     dependencies:
@@ -6066,11 +6188,11 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.2
       fast-png: 6.4.0
-      fflate: 0.8.2
+      fflate: 0.8.3
     optionalDependencies:
       canvg: 3.0.11
-      core-js: 3.49.0
-      dompurify: 3.4.1
+      core-js: 3.51.0
+      dompurify: 3.5.0
       html2canvas: 1.4.1
 
   jszip@3.10.1:
@@ -6242,7 +6364,7 @@ snapshots:
 
   pako@2.1.0: {}
 
-  papaparse@5.5.3: {}
+  papaparse@5.7.1: {}
 
   parent-module@1.0.1:
     dependencies:

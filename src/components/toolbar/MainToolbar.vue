@@ -94,6 +94,7 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { TextObject, BarcodeObject, ImageObject } from '@burnmark-io/designer-core';
 import { useDesignerStore } from '@/stores/designer';
+import { DEFAULT_FONT_FAMILY } from '@/lib/fonts';
 import IconButton from '@/components/common/IconButton.vue';
 import ShapeLibrary from './ShapeLibrary.vue';
 
@@ -131,7 +132,7 @@ function addText(): void {
     visible: true,
     color: '#1c1917',
     content: 'Your text',
-    fontFamily: 'Inter',
+    fontFamily: DEFAULT_FONT_FAMILY,
     fontSize: 36,
     fontWeight: 'normal',
     fontStyle: 'normal',

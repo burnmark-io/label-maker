@@ -1,5 +1,5 @@
 <template>
-  <VText
+  <VShape
     ref="nodeRef"
     :config="config"
     @click="emit('select', $event)"
@@ -16,15 +16,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchPostEffect } from 'vue';
-import { applyTemplate, type TextObject } from '@burnmark-io/designer-core';
+import { computed, ref } from 'vue';
+import type { TextObject } from '@burnmark-io/designer-core';
+import type { Context } from 'konva/lib/Context';
+import type { Shape } from 'konva/lib/Shape';
 import { useDataStore } from '@/stores/data';
+import {
+  layoutEditorText,
+  paintEditorText,
+  parseTextLayoutKey,
+  textLayoutKey,
+  textNodeTransform,
+  useFontEpoch,
+  type TextLiveOverrides,
+} from '@/lib/canvas/text-layout';
 import { useShiftKey } from '@/composables/useShiftKey';
 import { useTransformContext } from '@/composables/useTransformContext';
 
 const data = useDataStore();
 const shiftKey = useShiftKey();
 const { activeAnchor, groupContext } = useTransformContext();
+const fontEpoch = useFontEpoch();
 
 const props = defineProps<{
   object: TextObject;
@@ -56,8 +68,6 @@ interface KonvaTextNode {
   width(n: number): void;
   height(): number;
   height(n: number): void;
-  fontSize(): number;
-  fontSize(n: number): void;
   scaleX(): number;
   scaleX(s: number): void;
   scaleY(): number;
@@ -82,56 +92,58 @@ interface KonvaNodeRef {
 
 const nodeRef = ref<KonvaNodeRef | null>(null);
 
-const measuredHeight = ref(props.object.height ?? 0);
+/** Live resize values; painted only, so vue-konva config never fights onTransform positioning. */
+const live = ref<TextLiveOverrides | null>(null);
 
-const renderHeight = computed(() =>
-  props.object.autoHeight ? measuredHeight.value : props.object.height,
-);
+/** Layout fields as a string, so moving the object (x/y) skips re-layout. */
+const layoutKey = computed(() => textLayoutKey(props.object));
+
+/** Layout of the committed object: drives node position and size. */
+const committedLayout = computed(() => {
+  void fontEpoch.value;
+  return layoutEditorText(parseTextLayoutKey(layoutKey.value), data.currentVariables);
+});
+
+/** Layout to paint: committed, or with the live resize values applied. */
+const paintLayout = computed(() => {
+  if (!live.value) return committedLayout.value;
+  void fontEpoch.value;
+  return layoutEditorText(props.object, data.currentVariables, live.value);
+});
+
+const renderHeight = computed(() => committedLayout.value.boxHeight);
+
+function sceneFunc(context: Context, shape: Shape): void {
+  void shape;
+  const ctx = context._context as unknown as Parameters<typeof paintEditorText>[0];
+  paintEditorText(ctx, props.object, paintLayout.value);
+}
+
+/** Hit area is the whole box, so empty parts of it still select. */
+function hitFunc(context: Context, shape: Shape): void {
+  context.beginPath();
+  context.rect(0, 0, shape.width(), shape.height());
+  context.closePath();
+  context.fillStrokeShape(shape);
+}
 
 const config = computed(() => ({
   id: props.object.id,
   name: 'object',
-  x: props.object.x + props.object.width / 2,
-  y: props.object.y + renderHeight.value / 2,
-  offsetX: props.object.width / 2,
-  offsetY: renderHeight.value / 2,
+  ...textNodeTransform(props.object, committedLayout.value),
   width: props.object.width,
-  height: props.object.autoHeight ? undefined : props.object.height,
-  text: applyTemplate(props.object.content, data.currentVariables),
-  fontSize: props.object.fontSize,
-  fontFamily: props.object.fontFamily,
-  fontStyle: textFontStyle(props.object),
-  align: props.object.textAlign,
-  verticalAlign: props.object.verticalAlign,
-  letterSpacing: props.object.letterSpacing,
-  lineHeight: props.object.lineHeight,
-  fill: props.object.color,
-  rotation: props.object.rotation,
+  height: renderHeight.value,
+  sceneFunc,
+  hitFunc,
+  // Only the hit canvas fills (hitFunc); sceneFunc paints the text itself.
+  fill: '#000000',
+  // Repaint when the layout changes (content, variables, fonts).
+  layoutKey: paintLayout.value,
   opacity: props.object.opacity,
   visible: props.object.visible,
   listening: !props.object.locked,
   draggable: props.selected && props.draggable && !props.object.locked,
-  wrap: props.object.wrap ? 'word' : 'none',
 }));
-
-watchPostEffect(() => {
-  void config.value;
-  const node = nodeRef.value?.getNode();
-  if (!node) return;
-  if (props.object.autoHeight) {
-    const h = node.height();
-    if (h && h !== measuredHeight.value) measuredHeight.value = h;
-  } else if (measuredHeight.value !== props.object.height) {
-    measuredHeight.value = props.object.height;
-  }
-});
-
-function textFontStyle(o: TextObject): string {
-  const parts: string[] = [];
-  if (o.fontStyle === 'italic') parts.push('italic');
-  if (o.fontWeight === 'bold') parts.push('bold');
-  return parts.length === 0 ? 'normal' : parts.join(' ');
-}
 
 function onDragMove(event: { target?: { x?: () => number; y?: () => number } }): void {
   const t = event.target;
@@ -144,10 +156,7 @@ function onDragEnd(event: {
 }): void {
   const t = event.target;
   if (!t?.x || !t?.y) return;
-  // For autoHeight text the stored height may differ from what Konva
-  // actually rendered — read the live node height to avoid position drift.
-  const renderedHeight = props.object.autoHeight && t.height ? t.height() : props.object.height;
-  emit('dragend', t.x() - props.object.width / 2, t.y() - renderedHeight / 2);
+  emit('dragend', t.x() - props.object.width / 2, t.y() - renderHeight.value / 2);
 }
 
 const MIN_DIM = 10;
@@ -211,12 +220,13 @@ function onTransformStart(): void {
   const node = nodeRef.value?.getNode();
   if (!node) return;
   dragStartWidth = props.object.width;
-  dragStartHeight = props.object.autoHeight ? measuredHeight.value : props.object.height;
+  dragStartHeight = renderHeight.value;
   dragStartFontSize = props.object.fontSize;
   dragStartLetterSpacing = props.object.letterSpacing;
   dragStartAnchor = activeAnchor.value;
   cumulativeScaleX = 1;
   cumulativeScaleY = 1;
+  live.value = {};
 
   dragStartRotationRad = (props.object.rotation * Math.PI) / 180;
   const cx = props.object.x + dragStartWidth / 2;
@@ -315,16 +325,19 @@ function onTransform(): void {
     newHeight = Math.max(MIN_DIM, dragStartHeight * cumulativeScaleY);
   }
 
-  node.width(newWidth);
-  if (!props.object.autoHeight) {
-    node.height(newHeight);
-  }
   // Always set fontSize so toggling Shift mid-drag snaps the live font
   // back to dragStart in non-proportional mode (and re-engages scaling
   // cleanly when toggled back). dragStart is the no-op value.
-  node.fontSize(newFont);
-
-  const liveHeight = props.object.autoHeight ? node.height() : newHeight;
+  live.value = {
+    width: newWidth,
+    fontSize: newFont,
+    // Scales with the font; negative spacing stays negative.
+    letterSpacing: dragStartLetterSpacing * (newFont / dragStartFontSize),
+  };
+  // autoHeight: the height is whatever the live layout needs.
+  const liveHeight = props.object.autoHeight ? paintLayout.value.boxHeight : newHeight;
+  node.width(newWidth);
+  node.height(liveHeight);
 
   // Always anchor the bbox at the pivot computed at transformstart.
   // This is robust regardless of how Konva positions the node — at the
@@ -375,18 +388,17 @@ function onTransformEnd(): void {
     x: posX,
     y: posY,
     width: newWidth,
+    height: newHeight,
     rotation: node.rotation(),
   };
-  if (!props.object.autoHeight) {
-    patch.height = newHeight;
-  }
   if (proportional) {
-    const liveFont = Math.max(MIN_FONT, node.fontSize());
+    const liveFont = Math.max(MIN_FONT, live.value?.fontSize ?? dragStartFontSize);
     patch.fontSize = liveFont;
     const fontScale = liveFont / dragStartFontSize;
-    patch.letterSpacing = Math.max(0, dragStartLetterSpacing * fontScale);
+    patch.letterSpacing = dragStartLetterSpacing * fontScale;
   }
 
   emit('transformend', patch);
+  live.value = null;
 }
 </script>
