@@ -476,6 +476,21 @@ function isOnSelectedObject(event: {
   return designer.selection.includes(id);
 }
 
+interface KonvaTargetLike {
+  getClassName?: () => string;
+  getParent?: () => KonvaTargetLike | null;
+}
+
+/** True when the pointer-down target is part of a Konva Transformer. */
+function isOnTransformer(event: { target?: unknown }): boolean {
+  let node = event.target as KonvaTargetLike | null | undefined;
+  while (node) {
+    if (node.getClassName?.() === 'Transformer') return true;
+    node = node.getParent?.() ?? null;
+  }
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // Marquee move/up use native window listeners instead of Konva events.
 // Konva suppresses pointermove while isDragging()/isTransforming() is true
@@ -569,6 +584,8 @@ function onStagePointerDown(event: {
   // objects start a marquee — the object becomes draggable only after it's
   // selected, so Konva won't initiate a drag on this gesture.
   if (isOnSelectedObject(event)) return;
+  // Resize/rotate handle press: no marquee, or release would select what it swept.
+  if (isOnTransformer(event)) return;
   if (editingTextId.value) return;
   if (event.evt?.button !== undefined && event.evt.button !== 0) return;
 
