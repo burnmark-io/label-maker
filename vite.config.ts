@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url';
 import { readFileSync } from 'node:fs';
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -70,11 +70,17 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    fs: {
+      // Serve a locally linked designer-core (its bundled fonts live outside this project).
+      allow: [searchForWorkspaceRoot(process.cwd()), r('../designer-core/packages/core')],
+    },
   },
   test: {
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.{test,spec}.ts'],
+    // Load a locally linked designer-core natively, so @napi-rs/canvas keeps its CJS named exports.
+    server: { deps: { external: [/designer-core[\\/]packages[\\/]core[\\/]dist/] } },
     // Node 25+ enables its own global `localStorage`, which is undefined
     // without `--localstorage-file` and shadows jsdom's. Turn it off.
     poolOptions: {
