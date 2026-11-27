@@ -165,6 +165,7 @@ import { useMediaStore, dotsFromMm } from '@/stores/media';
 import { usePreferencesStore } from '@/stores/preferences';
 import { CANVAS_VIEWPORT_KEY, type ViewportState } from '@/composables/useCanvasViewport';
 import { computeSnap } from '@/composables/useSnapping';
+import { useDocumentFonts } from '@/lib/canvas/text-layout';
 import type { KonvaStage } from './konva-types';
 
 const { t } = useI18n();
@@ -214,9 +215,8 @@ const visibleSelectionObjects = computed<LabelObject[]>(() =>
  * there's a multi-selection — for a single object the Transformer's own
  * border already conveys the selection, so an inner dashed rect would
  * just be visual noise. Mirrors each node's centred-origin positioning
- * math so rotated objects outline correctly. Note: autoHeight text uses
- * the stored `height`, which lags the rendered height — accept until the
- * autoHeight value is persisted on content change.
+ * math so rotated objects outline correctly. autoHeight text's stored
+ * `height` can lag (it's only refreshed on layout-changing edits).
  */
 const selectionOutlines = computed(() => {
   if (visibleSelectionObjects.value.length < 2) return [];
@@ -236,6 +236,8 @@ const selectionOutlines = computed(() => {
     perfectDrawEnabled: false,
   }));
 });
+
+useDocumentFonts(() => document.value);
 
 const editingTextId = ref<string | null>(null);
 const editingText = computed<TextObject | null>(() => {

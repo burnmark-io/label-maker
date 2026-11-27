@@ -31,6 +31,8 @@ import { BurnmarkAssetLoader } from '@/services/asset-loader';
 import { autoNameFor, type TypeLabelKey } from '@/lib/naming/auto-name';
 import { dotsFromMm, mmFromDots, defaultContinuousLength } from '@/stores/media';
 import { i18n } from '@/i18n';
+import { withAutoHeight, withAutoHeightInput } from '@/lib/canvas/text-layout';
+import { useDataStore } from '@/stores/data';
 
 /**
  * Designer store — wraps `useLabelDesigner` from `@burnmark-io/designer-vue`
@@ -95,7 +97,8 @@ export const useDesignerStore = defineStore('designer', () => {
    */
   function addObject<T extends LabelObject>(input: Omit<T, 'id'>): string {
     const withName = ensureAutoName(input);
-    return composable.add(withName as LabelObjectInput);
+    const sized = withAutoHeightInput(withName, useDataStore().currentVariables);
+    return composable.add(sized as LabelObjectInput);
   }
 
   function autoNamePrefix(key: TypeLabelKey): string {
@@ -109,8 +112,13 @@ export const useDesignerStore = defineStore('designer', () => {
     return { ...input, name } as Omit<T, 'id'>;
   }
 
+  function findObject(id: string): LabelObject | undefined {
+    return composable.designer.document.objects.find(o => o.id === id);
+  }
+
+  /** Update an object; autoHeight text gets its re-measured height in the same history entry. */
   function updateObject(id: string, patch: Partial<LabelObject>): void {
-    composable.update(id, patch);
+    composable.update(id, withAutoHeight(findObject(id), patch, useDataStore().currentVariables));
   }
 
   function removeObject(id: string): void {

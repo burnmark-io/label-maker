@@ -15,7 +15,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
-import type { TextObject } from '@burnmark-io/designer-core';
+import { getMeasurementContext, type TextObject } from '@burnmark-io/designer-core';
+import { layoutEditorText, useFontEpoch } from '@/lib/canvas/text-layout';
 
 const props = defineProps<{
   object: TextObject;
@@ -33,23 +34,43 @@ const emit = defineEmits<{
 }>();
 
 const editorRef = ref<HTMLDivElement | null>(null);
+const fontEpoch = useFontEpoch();
+
+/** Layout of the raw content (placeholders unresolved), as being edited. */
+const layout = computed(() => {
+  void fontEpoch.value;
+  return layoutEditorText(props.object, {});
+});
+
+/** Shift (dots) putting the DOM editor's first baseline (CSS half-leading) on the canvas's. */
+const baselineShift = computed(() => {
+  const l = layout.value;
+  const first = l.lines[0];
+  if (!first) return 0;
+  const ctx = getMeasurementContext();
+  ctx.save();
+  ctx.font = l.font;
+  const m = ctx.measureText('Mg') as {
+    fontBoundingBoxAscent?: number;
+    fontBoundingBoxDescent?: number;
+  };
+  ctx.restore();
+  const ascent = m.fontBoundingBoxAscent ?? props.object.fontSize * 0.8;
+  const descent = m.fontBoundingBoxDescent ?? props.object.fontSize * 0.2;
+  const cssBaseline = (l.lineHeight - (ascent + descent)) / 2 + ascent;
+  return first.baselineY - cssBaseline;
+});
 
 const wrapperStyle = computed(() => {
   const left = props.offsetX + props.object.x * props.scale;
   const top = props.offsetY + props.object.y * props.scale;
   const width = props.object.width * props.scale;
-  const height = props.object.height * props.scale;
+  const height = layout.value.boxHeight * props.scale;
   return {
     left: `${left}px`,
     top: `${top}px`,
     width: `${width}px`,
     minHeight: `${height}px`,
-    justifyContent:
-      props.object.verticalAlign === 'middle'
-        ? 'center'
-        : props.object.verticalAlign === 'bottom'
-          ? 'flex-end'
-          : 'flex-start',
   };
 });
 
@@ -61,6 +82,8 @@ const editorStyle = computed(
     fontStyle: props.object.fontStyle,
     textAlign: props.object.textAlign,
     color: props.object.color,
+    // Vertical alignment is already in the layout's first baseline.
+    transform: `translateY(${baselineShift.value * props.scale}px)`,
     lineHeight: String(props.object.lineHeight),
     letterSpacing: `${(props.object.letterSpacing ?? 0) * props.scale}px`,
     whiteSpace: props.object.wrap ? 'pre-wrap' : 'pre',
